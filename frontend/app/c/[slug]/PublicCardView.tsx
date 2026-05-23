@@ -335,7 +335,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
     if (!products) return ['All'];
     const cats = new Set<string>();
     products.forEach((p: any) => {
-      if (p.category) cats.add(p.category);
+      if (p.is_active && p.category) cats.add(p.category);
     });
     return ['All', ...Array.from(cats)];
   }, [products]);
@@ -343,6 +343,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter((p: any) => {
+      if (!p.is_active) return false;
       const matchesSearch = p.name?.toLowerCase().includes(productSearch.toLowerCase()) || p.description?.toLowerCase().includes(productSearch.toLowerCase());
       const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
       return matchesSearch && matchesCategory;

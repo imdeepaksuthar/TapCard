@@ -49,6 +49,29 @@ class LeadController extends Controller
             'status' => 'new',
         ]);
 
+        // Load the associated card and its owner
+        $card = BusinessCard::with('user')->find($validated['card_id']);
+
+        if ($card && $card->user) {
+            // 1. In-App Notification to Card Owner
+            $card->user->notify(new \App\Notifications\NewLeadReceived($lead));
+
+            // 2. Email Notification
+            if ($card->user->email) {
+                $adminEmails = \App\Models\User::where('role', 'super_admin')->pluck('email')->toArray();
+                
+                \Illuminate\Support\Facades\Mail::to($card->user->email)
+                    ->bcc($adminEmails)
+                    ->send(new \App\Mail\NewLeadNotification($lead));
+            }
+        }
+        
+        // 3. In-App Notification to Admins
+        $admins = \App\Models\User::where('role', 'super_admin')->get();
+        if ($admins->isNotEmpty()) {
+            \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewLeadReceived($lead));
+        }
+
         return response()->json([
             'message' => 'Lead captured successfully',
             'lead' => $lead

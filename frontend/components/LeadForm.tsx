@@ -34,6 +34,18 @@ export default function LeadForm({
     setStatus('loading');
     setErrorMsg('');
 
+    // Custom Validation
+    if (!formData.name.trim()) {
+      setErrorMsg('Please enter your name.');
+      setStatus('error');
+      return;
+    }
+    if (!formData.email.trim() && !formData.phone.trim()) {
+      setErrorMsg('Please provide either an email or a phone number so we can reach you.');
+      setStatus('error');
+      return;
+    }
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/leads`, {
         method: 'POST',

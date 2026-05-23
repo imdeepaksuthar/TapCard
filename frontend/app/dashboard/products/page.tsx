@@ -30,9 +30,15 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Filter & Sort states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'active', 'inactive'
+  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'price-asc', 'price-desc', 'name-asc'
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToView, setProductToView] = useState<Product | null>(null);
 
   // Form states
   const [formName, setFormName] = useState('');
@@ -190,6 +196,21 @@ export default function ProductsPage() {
     }
   };
 
+  const handleToggleStatus = async (product: Product) => {
+    // Optimistic update
+    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_active: !p.is_active } : p));
+    try {
+      await apiFetch<{ product: Product }>(`/api/products/${product.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ ...product, is_active: !product.is_active }),
+      });
+    } catch (err) {
+      // Revert on failure
+      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_active: product.is_active } : p));
+      alert((err as Error).message || 'Failed to update status');
+    }
+  };
+
   const confirmDeleteProduct = async () => {
     if (!productToDelete) return;
     setIsDeleting(true);
@@ -208,24 +229,86 @@ export default function ProductsPage() {
   const setCarouselIdx = (id: number, idx: number) =>
     setCarouselIndex(prev => ({ ...prev, [id]: idx }));
 
+  const filteredAndSortedProducts = products
+    .filter((p) => {
+      if (filterStatus === 'active' && !p.is_active) return false;
+      if (filterStatus === 'inactive' && p.is_active) return false;
+      if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'price-asc') return a.price - b.price;
+      if (sortBy === 'price-desc') return b.price - a.price;
+      if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
+      // 'newest' (default)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Products</h1>
-          <p className="text-gray-400 text-sm">Browse the latest products from Card Setu.</p>
+      {/* Header & Controls */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Products</h1>
+            <p className="text-gray-400 text-sm">Manage and organize your product catalog.</p>
+          </div>
+          {isAdmin && (
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 active:scale-95"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Product
+            </button>
+          )}
         </div>
-        {isAdmin && (
-          <button
-            onClick={openAddModal}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 active:scale-95"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Product
-          </button>
+
+        {/* Toolbar */}
+        {!isLoading && !error && products.length > 0 && (
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Search products..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl pl-12 pr-4 py-2.5 text-white text-sm outline-none transition-all duration-300"
+              />
+            </div>
+
+            {/* Filters & Sorting */}
+            <div className="flex flex-wrap sm:flex-nowrap gap-3">
+              <select 
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+              >
+                <option value="all" className="bg-[#0F1C35]">All Status</option>
+                <option value="active" className="bg-[#0F1C35]">Active Only</option>
+                <option value="inactive" className="bg-[#0F1C35]">Inactive Only</option>
+              </select>
+
+              <select 
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+              >
+                <option value="newest" className="bg-[#0F1C35]">Newest First</option>
+                <option value="price-asc" className="bg-[#0F1C35]">Price: Low to High</option>
+                <option value="price-desc" className="bg-[#0F1C35]">Price: High to Low</option>
+                <option value="name-asc" className="bg-[#0F1C35]">Name: A to Z</option>
+              </select>
+            </div>
+          </div>
         )}
       </div>
 
@@ -244,9 +327,23 @@ export default function ProductsPage() {
       )}
 
       {/* Product Grid */}
-      {!isLoading && products.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product, index) => {
+      {!isLoading && products.length > 0 && filteredAndSortedProducts.length === 0 && (
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-12 text-center mt-6">
+          <svg className="w-12 h-12 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <h3 className="text-lg font-bold text-white">No products found</h3>
+          <p className="text-gray-400 mt-1">Try adjusting your filters or search query.</p>
+          <button 
+            onClick={() => { setSearchQuery(''); setFilterStatus('all'); setSortBy('newest'); }}
+            className="mt-4 text-sm text-blue-400 hover:text-blue-300 hover:underline"
+          >
+            Clear all filters
+          </button>
+        </div>
+      )}
+
+      {!isLoading && filteredAndSortedProducts.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+          {filteredAndSortedProducts.map((product, index) => {
             const imgs = product.images || [];
             const ci = getCarouselIdx(product.id);
             return (
@@ -257,15 +354,25 @@ export default function ProductsPage() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 flex flex-col relative group"
               >
-                {/* Status badge */}
+                {/* Status toggle badge with switch */}
                 {isAdmin && (
-                  <span className={`absolute top-3 left-3 text-xs font-semibold px-2 py-1 rounded-full backdrop-blur-md shadow-sm z-10 ${
-                    product.is_active
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                  }`}>
-                    {product.is_active ? 'Active' : 'Inactive'}
-                  </span>
+                  <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-white/10">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${product.is_active ? 'text-green-400' : 'text-gray-400'}`}>
+                      {product.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleToggleStatus(product); }}
+                      className={`w-8 h-4 flex items-center rounded-full p-0.5 transition-colors duration-300 outline-none ${product.is_active ? 'bg-green-500' : 'bg-gray-600'}`}
+                    >
+                      <motion.div
+                        layout
+                        className="bg-white w-3 h-3 rounded-full shadow-md"
+                        animate={{ x: product.is_active ? 16 : 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      />
+                    </button>
+                  </div>
                 )}
 
                 {/* Image carousel */}
@@ -344,7 +451,7 @@ export default function ProductsPage() {
                           </button>
                         </>
                       )}
-                      <button className="text-sm bg-white/5 hover:bg-white/10 text-white font-medium py-2 px-4 rounded-lg border border-white/10 transition-all duration-300">View</button>
+                      <button onClick={() => setProductToView(product)} className="text-sm bg-white/5 hover:bg-white/10 text-white font-medium py-2 px-4 rounded-lg border border-white/10 transition-all duration-300">View</button>
                     </div>
                   </div>
                 </div>
@@ -601,6 +708,76 @@ export default function ProductsPage() {
                 <button onClick={confirmDeleteProduct} disabled={isDeleting} className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow-lg shadow-red-500/20">
                   {isDeleting && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
                   Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* View Product Modal */}
+      <AnimatePresence>
+        {productToView && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setProductToView(null)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-[#0B1528] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] z-10"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-white/5 flex justify-between items-start bg-[#070D1A]">
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">{productToView.name}</h2>
+                  <p className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                    ₹{productToView.price.toFixed(2)}
+                  </p>
+                </div>
+                <button onClick={() => setProductToView(null)} className="text-gray-400 hover:text-white transition-colors p-1 bg-white/5 hover:bg-white/10 rounded-lg">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="overflow-y-auto flex-1 p-6 space-y-6">
+                {/* Images */}
+                {productToView.images && productToView.images.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {productToView.images.map((img, i) => (
+                      <div key={i} className="aspect-square rounded-xl overflow-hidden bg-black/50 border border-white/5">
+                        <img src={img} alt={`${productToView.name} ${i+1}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="w-full h-40 bg-black/20 rounded-xl flex items-center justify-center border border-white/5">
+                    <p className="text-gray-500 text-sm">No images available.</p>
+                  </div>
+                )}
+                
+                {/* Description */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Description</h3>
+                  <div className="bg-[#070D1A]/50 border border-white/5 rounded-xl p-4 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                    {productToView.description || <span className="text-gray-500 italic">No description provided.</span>}
+                  </div>
+                </div>
+
+                {/* Additional Details */}
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${productToView.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    {productToView.is_active ? 'Currently Active' : 'Currently Inactive'}
+                  </div>
+                  <span>&bull;</span>
+                  <div>Added {new Date(productToView.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-white/5 flex justify-end bg-[#070D1A]">
+                <button onClick={() => setProductToView(null)} className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-medium transition-all duration-300">
+                  Close Preview
                 </button>
               </div>
             </motion.div>

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BusinessCardController;
 use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\SocialAuthController;
@@ -79,6 +80,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/leads', [LeadController::class, 'index']);
     Route::put('/leads/{id}', [LeadController::class, 'update']);
     Route::delete('/leads/{id}', [LeadController::class, 'destroy']);
+    
+    // Order Actions
+    Route::get('/orders', [\App\Http\Controllers\OrderController::class, 'index']);
+    Route::put('/orders/{id}', [\App\Http\Controllers\OrderController::class, 'update']);
+    Route::delete('/orders/{id}', [\App\Http\Controllers\OrderController::class, 'destroy']);
+    
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     
     // AI Generation Endpoint
     Route::post('/cards/ai-optimize', [BusinessCardController::class, 'optimizeContent']);

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import NotificationBell from '../../components/NotificationBell';
+
 
 export default function DashboardLayout({
   children,
@@ -67,6 +69,7 @@ export default function DashboardLayout({
           <SidebarLink href="/dashboard" icon="dashboard" active={pathname === '/dashboard'}>Dashboard</SidebarLink>
           <SidebarLink href="/dashboard/cards" icon="cards" active={pathname === '/dashboard/cards'}>My Cards</SidebarLink>
           <SidebarLink href="/dashboard/products" icon="products" active={pathname === '/dashboard/products'}>Products</SidebarLink>
+          <SidebarLink href="/dashboard/orders" icon="orders" active={pathname === '/dashboard/orders'}>Orders</SidebarLink>
           <SidebarLink href="/dashboard/leads" icon="leads" active={pathname === '/dashboard/leads'}>Leads</SidebarLink>
           <SidebarLink href="/dashboard/analytics" icon="analytics" active={pathname === '/dashboard/analytics'}>Analytics</SidebarLink>
           <SidebarLink href="/dashboard/settings" icon="settings" active={pathname === '/dashboard/settings'}>Settings</SidebarLink>
@@ -96,7 +99,7 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-[#0B1528]/50 backdrop-blur-xl border-b border-white/5 h-16 flex items-center justify-between px-6">
+        <header className="relative z-50 bg-[#0B1528]/50 backdrop-blur-xl border-b border-white/5 h-16 flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -116,12 +119,7 @@ export default function DashboardLayout({
             </h2>
           </div>
           <div className="flex items-center gap-4">
-            <button className="text-gray-400 hover:text-white relative">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"></path>
-              </svg>
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBell />
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center font-bold text-indigo-500">
                 {user.name.charAt(0).toUpperCase()}
@@ -182,6 +180,12 @@ function SidebarIcon({ name }: { name: string }) {
       return (
         <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+        </svg>
+      );
+    case 'orders':
+      return (
+        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
         </svg>
       );
     case 'leads':
