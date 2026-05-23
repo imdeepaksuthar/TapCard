@@ -54,4 +54,11 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // AI Generation Endpoint
     Route::post('/cards/ai-optimize', [BusinessCardController::class, 'optimizeContent']);
+
+    // Product Admin Actions (Admin & Super Admin only)
+    Route::middleware(\App\Http\Middleware\RoleMiddleware::class . ':super_admin,admin')->group(function () {
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{product}', [ProductController::class, 'update']);
+        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    });
 });

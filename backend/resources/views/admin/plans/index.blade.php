@@ -42,7 +42,7 @@
                         </div>
 
                         <div class="flex items-center justify-center p-2.5 xl:p-5">
-                            <p class="text-meta-3">${{ number_format($plan->price, 2) }}</p>
+                            <p class="text-meta-3">₹{{ number_format($plan->price, 2) }}</p>
                         </div>
 
                         <div class="flex items-center justify-center p-2.5 xl:p-5">
@@ -83,7 +83,7 @@
 
                     <div class="mb-4.5">
                         <label class="mb-2.5 block text-black dark:text-white">
-                            Price ($) <span class="text-meta-1">*</span>
+                            Price (₹) <span class="text-meta-1">*</span>
                         </label>
                         <input type="number" name="price" step="0.01" required placeholder="e.g. 29.99"
                             class="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" />

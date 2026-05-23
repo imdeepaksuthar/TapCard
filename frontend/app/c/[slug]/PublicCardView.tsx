@@ -152,6 +152,36 @@ const Icon = {
       <path d="M23.5 6.2a3 3 0 0 0-2.1-2.13C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.4.52A3 3 0 0 0 .5 6.2 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.13c1.9.52 9.4.52 9.4.52s7.5 0 9.4-.52a3 3 0 0 0 2.1-2.13A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.8zM9.6 15.57V8.43L15.82 12 9.6 15.57z"/>
     </svg>
   ),
+  ShoppingCart: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </svg>
+  ),
+  Trash: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  ),
+  Plus: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  Minus: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  X: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
 };
 
 const SOCIAL_META: Record<string, { label: string; color: string; href: (v: string) => string; Icon: any }> = {
@@ -162,7 +192,7 @@ const SOCIAL_META: Record<string, { label: string; color: string; href: (v: stri
   youtube:   { label: 'YouTube',   color: '#FF0000', href: (v) => v, Icon: Icon.YouTube },
 };
 
-export default function PublicCardView({ data }: { data: any }) {
+export default function PublicCardView({ data, products = [] }: { data: any, products?: any[] }) {
   const { card } = data;
   const personalInfo   = asObject(card.personal_info);
   const contactButtons = asObject(card.contact_buttons);
@@ -183,6 +213,77 @@ export default function PublicCardView({ data }: { data: any }) {
   const [saving, setSaving]   = useState(false);
   const [shareOk, setShareOk] = useState(false);
 
+  // Cart State
+  const [cart, setCart] = useState<any[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [checkoutName, setCheckoutName] = useState('');
+  const [checkoutPhone, setCheckoutPhone] = useState('');
+  const [checkoutPincode, setCheckoutPincode] = useState('');
+  const [checkoutVillage, setCheckoutVillage] = useState('');
+  const [postOffices, setPostOffices] = useState<any[]>([]);
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  // Fetch Pincode Details
+  useEffect(() => {
+    if (checkoutPincode.length === 6) {
+      setIsFetchingPincode(true);
+      setFormError('');
+      fetch(`https://api.zippopotam.us/in/${checkoutPincode}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Invalid pincode');
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.places && data.places.length > 0) {
+            const offices = data.places.map((place: any) => ({ Name: place["place name"] }));
+            setPostOffices(offices);
+            setCheckoutVillage('');
+          } else {
+            setPostOffices([]);
+            setFormError('Invalid Pincode. Please check and try again.');
+          }
+        })
+        .catch(() => {
+          setPostOffices([]);
+          setFormError('Failed to fetch pincode details. Try again later.');
+        })
+        .finally(() => {
+          setIsFetchingPincode(false);
+        });
+    } else {
+      setPostOffices([]);
+      setCheckoutVillage('');
+    }
+  }, [checkoutPincode]);
+
+  const cartItemCount = cart.length;
+  const cartTotal = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
+
+  const addToCart = (product: any) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+
+  const updateCartQty = (id: any, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }));
+  };
+
+  const removeFromCart = (id: any) => {
+    setCart(prev => prev.filter(item => item.id !== id));
+  };
+
   const themeName    = customBranding.theme_color || card.theme_color || 'indigo';
   const primaryColor = data.theme?.primary_color || getHexColor(themeName);
   const primary15    = hexToRgba(primaryColor, 0.15);
@@ -197,6 +298,57 @@ export default function PublicCardView({ data }: { data: any }) {
   const phone    = contactButtons.call     || socialLinks.phone    || socialLinks.call;
   const whatsapp = contactButtons.whatsapp || socialLinks.whatsapp;
   const email    = contactButtons.email    || socialLinks.email;
+
+  const validateForm = () => {
+    setFormError('');
+    if (!checkoutName.trim()) {
+      setFormError('Name is required.');
+      return false;
+    }
+    if (!checkoutPhone.trim()) {
+      setFormError('Phone number is required.');
+      return false;
+    }
+    if (checkoutPincode.length !== 6) {
+      setFormError('Valid 6-digit Pincode is required.');
+      return false;
+    }
+    if (postOffices.length > 0 && !checkoutVillage) {
+      setFormError('Please select your Village/Area.');
+      return false;
+    }
+    return true;
+  };
+
+  const generateOrderText = () => {
+    let text = `*New Order*\n\n`;
+    text += `*Name:* ${checkoutName}\n`;
+    text += `*Phone:* ${checkoutPhone}\n`;
+    text += `*Address:* ${checkoutVillage ? checkoutVillage + ', ' : ''}${checkoutPincode}\n`;
+    text += `\n*Order Details:*\n`;
+    cart.forEach(item => {
+      text += `${item.quantity}x ${item.name} - ₹${(Number(item.price) * item.quantity).toFixed(2)}\n`;
+    });
+    text += `\n*Total: ₹${cartTotal.toFixed(2)}*`;
+    return text;
+  };
+
+  const handleWhatsAppCheckout = () => {
+    if (!validateForm()) return;
+    const text = generateOrderText();
+    const targetNumber = String(contactButtons.whatsapp || socialLinks.whatsapp || contactButtons.call || socialLinks.phone || socialLinks.call).replace(/[^\d]/g, '');
+    if (targetNumber) {
+      window.open(`https://wa.me/${targetNumber.replace('+', '')}?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  };
+
+  const handleEmailCheckout = () => {
+    if (!validateForm()) return;
+    const text = generateOrderText();
+    if (email) {
+      window.open(`mailto:${email}?subject=${encodeURIComponent('New Order')}&body=${encodeURIComponent(text)}`, '_blank');
+    }
+  };
 
   const cleanedPhone    = phone    ? String(phone).replace(/[^\d+]/g, '')    : '';
   const cleanedWhatsapp = whatsapp ? String(whatsapp).replace(/[^\d]/g, '')  : '';
@@ -596,6 +748,53 @@ export default function PublicCardView({ data }: { data: any }) {
               </Section>
             )}
 
+            {/* ---- PRODUCTS (SHOP) ---- */}
+            {products && products.length > 0 && (
+              <Section title="Products" isDark={isDark} textMuted={textMuted}>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {products.map((product) => {
+                    const inCart = cart.some(item => item.id === product.id);
+                    
+                    return (
+                      <div key={product.id} className={`flex flex-col overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft} group`}>
+                        <div className="aspect-square w-full bg-black/5 dark:bg-white/5 relative overflow-hidden">
+                          {product.image_url ? (
+                            <img src={product.image_url} alt={product.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-slate-400">
+                              <Icon.Building className="h-6 w-6 opacity-20" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-1 flex-col p-3">
+                          <h4 className={`line-clamp-1 text-sm font-semibold ${textMain}`}>{product.name}</h4>
+                          <div className="mt-auto pt-1 flex items-center justify-between">
+                            <p className={`text-[12px] font-bold`} style={{ color: primaryColor }}>₹{Number(product.price).toFixed(2)}</p>
+                            <button
+                              onClick={() => {
+                                if (inCart) {
+                                  setIsCartOpen(true);
+                                } else {
+                                  addToCart(product);
+                                }
+                              }}
+                              className={`group flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 active:scale-95 shadow-md hover:shadow-lg hover:-translate-y-1 ${
+                                inCart ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'text-white'
+                              }`}
+                              style={inCart ? {} : { backgroundColor: primaryColor, boxShadow: `0 4px 12px ${hexToRgba(primaryColor, 0.4)}` }}
+                              title={inCart ? "View Cart" : "Add to Cart"}
+                            >
+                              {inCart ? <Icon.Check className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" /> : <Icon.ShoppingCart className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+            )}
+
             {/* ---- INQUIRY FORM ---- */}
             <Section title="Send an Inquiry" isDark={isDark} textMuted={textMuted}>
               <div className={`rounded-2xl ${surfaceSoft} ring-1 ${borderSoft} p-5`}>
@@ -664,6 +863,168 @@ export default function PublicCardView({ data }: { data: any }) {
           Copied to clipboard
         </div>
       )}
+      {/* ---- CART MODAL ---- */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className={`w-full max-w-md overflow-hidden rounded-3xl ${surface} shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[90vh]`}
+          >
+            <div className={`flex items-center justify-between border-b ${borderSoft} px-5 py-4`}>
+              <h2 className="text-lg font-bold">Your Cart</h2>
+              <button onClick={() => setIsCartOpen(false)} className={`rounded-full p-2 hover:bg-slate-200 dark:hover:bg-white/10 transition`}>
+                <Icon.X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-5">
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                  <Icon.ShoppingCart className="h-12 w-12 opacity-50 mb-4" />
+                  <p>Your cart is empty</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {cart.map(item => (
+                    <div key={item.id} className={`flex items-center gap-3 rounded-2xl ${surfaceSoft} p-3 ring-1 ${borderSoft}`}>
+                      <div className="h-14 w-14 overflow-hidden rounded-xl bg-black/5 dark:bg-white/5 shrink-0">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <Icon.Building className="h-full w-full p-3 opacity-20" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="truncate text-sm font-semibold">{item.name}</h4>
+                        <p className={`text-xs`} style={{ color: primaryColor }}>₹{Number(item.price).toFixed(2)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center rounded-lg bg-black/5 dark:bg-white/10 p-1">
+                          <button onClick={() => updateCartQty(item.id, -1)} className="p-1 hover:text-slate-900 dark:hover:text-white transition">
+                            <Icon.Minus className="h-3 w-3" />
+                          </button>
+                          <span className="w-6 text-center text-xs font-semibold">{item.quantity}</span>
+                          <button onClick={() => updateCartQty(item.id, 1)} className="p-1 hover:text-slate-900 dark:hover:text-white transition">
+                            <Icon.Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <button onClick={() => removeFromCart(item.id)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition">
+                          <Icon.Trash className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className={`mt-2 border-t ${borderSoft} pt-4`}>
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>Total</span>
+                      <span style={{ color: primaryColor }}>₹{cartTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-3">
+                    <p className={`text-[11px] font-semibold uppercase tracking-wider ${textMuted}`}>Your Details</p>
+                    
+                    {formError && (
+                      <div className="rounded-xl bg-rose-500/10 p-3 ring-1 ring-rose-500/20 text-rose-500 text-xs font-semibold">
+                        {formError}
+                      </div>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder="Name *"
+                      value={checkoutName}
+                      onChange={e => setCheckoutName(e.target.value)}
+                      className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
+                      style={{ outlineColor: primaryColor }}
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Phone Number *"
+                      value={checkoutPhone}
+                      onChange={e => setCheckoutPhone(e.target.value)}
+                      className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
+                      style={{ outlineColor: primaryColor }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Pincode (6 digits) *"
+                      maxLength={6}
+                      value={checkoutPincode}
+                      onChange={e => setCheckoutPincode(e.target.value.replace(/\D/g, ''))}
+                      className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
+                      style={{ outlineColor: primaryColor }}
+                    />
+                    
+                    {isFetchingPincode && (
+                      <p className={`text-[11px] font-medium ${textMuted} px-2`}>Loading localities...</p>
+                    )}
+
+                    {postOffices.length > 0 && (
+                      <select
+                        value={checkoutVillage}
+                        onChange={e => setCheckoutVillage(e.target.value)}
+                        className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
+                        style={{ outlineColor: primaryColor }}
+                      >
+                        <option value="" disabled className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Select Village / Area *</option>
+                        {postOffices.map((po, i) => (
+                          <option key={i} value={po.Name} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                            {po.Name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <div className={`border-t ${borderSoft} p-5 flex flex-col gap-2 bg-black/5 dark:bg-white/5`}>
+                <button
+                  onClick={handleWhatsAppCheckout}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98]"
+                  style={{ backgroundColor: '#25D366' }}
+                >
+                  <Icon.Whatsapp className="h-5 w-5" />
+                  Order via WhatsApp
+                </button>
+                {email && (
+                  <button
+                    onClick={handleEmailCheckout}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98]"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <Icon.Mail className="h-5 w-5" />
+                    Order via Email
+                  </button>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+
+      {/* ---- FLOATING CART BUTTON ---- */}
+      {cartItemCount > 0 && (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-24 right-4 z-[90] flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition hover:scale-105 active:scale-95 sm:bottom-8 sm:right-8"
+          style={{ backgroundColor: primaryColor, color: '#fff', boxShadow: `0 8px 32px ${primary30}` }}
+        >
+          <div className="relative">
+            <Icon.ShoppingCart className="h-6 w-6" />
+            <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#12121A]">
+              {cartItemCount}
+            </span>
+          </div>
+        </button>
+      )}
+
     </main>
   );
 }

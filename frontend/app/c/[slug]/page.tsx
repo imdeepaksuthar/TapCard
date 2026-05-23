@@ -16,9 +16,28 @@ async function getCardData(slug: string) {
   }
 }
 
+// Fetch global active products server-side
+async function getProducts() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/products`, {
+      next: { revalidate: 60 }
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.products || [];
+  } catch (e) {
+    return [];
+  }
+}
+
 export default async function PublicCardPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const data = await getCardData(slug);
+  
+  // Fetch card data and products concurrently
+  const [data, products] = await Promise.all([
+    getCardData(slug),
+    getProducts()
+  ]);
 
   if (!data || !data.card) {
     notFound();
@@ -51,5 +70,5 @@ export default async function PublicCardPage({ params }: { params: Promise<{ slu
 
   const primaryColor = data.theme?.primary_color || getHexColor(themeColor);
 
-  return <PublicCardView data={data} />;
+  return <PublicCardView data={data} products={products} />;
 }

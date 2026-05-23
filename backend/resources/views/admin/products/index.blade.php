@@ -57,7 +57,7 @@
                                     <p class="text-xs text-gray-500 line-clamp-2 max-w-xs">{{ $product->description }}</p>
                                 </td>
                                 <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
-                                    <p class="text-meta-3 font-medium">${{ number_format($product->price, 2) }}</p>
+                                    <p class="text-meta-3 font-medium">₹{{ number_format($product->price, 2) }}</p>
                                 </td>
                                 <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
                                     @if($product->is_active)
@@ -121,7 +121,7 @@
 
                     <div class="mb-4.5">
                         <label class="mb-2.5 block text-black dark:text-white">
-                            Price ($) <span class="text-meta-1">*</span>
+                            Price (₹) <span class="text-meta-1">*</span>
                         </label>
                         <input type="number" step="0.01" name="price" required placeholder="e.g. 49.99"
                             class="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary" />
@@ -185,7 +185,7 @@
 
                         <div class="mb-4.5">
                             <label class="mb-2.5 block text-black dark:text-white">
-                                Price ($) <span class="text-meta-1">*</span>
+                                Price (₹) <span class="text-meta-1">*</span>
                             </label>
                             <input type="number" step="0.01" name="price" required x-model="editing.price"
                                 class="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary" />

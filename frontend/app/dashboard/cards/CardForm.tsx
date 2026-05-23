@@ -28,6 +28,8 @@ export default function CardForm({ id }: CardFormProps) {
     location_info: { map_url: '', address: '', latitude: '', longitude: '', pincode: '', state: '', city: '', village: '' },
     custom_branding: {
       theme_color: 'blue',
+      primary_color: '#3b82f6',
+      secondary_color: '#eff6ff',
       show_social: true,
       show_company: true,
       show_payment: true,
@@ -563,6 +565,91 @@ export default function CardForm({ id }: CardFormProps) {
             </div>
 
             {error && <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm mb-6">{error}</div>}
+
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">Select Brand Colors</h3>
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+                {[
+                  { id: 'blue', primary: '#3b82f6', secondary: '#eff6ff' },
+                  { id: 'indigo', primary: '#6366f1', secondary: '#eef2ff' },
+                  { id: 'purple', primary: '#a855f7', secondary: '#faf5ff' },
+                  { id: 'rose', primary: '#f43f5e', secondary: '#fff1f2' },
+                  { id: 'orange', primary: '#f97316', secondary: '#fff7ed' },
+                  { id: 'green', primary: '#22c55e', secondary: '#f0fdf4' },
+                  { id: 'teal', primary: '#14b8a6', secondary: '#f0fdfa' },
+                  { id: 'cyan', primary: '#06b6d4', secondary: '#ecfeff' },
+                  { id: 'yellow', primary: '#eab308', secondary: '#fefce8' },
+                  { id: 'dark', primary: '#1f2937', secondary: '#f3f4f6' },
+                ].map((pair) => (
+                  <div
+                    key={pair.id}
+                    onClick={() => setFormData({
+                      ...formData,
+                      custom_branding: {
+                        ...formData.custom_branding,
+                        theme_color: pair.primary,
+                        primary_color: pair.primary,
+                        secondary_color: pair.secondary
+                      }
+                    })}
+                    className={`h-10 w-10 rounded-full cursor-pointer border-2 transition-transform overflow-hidden relative ${
+                      (formData.custom_branding?.primary_color === pair.primary || formData.custom_branding?.theme_color === pair.primary || formData.custom_branding?.theme_color === pair.id) ? 'border-white scale-110 shadow-lg ring-2 ring-white/20' : 'border-white/10 hover:scale-105'
+                    }`}
+                    title={pair.id.charAt(0).toUpperCase() + pair.id.slice(1)}
+                  >
+                    <div className="absolute inset-y-0 left-0 w-1/2 h-full" style={{ backgroundColor: pair.primary }}></div>
+                    <div className="absolute inset-y-0 right-0 w-1/2 h-full" style={{ backgroundColor: pair.secondary }}></div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-6 mt-5 pt-5 border-t border-white/10">
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-white mb-2">Custom Primary</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={formData.custom_branding.primary_color || (formData.custom_branding.theme_color?.startsWith('#') ? formData.custom_branding.theme_color : '#3b82f6')}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        custom_branding: {
+                          ...formData.custom_branding,
+                          primary_color: e.target.value,
+                          theme_color: e.target.value
+                        }
+                      })}
+                      className="w-9 h-9 rounded-md cursor-pointer border-0 p-0 bg-transparent shadow-sm"
+                    />
+                    <span className="text-xs text-gray-400 font-mono uppercase">
+                      {formData.custom_branding.primary_color || (formData.custom_branding.theme_color?.startsWith('#') ? formData.custom_branding.theme_color : '#3B82F6')}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="w-[1px] h-10 bg-white/10"></div>
+                
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-white mb-2">Custom Secondary</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={formData.custom_branding.secondary_color || '#eff6ff'}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        custom_branding: {
+                          ...formData.custom_branding,
+                          secondary_color: e.target.value
+                        }
+                      })}
+                      className="w-9 h-9 rounded-md cursor-pointer border-0 p-0 bg-transparent shadow-sm"
+                    />
+                    <span className="text-xs text-gray-400 font-mono uppercase">
+                      {formData.custom_branding.secondary_color || '#EFF6FF'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div className="p-6 bg-[#0B1528]/50 backdrop-blur-xl rounded-2xl border border-white/10 space-y-6">
               <div className="flex items-center gap-6">

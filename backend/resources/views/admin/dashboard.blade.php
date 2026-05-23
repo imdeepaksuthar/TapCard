@@ -30,7 +30,7 @@
             </div>
             <div class="mt-4 flex items-end justify-between">
                 <div>
-                    <h4 class="text-title-md font-bold text-black dark:text-white">${{ number_format($totalEarnings, 2) }}</h4>
+                    <h4 class="text-title-md font-bold text-black dark:text-white">₹{{ number_format($totalEarnings, 2) }}</h4>
                     <span class="text-sm font-medium">Total Active MRR</span>
                 </div>
             </div>
