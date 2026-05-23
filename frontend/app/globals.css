@@ -4,7 +4,3 @@
   --color-blue-600: #2563eb;
   --color-indigo-700: #4338ca;
 }
-
-body {
-  @apply bg-gray-50 text-gray-900;
-}

@@ -97,6 +97,12 @@ const Icon = {
       <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
     </svg>
   ),
+  Tag: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  ),
   Wallet: (p: AnyObj) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M20 12V8a2 2 0 0 0-2-2H5a2 2 0 0 1 0-4h12v4" />
@@ -451,7 +457,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
     setFormError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/orders', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -506,7 +512,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
   const hasPayment = !!(paymentInfo.upi_id || paymentInfo.upi || paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.qr_path);
   const hasLocationBlock = showLocation && (locationInfo.city || locationInfo.state || locationInfo.map_url);
-  const hasBusinessBlock = showCompany && (companyDetails.company_name || companyDetails.gst || companyDetails.website || (showAddress && fullAddress));
+  const hasBusinessBlock = (showCompany && (companyDetails.company_name || companyDetails.gst || companyDetails.website)) || (showAddress && fullAddress);
 
   const copyToClipboard = async (label: string, value: string) => {
     try {
@@ -654,6 +660,13 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               )}
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                {card.category && (
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${surfaceSoft} ${textSubtle} ring-1 ${borderSoft}`}>
+                    <Icon.Tag className="h-3 w-3" />
+                    {card.category.name}
+                    {card.subcategory && ` › ${card.subcategory.name}`}
+                  </span>
+                )}
                 {showCompany && (companyDetails.company_name || personalInfo.company) && (
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${surfaceSoft} ${textSubtle} ring-1 ${borderSoft}`}>
                     <Icon.Building className="h-3 w-3" />
@@ -754,7 +767,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             {hasBusinessBlock && (
               <Section title="Business" isDark={isDark} textMuted={textMuted}>
                 <div className="flex flex-col gap-3">
-                  {companyDetails.company_name && (
+                  {showCompany && companyDetails.company_name && (
                     <InfoRow
                       icon={<Icon.Building className="h-5 w-5" style={{ color: primaryColor }} />}
                       label="Company"
@@ -762,11 +775,19 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                       isDark={isDark}
                     />
                   )}
-                  {companyDetails.gst && (
+                  {showCompany && companyDetails.gst && (
                     <InfoRow
                       icon={<Icon.Wallet className="h-5 w-5" style={{ color: primaryColor }} />}
                       label="GST"
-                      value={companyDetails.gst}
+                      value={
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span>{companyDetails.gst}</span>
+                          <span className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-1.5 py-0.5 text-[9px] font-bold shrink-0">
+                            <Icon.Check className="w-2.5 h-2.5 text-green-400" />
+                            Verified
+                          </span>
+                        </div>
+                      }
                       onCopy={() => copyToClipboard('gst', companyDetails.gst)}
                       copied={copied === 'gst'}
                       isDark={isDark}
@@ -782,7 +803,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                       }
                     />
                   )}
-                  {companyDetails.website && (
+                  {showCompany && companyDetails.website && (
                     <InfoRow
                       icon={<Icon.Globe className="h-5 w-5" style={{ color: primaryColor }} />}
                       label="Website"
@@ -1586,7 +1607,7 @@ function InfoRow({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: React.ReactNode;
   href?: string;
   tint?: string;
   onCopy?: () => void;
@@ -1614,7 +1635,7 @@ function InfoRow({
               {value}
             </a>
           ) : (
-            <p className={`mt-1 break-words text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{value}</p>
+            <div className={`mt-1 break-words text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{value}</div>
           )}
         </div>
       </div>

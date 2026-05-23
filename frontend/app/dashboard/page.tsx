@@ -2,26 +2,70 @@
 
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '../../lib/api';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const router = useRouter();
+  
   const [stats, setStats] = useState({
-    totalCards: 0, // Set to 0 to show button initially if not fetched
+    totalCards: 0,
     activeCards: 0,
-    totalLeads: 12,
-    profileViews: 1450,
+    totalLeads: 0,
+    profileViews: 0,
   });
 
-  const [recentLeads, setRecentLeads] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', company: 'Acme Corp', date: '2026-05-15' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', company: 'Startup LLC', date: '2026-05-14' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', company: 'Global Tech', date: '2026-05-13' },
-  ]);
+  const [recentLeads, setRecentLeads] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchDashboardData = async () => {
+      try {
+        const [cardsRes, leadsRes] = await Promise.all([
+          apiFetch<{ cards: any[] }>('/api/cards'),
+          apiFetch<{ leads: any[] }>('/api/leads')
+        ]);
+
+        const cards = cardsRes.cards || [];
+        const leads = leadsRes.leads || [];
+
+        const totalCards = cards.length;
+        const activeCards = cards.filter((c: any) => c.status === 'active').length;
+        const profileViews = cards.reduce((sum: number, c: any) => sum + (c.views_count || 0), 0);
+        const totalLeads = leads.length;
+
+        setStats({
+          totalCards,
+          activeCards,
+          totalLeads,
+          profileViews,
+        });
+
+        // Set recent leads (top 5)
+        setRecentLeads(leads.slice(0, 5));
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user]);
 
   if (!user) return null; // Handled by layout/middleware
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex justify-center items-center h-[50vh]">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -65,20 +109,30 @@ export default function Dashboard() {
               <thead>
                 <tr className="border-b border-white/5 text-gray-400">
                   <th className="pb-3 pr-4">Name</th>
-                  <th className="pb-3 pr-4">Company</th>
+                  <th className="pb-3 pr-4">Phone / Msg</th>
                   <th className="pb-3 pr-4">Date</th>
                   <th className="pb-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
+                {recentLeads.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-4 text-center text-gray-500">No leads yet</td>
+                  </tr>
+                )}
                 {recentLeads.map((lead) => (
                   <tr key={lead.id} className="border-b border-white/5 last:border-0 text-gray-300">
                     <td className="py-3 pr-4">
                       <p className="font-medium text-white">{lead.name}</p>
-                      <p className="text-xs text-gray-500">{lead.email}</p>
+                      <p className="text-xs text-gray-500">{lead.email || 'No email'}</p>
                     </td>
-                    <td className="py-3 pr-4">{lead.company}</td>
-                    <td className="py-3 pr-4 text-gray-500">{lead.date}</td>
+                    <td className="py-3 pr-4">
+                      <p className="text-sm">{lead.phone || '-'}</p>
+                      <p className="text-xs text-gray-500 truncate max-w-[150px]">{lead.message || ''}</p>
+                    </td>
+                    <td className="py-3 pr-4 text-gray-500">
+                      {new Date(lead.created_at).toLocaleDateString()}
+                    </td>
                     <td className="py-3 text-right">
                       <button className="text-gray-400 hover:text-white">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

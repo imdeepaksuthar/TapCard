@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
@@ -8,13 +7,13 @@ import { ApiError } from '../../../lib/api';
 
 export default function Register() {
   const { register } = useAuth();
-  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [phoneBlurred, setPhoneBlurred] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -25,211 +24,186 @@ export default function Register() {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
-
     if (password !== confirmPassword) {
       setErrors({ confirmPassword: ['Passwords do not match'] });
       setIsLoading(false);
       return;
     }
-
     try {
-      await register({
-        name,
-        email,
-        phone: phoneDigits || null,
-        password,
-        password_confirmation: confirmPassword,
-      });
+      await register({ name, email, phone: phoneDigits || null, password, password_confirmation: confirmPassword });
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrors(error.errors);
-      } else {
-        console.error('Registration failed:', error);
-      }
+      if (error instanceof ApiError) setErrors(error.errors);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <main className="relative min-h-screen bg-[#030712] text-white overflow-hidden flex flex-col justify-center items-center px-4 py-12">
-      {/* Background Gradients */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-[30%] -right-[10%] w-[60%] h-[60%] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.1)_0%,rgba(0,0,0,0)_70%)]" />
-        <div className="absolute -bottom-[30%] -left-[10%] w-[60%] h-[60%] rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.1)_0%,rgba(0,0,0,0)_70%)]" />
-      </div>
+  const handleGoogleSignup = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    window.location.href = `${apiUrl}/api/auth/google/redirect`;
+  };
 
-      {/* Content */}
-      <div className="relative z-10 w-full max-w-md">
-        {/* Logo/Brand */}
-        <div className="text-center mb-8">
-          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-            Card Setu
-          </Link>
-          <p className="text-gray-400 mt-2 text-sm">Join us and bridge your digital presence.</p>
+  const EyeIcon = ({ open }: { open: boolean }) => open
+    ? <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+    : <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+
+  return (
+    <>
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .auth-card { animation: fadeUp 0.45s ease-out both; }
+        .auth-input {
+          width: 100%; box-sizing: border-box;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.18);
+          border-radius: 12px; padding: 12px 16px;
+          color: #ffffff; font-size: 14px; outline: none;
+          transition: border-color 0.2s;
+        }
+        .auth-input:focus { border-color: #3b82f6; }
+        .auth-input::placeholder { color: #6b7280; }
+        .auth-input.error { border-color: #ef4444; }
+        .auth-btn {
+          width: 100%; padding: 13px;
+          background: linear-gradient(135deg, #2563eb, #4f46e5);
+          border: none; border-radius: 12px;
+          color: #ffffff; font-size: 15px; font-weight: 600;
+          cursor: pointer; box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          transition: opacity 0.2s, transform 0.2s;
+        }
+        .auth-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+        .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .social-btn {
+          padding: 11px; border-radius: 12px;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.15);
+          color: #e5e7eb; font-size: 13px; font-weight: 500;
+          cursor: pointer; transition: background 0.2s;
+        }
+        .social-btn:hover { background: rgba(255,255,255,0.14); }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
+
+      <main style={{
+        background: '#060d1f', minHeight: '100vh', color: '#ffffff',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+        padding: '48px 16px', position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Gradient blobs */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: '-15%', right: '-5%', width: '50%', height: '50%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)' }} />
+          <div style={{ position: 'absolute', bottom: '-15%', left: '-5%', width: '50%', height: '50%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)' }} />
         </div>
 
-        {/* Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-xl"
-        >
-          <h2 className="text-xl font-semibold mb-6 text-center">Create Account</h2>
+        <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '420px' }}>
+          {/* Brand */}
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <Link href="/" style={{ fontSize: '28px', fontWeight: 800, background: 'linear-gradient(135deg, #60a5fa, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', textDecoration: 'none' }}>
+              Card Setu
+            </Link>
+            <p style={{ color: '#9ca3af', marginTop: '8px', fontSize: '14px' }}>Join us and bridge your digital presence.</p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1.5">
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`w-full bg-white/5 border ${errors.name ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200`}
-                placeholder="Your full name"
-                required
-                minLength={2}
-                maxLength={100}
-              />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name[0]}</p>}
-            </div>
+          {/* Card */}
+          <div className="auth-card" style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '20px', padding: '36px',
+            backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+          }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, textAlign: 'center', marginBottom: '28px', color: '#ffffff' }}>Create Account</h2>
 
-            {/* Email Address */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full bg-white/5 border ${errors.email ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200`}
-                placeholder="you@example.com"
-                required
-              />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email[0]}</p>}
-            </div>
-
-            {/* Phone Number */}
-            <div>
-              <div className="flex justify-between mb-1.5">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-300">
-                  Phone Number (optional)
-                </label>
-                <span className="text-xs text-gray-500">{phoneDigits.length} / 10 digits</span>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Full Name */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#d1d5db', marginBottom: '8px' }}>Full Name</label>
+                <input type="text" className={`auth-input${errors.name ? ' error' : ''}`} value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" required minLength={2} />
+                {errors.name && <p style={{ color: '#fca5a5', fontSize: '12px', marginTop: '4px' }}>{errors.name[0]}</p>}
               </div>
-              <div className="relative">
-                <input
-                  type="tel"
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  onBlur={() => setPhoneBlurred(true)}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  className={`w-full bg-white/5 border ${errors.phone || (phoneBlurred && phoneDigits.length > 0 && phoneDigits.length !== 10) ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200`}
-                  placeholder="10-digit mobile number"
-                />
-                {phoneDigits.length === 10 && (
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                    </svg>
-                  </div>
-                )}
+
+              {/* Email */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#d1d5db', marginBottom: '8px' }}>Email Address</label>
+                <input type="email" className={`auth-input${errors.email ? ' error' : ''}`} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+                {errors.email && <p style={{ color: '#fca5a5', fontSize: '12px', marginTop: '4px' }}>{errors.email[0]}</p>}
               </div>
-              {phoneBlurred && phoneDigits.length > 0 && phoneDigits.length !== 10 && (
-                <p className="text-red-500 text-xs mt-1">Must be exactly 10 digits</p>
-              )}
-              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone[0]}</p>}
+
+              {/* Phone */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 500, color: '#d1d5db' }}>Phone <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional)</span></label>
+                  <span style={{ fontSize: '12px', color: '#6b7280' }}>{phoneDigits.length}/10</span>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input type="tel" className={`auth-input${errors.phone || (phoneBlurred && phoneDigits.length > 0 && phoneDigits.length !== 10) ? ' error' : ''}`} value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneBlurred(true)} placeholder="10-digit mobile number" inputMode="numeric" />
+                  {phoneDigits.length === 10 && (
+                    <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                      <svg width="18" height="18" fill="#22c55e" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                    </div>
+                  )}
+                </div>
+                {phoneBlurred && phoneDigits.length > 0 && phoneDigits.length !== 10 && <p style={{ color: '#fca5a5', fontSize: '12px', marginTop: '4px' }}>Must be exactly 10 digits</p>}
+                {errors.phone && <p style={{ color: '#fca5a5', fontSize: '12px', marginTop: '4px' }}>{errors.phone[0]}</p>}
+              </div>
+
+              {/* Password */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#d1d5db', marginBottom: '8px' }}>Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input type={showPassword ? 'text' : 'password'} className={`auth-input${errors.password ? ' error' : ''}`} style={{ paddingRight: '44px' }} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 8 characters" required minLength={8} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '13px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+                    <EyeIcon open={showPassword} />
+                  </button>
+                </div>
+                {errors.password && <p style={{ color: '#fca5a5', fontSize: '12px', marginTop: '4px' }}>{errors.password[0]}</p>}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#d1d5db', marginBottom: '8px' }}>Confirm Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input type={showConfirm ? 'text' : 'password'} className={`auth-input${errors.confirmPassword ? ' error' : ''}`} style={{ paddingRight: '44px' }} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repeat your password" required />
+                  <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: '13px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+                    <EyeIcon open={showConfirm} />
+                  </button>
+                </div>
+                {errors.confirmPassword && <p style={{ color: '#fca5a5', fontSize: '12px', marginTop: '4px' }}>{errors.confirmPassword[0]}</p>}
+              </div>
+
+              {/* Submit */}
+              <button type="submit" disabled={isLoading} className="auth-btn" style={{ marginTop: '4px' }}>
+                {isLoading
+                  ? <><svg style={{ animation: 'spin 1s linear infinite', width: '18px', height: '18px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Creating account...</>
+                  : 'Create Account'
+                }
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div style={{ position: 'relative', margin: '24px 0' }}>
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#060d1f', padding: '0 12px', color: '#6b7280', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', whiteSpace: 'nowrap' }}>
+                Or sign up with
+              </div>
             </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`w-full bg-white/5 border ${errors.password ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200`}
-                placeholder="Min. 8 characters"
-                required
-                minLength={8}
-              />
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password[0]}</p>}
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1.5">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full bg-white/5 border ${errors.confirmPassword ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200`}
-                placeholder="Repeat your password"
-                required
-              />
-              {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword[0]}</p>}
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 py-3 rounded-xl font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-300 hover:scale-[1.01] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
-            >
-              {isLoading ? (
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </form>
-
-          {/* Social Login Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#0b1224] px-2 text-gray-500">Or sign up with</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button type="button" onClick={handleGoogleSignup} className="social-btn">Google</button>
+              <button className="social-btn">GitHub</button>
             </div>
           </div>
 
-          {/* Social Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl transition-colors duration-200">
-              <span className="text-sm font-medium">Google</span>
-            </button>
-            <button className="flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl transition-colors duration-200">
-              <span className="text-sm font-medium">GitHub</span>
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Login Link */}
-        <p className="text-center mt-6 text-sm text-gray-400">
-          Already have an account?{' '}
-          <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-            Sign in
-          </Link>
-        </p>
-      </div>
-    </main>
+          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#9ca3af' }}>
+            Already have an account?{' '}
+            <Link href="/login" style={{ color: '#60a5fa', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
+          </p>
+        </div>
+      </main>
+    </>
   );
 }

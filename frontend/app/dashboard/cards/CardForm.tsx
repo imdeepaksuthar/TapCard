@@ -18,9 +18,13 @@ export default function CardForm({ id }: CardFormProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 5;
 
+  const [categories, setCategories] = useState<any[]>([]);
+
   const [formData, setFormData] = useState({
     slug: '',
     card_type: '',
+    category_id: '',
+    subcategory_id: '',
     personal_info: { name: '', designation: '', bio: '', profile_image: '' },
     social_links: { email: '', phone: '', whatsapp: '', linkedin: '', instagram: '', facebook: '', twitter: '', youtube: '' },
     company_details: { company_name: '', website: '', address: '', gst: '' },
@@ -41,10 +45,59 @@ export default function CardForm({ id }: CardFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [villages, setVillages] = useState<string[]>([]);
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [socialFilter, setSocialFilter] = useState('');
+  const [isVerifyingGst, setIsVerifyingGst] = useState(false);
+  const [isGstVerified, setIsGstVerified] = useState(false);
+
+  const verifyGstin = async (gstin: string) => {
+    setIsVerifyingGst(true);
+    setIsGstVerified(false);
+    try {
+      const res = await fetch('/api/verify-gst', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gstNo: gstin }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsGstVerified(true);
+        // Autofill business name
+        if (data.data?.legal_name) {
+          setFormData(prev => ({
+            ...prev,
+            company_details: {
+              ...(prev.company_details || {}),
+              company_name: data.data.legal_name
+            }
+          }));
+          // Clear company name error and gst error if any
+          setValidationErrors(prev => {
+            const copy = { ...prev };
+            delete copy.company_name;
+            delete copy.gst;
+            return copy;
+          });
+        }
+      } else {
+        setValidationErrors(prev => ({
+          ...prev,
+          gst: data.error || 'GST number is not genuine or could not be verified.'
+        }));
+      }
+    } catch (err) {
+      console.error('GST Verification failed', err);
+      setValidationErrors(prev => ({
+        ...prev,
+        gst: 'Failed to verify GST number. Please check your network.'
+      }));
+    } finally {
+      setIsVerifyingGst(false);
+    }
+  };
 
   const handlePincodeChange = async (pincode: string) => {
     setFormData(prev => ({ ...prev, location_info: { ...prev.location_info, pincode } }));
@@ -52,24 +105,32 @@ export default function CardForm({ id }: CardFormProps) {
     if (pincode.length === 6) {
       setIsFetchingPincode(true);
       try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-        const data = await res.json();
-        if (data[0].Status === "Success") {
+        // Chain .catch directly to resolve with null and prevent Next.js/Turbopack error overlay
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`).catch(() => null);
+        if (!res || !res.ok) {
+          console.warn("Pincode API offline or unreachable");
+          return;
+        }
+        
+        const data = await res.json().catch(() => null);
+        if (data && Array.isArray(data) && data[0] && data[0].Status === "Success") {
           const postOffices = data[0].PostOffice;
-          const state = postOffices[0].State;
-          const city = postOffices[0].District;
-          const villageList = postOffices.map((po: any) => po.Name);
+          if (postOffices && postOffices.length > 0) {
+            const state = postOffices[0].State;
+            const city = postOffices[0].District;
+            const villageList = postOffices.map((po: any) => po.Name);
 
-          setVillages(villageList);
-          setFormData(prev => ({
-            ...prev,
-            location_info: {
-              ...prev.location_info,
-              state,
-              city,
-              village: ''
-            }
-          }));
+            setVillages(villageList);
+            setFormData(prev => ({
+              ...prev,
+              location_info: {
+                ...prev.location_info,
+                state,
+                city,
+                village: ''
+              }
+            }));
+          }
         }
       } catch (err) {
         console.error("Error fetching pincode", err);
@@ -115,6 +176,20 @@ export default function CardForm({ id }: CardFormProps) {
   };
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await apiFetch<{ categories: any[] }>('/api/categories');
+        if (res.categories) {
+          setCategories(res.categories);
+        }
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
       return;
@@ -140,6 +215,8 @@ export default function CardForm({ id }: CardFormProps) {
         setFormData(prev => ({
           ...prev,
           ...data,
+          category_id: data.category_id ? data.category_id.toString() : '',
+          subcategory_id: data.subcategory_id ? data.subcategory_id.toString() : '',
           card_type: data.card_type || data.template_id || '',
           personal_info: { ...prev.personal_info, ...(data.personal_info || {}) },
           company_details: { ...prev.company_details, ...(data.company_details || {}) },
@@ -171,10 +248,106 @@ export default function CardForm({ id }: CardFormProps) {
   }, [user, authLoading, router, id]);
 
   const handleNext = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (currentStep === 1) {
+      if (!formData.card_type) {
+        newErrors.card_type = 'Please select a card type.';
+      }
+    }
+    if (currentStep === 2) {
+      if (!formData.personal_info?.name?.trim()) {
+        newErrors.name = 'Full Name is required.';
+      }
+      if (!formData.category_id) {
+        newErrors.category_id = 'Category is required.';
+      }
+      if (!formData.subcategory_id) {
+        newErrors.subcategory_id = 'Subcategory is required.';
+      }
+    }
+    if (currentStep === 3) {
+      // Validate Phone
+      const phone = formData.social_links?.phone?.trim();
+      if (!phone) {
+        newErrors.phone = 'Phone Number is required.';
+      } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(phone)) {
+        newErrors.phone = 'Please enter a valid Phone Number (10-15 digits).';
+      }
+
+      // Validate Email
+      const email = formData.social_links?.email?.trim();
+      if (!email) {
+        newErrors.email = 'Email is required.';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        newErrors.email = 'Please enter a valid email address.';
+      }
+
+      // Validate WhatsApp
+      const whatsapp = formData.social_links?.whatsapp?.trim();
+      if (!whatsapp) {
+        newErrors.whatsapp = 'WhatsApp Number is required.';
+      } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(whatsapp)) {
+        newErrors.whatsapp = 'Please enter a valid WhatsApp Number (10-15 digits).';
+      }
+
+      // Validate social URLs
+      const socialKeys = ['linkedin', 'instagram', 'facebook', 'twitter', 'youtube'] as const;
+      socialKeys.forEach(key => {
+        const url = formData.social_links?.[key]?.trim();
+        if (url && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(url)) {
+          newErrors[key] = 'Please enter a valid URL starting with http:// or https://';
+        }
+      });
+    }
+    if (currentStep === 4) {
+      if (formData.custom_branding.show_company) {
+        if (!formData.company_details?.company_name?.trim()) {
+          newErrors.company_name = 'Company Name is required.';
+        }
+        const website = formData.company_details?.website?.trim();
+        if (website && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(website)) {
+          newErrors.website = 'Please enter a valid Website URL starting with http:// or https://';
+        }
+        const gst = formData.company_details?.gst?.trim();
+        if (gst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gst)) {
+          newErrors.gst = 'Please enter a valid 15-character GST number.';
+        }
+      }
+      if (formData.custom_branding.show_payment) {
+        const upi_id = formData.payment_info?.upi_id?.trim();
+        if (upi_id && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi_id)) {
+          newErrors.upi_id = 'Please enter a valid UPI ID.';
+        }
+        const ifsc_code = formData.payment_info?.ifsc_code?.trim();
+        if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifsc_code)) {
+          newErrors.ifsc_code = 'Please enter a valid 11-digit IFSC code.';
+        }
+        const account_number = formData.payment_info?.account_number?.trim();
+        if (account_number && !/^[0-9]{9,18}$/.test(account_number)) {
+          newErrors.account_number = 'Please enter a valid Bank Account Number (9-18 digits).';
+        }
+        const phonepe = formData.payment_info?.phonepe?.trim();
+        if (phonepe && !/^\+?[0-9\s\-()]{10,15}$/.test(phonepe)) {
+          newErrors.phonepe = 'Please enter a valid PhonePe Number (10-15 digits).';
+        }
+      }
+    }
+
+    setValidationErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      setError('');
+      return;
+    }
+
+    setError('');
     if (currentStep < totalSteps) setCurrentStep(prev => prev + 1);
   };
 
   const handlePrev = () => {
+    setError('');
+    setValidationErrors({});
     if (currentStep > 1) setCurrentStep(prev => prev - 1);
   };
 
@@ -241,9 +414,93 @@ export default function CardForm({ id }: CardFormProps) {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setError('');
+    setValidationErrors({});
+
+    const newErrors: Record<string, string> = {};
+    if (!formData.personal_info?.name?.trim()) {
+      newErrors.name = 'Full Name is required.';
+    }
+    if (!formData.category_id) {
+      newErrors.category_id = 'Category is required.';
+    }
+    if (!formData.subcategory_id) {
+      newErrors.subcategory_id = 'Subcategory is required.';
+    }
+
+    // Contact step validations
+    const phone = formData.social_links?.phone?.trim();
+    if (!phone) {
+      newErrors.phone = 'Phone Number is required.';
+    } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(phone)) {
+      newErrors.phone = 'Please enter a valid Phone Number (10-15 digits).';
+    }
+
+    const email = formData.social_links?.email?.trim();
+    if (!email) {
+      newErrors.email = 'Email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Please enter a valid email address.';
+    }
+
+    const whatsapp = formData.social_links?.whatsapp?.trim();
+    if (!whatsapp) {
+      newErrors.whatsapp = 'WhatsApp Number is required.';
+    } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(whatsapp)) {
+      newErrors.whatsapp = 'Please enter a valid WhatsApp Number (10-15 digits).';
+    }
+
+    const socialKeys = ['linkedin', 'instagram', 'facebook', 'twitter', 'youtube'] as const;
+    socialKeys.forEach(key => {
+      const url = formData.social_links?.[key]?.trim();
+      if (url && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(url)) {
+        newErrors[key] = 'Please enter a valid URL starting with http:// or https://';
+      }
+    });
+
+    // Step 4 validations
+    if (formData.custom_branding.show_company) {
+      if (!formData.company_details?.company_name?.trim()) {
+        newErrors.company_name = 'Company Name is required.';
+      }
+      const website = formData.company_details?.website?.trim();
+      if (website && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(website)) {
+        newErrors.website = 'Please enter a valid Website URL starting with http:// or https://';
+      }
+      const gst = formData.company_details?.gst?.trim();
+      if (gst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gst)) {
+        newErrors.gst = 'Please enter a valid 15-character GST number.';
+      }
+    }
+    if (formData.custom_branding.show_payment) {
+      const upi_id = formData.payment_info?.upi_id?.trim();
+      if (upi_id && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi_id)) {
+        newErrors.upi_id = 'Please enter a valid UPI ID.';
+      }
+      const ifsc_code = formData.payment_info?.ifsc_code?.trim();
+      if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifsc_code)) {
+        newErrors.ifsc_code = 'Please enter a valid 11-digit IFSC code.';
+      }
+      const account_number = formData.payment_info?.account_number?.trim();
+      if (account_number && !/^[0-9]{9,18}$/.test(account_number)) {
+        newErrors.account_number = 'Please enter a valid Bank Account Number (9-18 digits).';
+      }
+      const phonepe = formData.payment_info?.phonepe?.trim();
+      if (phonepe && !/^\+?[0-9\s\-()]{10,15}$/.test(phonepe)) {
+        newErrors.phonepe = 'Please enter a valid PhonePe Number (10-15 digits).';
+      }
+    }
+
+    setValidationErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      setIsSubmitting(false);
+      return;
+    }
 
     const payload = {
       ...formData,
+      category_id: formData.category_id ? parseInt(formData.category_id) : null,
+      subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : null,
       template_id: formData.card_type,
       slug: formData.slug || generateSlug(formData.personal_info.name || 'card'),
     };
@@ -320,8 +577,95 @@ export default function CardForm({ id }: CardFormProps) {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Full Name *</label>
-                <input type="text" value={formData.personal_info?.name || ''} onChange={(e) => setFormData({ ...formData, personal_info: { ...(formData.personal_info || {}), name: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" required />
+                <label className="text-sm text-gray-400 block mb-1">Full Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={formData.personal_info?.name || ''}
+                  onChange={(e) => {
+                    setFormData({ ...formData, personal_info: { ...(formData.personal_info || {}), name: e.target.value } });
+                    if (validationErrors.name) {
+                      setValidationErrors(prev => {
+                        const copy = { ...prev };
+                        delete copy.name;
+                        return copy;
+                      });
+                    }
+                  }}
+                  className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all ${
+                    validationErrors.name ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10'
+                  }`}
+                  required
+                />
+                {validationErrors.name && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.name}</p>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-gray-400 block mb-1">Category <span className="text-red-500">*</span></label>
+                  <select
+                    value={formData.category_id || ''}
+                    onChange={(e) => {
+                      setFormData({ ...formData, category_id: e.target.value, subcategory_id: '' });
+                      if (validationErrors.category_id || validationErrors.subcategory_id) {
+                        setValidationErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.category_id;
+                          delete copy.subcategory_id;
+                          return copy;
+                        });
+                      }
+                    }}
+                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all ${
+                      validationErrors.category_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10'
+                    }`}
+                    required
+                  >
+                    <option value="" className="bg-gray-900">Select Category</option>
+                    <optgroup label="Departments" className="bg-gray-900 font-semibold text-blue-400">
+                      {categories.filter(c => c.type === 'department').map(c => (
+                        <option key={c.id} value={c.id} className="bg-gray-900 text-white font-normal">{c.name}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Business Categories" className="bg-gray-900 font-semibold text-blue-400">
+                      {categories.filter(c => c.type === 'business').map(c => (
+                        <option key={c.id} value={c.id} className="bg-gray-900 text-white font-normal">{c.name}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  {validationErrors.category_id && (
+                    <p className="text-xs text-red-500 mt-1">{validationErrors.category_id}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 block mb-1">Subcategory <span className="text-red-500">*</span></label>
+                  <select
+                    value={formData.subcategory_id || ''}
+                    onChange={(e) => {
+                      setFormData({ ...formData, subcategory_id: e.target.value });
+                      if (validationErrors.subcategory_id) {
+                        setValidationErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.subcategory_id;
+                          return copy;
+                        });
+                      }
+                    }}
+                    disabled={!formData.category_id}
+                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+                      validationErrors.subcategory_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10'
+                    }`}
+                    required
+                  >
+                    <option value="" className="bg-gray-900">Select Subcategory</option>
+                    {categories.find(c => c.id.toString() === formData.category_id)?.children?.map((c: any) => (
+                      <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>
+                    ))}
+                  </select>
+                  {validationErrors.subcategory_id && (
+                    <p className="text-xs text-red-500 mt-1">{validationErrors.subcategory_id}</p>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="text-sm text-gray-400 block mb-1">Designation / Title</label>
@@ -342,67 +686,144 @@ export default function CardForm({ id }: CardFormProps) {
               <p className="text-gray-400 mb-6">How your leads and clients will reach you.</p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl mb-6">
+            <div className="space-y-6">
+              {/* Contact Information Section */}
               <div>
-                <h3 className="font-semibold text-white">Enable Social & Contact Links</h3>
-                <p className="text-sm text-gray-400">Show social media icons and buttons on your card</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_social} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_social: e.target.checked } })} />
-                <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-              </label>
-            </div>
-
-            {formData.custom_branding.show_social && (
-              <div className="space-y-6">
-                {/* Contact Information Section */}
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">Contact Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { key: 'phone', label: 'Phone Number', type: 'tel' },
-                      { key: 'whatsapp', label: 'WhatsApp Number', type: 'tel' },
-                      { key: 'email', label: 'Email', type: 'email' },
-                    ].map(field => (
+                <h3 className="text-lg font-semibold text-white mb-3">Contact Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { key: 'phone', label: 'Phone Number', type: 'tel', required: true },
+                    { key: 'whatsapp', label: 'WhatsApp Number', type: 'tel', required: true },
+                    { key: 'email', label: 'Email', type: 'email', required: true },
+                  ].map(field => {
+                    const hasError = !!validationErrors[field.key];
+                    return (
                       <div key={field.key}>
-                        <label className="text-sm text-gray-400 block mb-1">{field.label}</label>
+                        <label className="text-sm text-gray-400 block mb-1">
+                          {field.label} {field.required && <span className="text-red-500">*</span>}
+                        </label>
                         <input
                           type={field.type}
                           value={(formData.social_links as any)?.[field.key] || ''}
-                          onChange={(e) => setFormData({ ...formData, social_links: { ...(formData.social_links || {}), [field.key]: e.target.value } })}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData({
+                              ...formData,
+                              social_links: {
+                                ...(formData.social_links || {}),
+                                [field.key]: val
+                              }
+                            });
+
+                            // Real-time validation
+                            let errorMsg = '';
+                            if (field.key === 'phone') {
+                              if (!val.trim()) {
+                                errorMsg = 'Phone Number is required.';
+                              } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(val.trim())) {
+                                errorMsg = 'Please enter a valid Phone Number (10-15 digits).';
+                              }
+                            } else if (field.key === 'email') {
+                              if (!val.trim()) {
+                                errorMsg = 'Email is required.';
+                              } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
+                                errorMsg = 'Please enter a valid email address.';
+                              }
+                            } else if (field.key === 'whatsapp') {
+                              if (!val.trim()) {
+                                errorMsg = 'WhatsApp Number is required.';
+                              } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(val.trim())) {
+                                errorMsg = 'Please enter a valid WhatsApp Number (10-15 digits).';
+                              }
+                            }
+
+                            // Update validation errors state
+                            setValidationErrors(prev => {
+                              const copy = { ...prev };
+                              if (errorMsg) {
+                                copy[field.key] = errorMsg;
+                              } else {
+                                delete copy[field.key];
+                              }
+                              return copy;
+                            });
+                          }}
+                          className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                            hasError
+                              ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
+                              : 'border-white/10 focus:border-blue-500'
+                          }`}
                         />
+                        {hasError && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors[field.key]}</p>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
+              </div>
 
-                {/* Social Media Section */}
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">Social Media Profiles</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { key: 'linkedin', label: 'LinkedIn Profile', type: 'url', placeholder: 'https://linkedin.com/...' },
-                      { key: 'instagram', label: 'Instagram Profile', type: 'url', placeholder: 'https://instagram.com/...' },
-                      { key: 'facebook', label: 'Facebook Profile', type: 'url', placeholder: 'https://facebook.com/...' },
-                      { key: 'twitter', label: 'Twitter / X Profile', type: 'url', placeholder: 'https://twitter.com/...' },
-                      { key: 'youtube', label: 'YouTube Channel', type: 'url', placeholder: 'https://youtube.com/...' },
-                    ].map(field => (
+              {/* Social Media Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">Social Media Profiles</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { key: 'linkedin', label: 'LinkedIn Profile', type: 'url', placeholder: 'https://linkedin.com/...' },
+                    { key: 'instagram', label: 'Instagram Profile', type: 'url', placeholder: 'https://instagram.com/...' },
+                    { key: 'facebook', label: 'Facebook Profile', type: 'url', placeholder: 'https://facebook.com/...' },
+                    { key: 'twitter', label: 'Twitter / X Profile', type: 'url', placeholder: 'https://twitter.com/...' },
+                    { key: 'youtube', label: 'YouTube Channel', type: 'url', placeholder: 'https://youtube.com/...' },
+                  ].map(field => {
+                    const hasError = !!validationErrors[field.key];
+                    return (
                       <div key={field.key}>
                         <label className="text-sm text-gray-400 block mb-1">{field.label}</label>
                         <input
                           type={field.type}
                           value={(formData.social_links as any)?.[field.key] || ''}
-                          onChange={(e) => setFormData({ ...formData, social_links: { ...(formData.social_links || {}), [field.key]: e.target.value } })}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData({
+                              ...formData,
+                              social_links: {
+                                ...(formData.social_links || {}),
+                                [field.key]: val
+                              }
+                            });
+
+                            // Real-time validation
+                            let errorMsg = '';
+                            if (val.trim() && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(val.trim())) {
+                              errorMsg = 'Please enter a valid URL starting with http:// or https://';
+                            }
+
+                            // Update validation errors state
+                            setValidationErrors(prev => {
+                              const copy = { ...prev };
+                              if (errorMsg) {
+                                copy[field.key] = errorMsg;
+                              } else {
+                                delete copy[field.key];
+                              }
+                              return copy;
+                            });
+                          }}
+                          className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                            hasError
+                              ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
+                              : 'border-white/10 focus:border-blue-500'
+                          }`}
                           placeholder={field.placeholder}
                         />
+                        {hasError && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors[field.key]}</p>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
-            )}
+            </div>
           </motion.div>
         );
       case 4:
@@ -413,8 +834,6 @@ export default function CardForm({ id }: CardFormProps) {
               <p className="text-gray-400 mb-6">Setup your company details and payment links.</p>
             </div>
 
-            {error && <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm mb-6">{error}</div>}
-
             <div className="space-y-6">
               <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
@@ -423,7 +842,24 @@ export default function CardForm({ id }: CardFormProps) {
                     <p className="text-sm text-gray-400">Display your brand's details</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_company} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_company: e.target.checked } })} />
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={formData.custom_branding.show_company}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_company: checked } });
+                        if (!checked) {
+                          setValidationErrors(prev => {
+                            const copy = { ...prev };
+                            delete copy.company_name;
+                            delete copy.gst;
+                            delete copy.website;
+                            return copy;
+                          });
+                        }
+                      }}
+                    />
                     <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
                   </label>
                 </div>
@@ -431,17 +867,121 @@ export default function CardForm({ id }: CardFormProps) {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm text-gray-400 block mb-1">Company Name</label>
-                        <input type="text" value={formData.company_details?.company_name || ''} onChange={(e) => setFormData({ ...formData, company_details: { ...(formData.company_details || {}), company_name: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                        <label className="text-sm text-gray-400 block mb-1">Company Name <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          value={formData.company_details?.company_name || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData({ ...formData, company_details: { ...(formData.company_details || {}), company_name: val } });
+
+                            let errorMsg = '';
+                            if (!val.trim()) {
+                              errorMsg = 'Company Name is required.';
+                            }
+
+                            setValidationErrors(prev => {
+                              const copy = { ...prev };
+                              if (errorMsg) copy.company_name = errorMsg;
+                              else delete copy.company_name;
+                              return copy;
+                            });
+                          }}
+                          className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                            validationErrors.company_name ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                          }`}
+                        />
+                        {validationErrors.company_name && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.company_name}</p>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm text-gray-400 block mb-1">GST Number</label>
-                        <input type="text" value={formData.company_details?.gst || ''} onChange={(e) => setFormData({ ...formData, company_details: { ...(formData.company_details || {}), gst: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={formData.company_details?.gst || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase(); // GSTIN is uppercase
+                              setFormData({ ...formData, company_details: { ...(formData.company_details || {}), gst: val } });
+
+                              let errorMsg = '';
+                              if (val.trim() && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(val.trim())) {
+                                errorMsg = 'Please enter a valid 15-character GST number.';
+                              }
+
+                              setValidationErrors(prev => {
+                                const copy = { ...prev };
+                                if (errorMsg) copy.gst = errorMsg;
+                                else delete copy.gst;
+                                return copy;
+                              });
+
+                              // Trigger verification when length reaches exactly 15 and format is correct
+                              if (val.trim().length === 15 && !errorMsg) {
+                                verifyGstin(val.trim());
+                              } else {
+                                setIsGstVerified(false);
+                              }
+                            }}
+                            className={`w-full bg-white/5 border rounded-xl pl-4 pr-24 py-3 text-white focus:outline-none transition-all ${
+                              validationErrors.gst
+                                ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
+                                : isGstVerified
+                                ? 'border-green-500/80 focus:border-green-500 bg-green-500/5'
+                                : 'border-white/10 focus:border-blue-500'
+                            }`}
+                            placeholder="e.g. 08GROPS2567D1Z8"
+                            maxLength={15}
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                            {isVerifyingGst && (
+                              <svg className="animate-spin h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                            )}
+                            {!isVerifyingGst && isGstVerified && (
+                              <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-2 py-0.5 text-[10px] font-bold">
+                                <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                Verified
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {validationErrors.gst && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.gst}</p>
+                        )}
                       </div>
                     </div>
                     <div>
                       <label className="text-sm text-gray-400 block mb-1">Website URL</label>
-                      <input type="url" value={formData.company_details?.website || ''} onChange={(e) => setFormData({ ...formData, company_details: { ...(formData.company_details || {}), website: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                      <input
+                        type="url"
+                        value={formData.company_details?.website || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData({ ...formData, company_details: { ...(formData.company_details || {}), website: val } });
+
+                          let errorMsg = '';
+                          if (val.trim() && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(val.trim())) {
+                            errorMsg = 'Please enter a valid Website URL starting with http:// or https://';
+                          }
+
+                          setValidationErrors(prev => {
+                            const copy = { ...prev };
+                            if (errorMsg) copy.website = errorMsg;
+                            else delete copy.website;
+                            return copy;
+                          });
+                        }}
+                        className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                          validationErrors.website ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                        }`}
+                      />
+                      {validationErrors.website && (
+                        <p className="text-xs text-red-500 mt-1">{validationErrors.website}</p>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -454,7 +994,25 @@ export default function CardForm({ id }: CardFormProps) {
                     <p className="text-sm text-gray-400">Allow clients to pay you directly</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_payment} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_payment: e.target.checked } })} />
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={formData.custom_branding.show_payment}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_payment: checked } });
+                        if (!checked) {
+                          setValidationErrors(prev => {
+                            const copy = { ...prev };
+                            delete copy.upi_id;
+                            delete copy.ifsc_code;
+                            delete copy.account_number;
+                            delete copy.phonepe;
+                            return copy;
+                          });
+                        }
+                      }}
+                    />
                     <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
                   </label>
                 </div>
@@ -473,11 +1031,61 @@ export default function CardForm({ id }: CardFormProps) {
                         </div>
                         <div>
                           <label className="text-sm text-gray-400 block mb-1">Account Number</label>
-                          <input type="text" value={formData.payment_info?.account_number || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), account_number: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                          <input
+                            type="text"
+                            value={formData.payment_info?.account_number || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), account_number: val } });
+
+                              let errorMsg = '';
+                              if (val.trim() && !/^[0-9]{9,18}$/.test(val.trim())) {
+                                errorMsg = 'Please enter a valid Bank Account Number (9-18 digits).';
+                              }
+
+                              setValidationErrors(prev => {
+                                const copy = { ...prev };
+                                if (errorMsg) copy.account_number = errorMsg;
+                                else delete copy.account_number;
+                                return copy;
+                              });
+                            }}
+                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              validationErrors.account_number ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                            }`}
+                          />
+                          {validationErrors.account_number && (
+                            <p className="text-xs text-red-500 mt-1">{validationErrors.account_number}</p>
+                          )}
                         </div>
                         <div>
                           <label className="text-sm text-gray-400 block mb-1">IFSC Code</label>
-                          <input type="text" value={formData.payment_info?.ifsc_code || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), ifsc_code: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                          <input
+                            type="text"
+                            value={formData.payment_info?.ifsc_code || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), ifsc_code: val } });
+
+                              let errorMsg = '';
+                              if (val.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(val.trim())) {
+                                errorMsg = 'Please enter a valid 11-digit IFSC code.';
+                              }
+
+                              setValidationErrors(prev => {
+                                const copy = { ...prev };
+                                if (errorMsg) copy.ifsc_code = errorMsg;
+                                else delete copy.ifsc_code;
+                                return copy;
+                              });
+                            }}
+                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              validationErrors.ifsc_code ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                            }`}
+                          />
+                          {validationErrors.ifsc_code && (
+                            <p className="text-xs text-red-500 mt-1">{validationErrors.ifsc_code}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -499,15 +1107,66 @@ export default function CardForm({ id }: CardFormProps) {
                         </div>
                         <div>
                           <label className="text-sm text-gray-400 block mb-1">UPI ID</label>
-                          <input type="text" value={formData.payment_info?.upi_id || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), upi_id: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="username@upi" />
+                          <input
+                            type="text"
+                            value={formData.payment_info?.upi_id || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), upi_id: val } });
+
+                              let errorMsg = '';
+                              if (val.trim() && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(val.trim())) {
+                                errorMsg = 'Please enter a valid UPI ID.';
+                              }
+
+                              setValidationErrors(prev => {
+                                const copy = { ...prev };
+                                if (errorMsg) copy.upi_id = errorMsg;
+                                else delete copy.upi_id;
+                                return copy;
+                              });
+                            }}
+                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              validationErrors.upi_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                            }`}
+                            placeholder="username@upi"
+                          />
+                          {validationErrors.upi_id && (
+                            <p className="text-xs text-red-500 mt-1">{validationErrors.upi_id}</p>
+                          )}
                         </div>
                         <div>
                           <label className="text-sm text-gray-400 block mb-1">PhonePe Number</label>
-                          <input type="text" value={formData.payment_info?.phonepe || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), phonepe: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 9876543210" />
+                          <input
+                            type="text"
+                            value={formData.payment_info?.phonepe || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), phonepe: val } });
+
+                              let errorMsg = '';
+                              if (val.trim() && !/^\+?[0-9\s\-()]{10,15}$/.test(val.trim())) {
+                                errorMsg = 'Please enter a valid PhonePe Number (10-15 digits).';
+                              }
+
+                              setValidationErrors(prev => {
+                                const copy = { ...prev };
+                                if (errorMsg) copy.phonepe = errorMsg;
+                                else delete copy.phonepe;
+                                return copy;
+                              });
+                            }}
+                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              validationErrors.phonepe ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                            }`}
+                            placeholder="e.g. 9876543210"
+                          />
+                          {validationErrors.phonepe && (
+                            <p className="text-xs text-red-500 mt-1">{validationErrors.phonepe}</p>
+                          )}
                         </div>
                       </div>
                     </div>
-
                   </motion.div>
                 )}
               </div>
@@ -622,8 +1281,6 @@ export default function CardForm({ id }: CardFormProps) {
               <p className="text-gray-400 mb-6">{id ? 'Choose your brand color and save your changes!' : 'Choose your brand color and generate your card!'}</p>
             </div>
 
-            {error && <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm mb-6">{error}</div>}
-
             <div>
               <h3 className="text-lg font-semibold text-white mb-3">Select Brand Colors</h3>
               <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
@@ -726,6 +1383,15 @@ export default function CardForm({ id }: CardFormProps) {
                     className="font-medium"
                     style={{ color: formData.custom_branding.theme_color.startsWith('#') ? formData.custom_branding.theme_color : (formData.custom_branding.theme_color === 'blue' ? '#60a5fa' : formData.custom_branding.theme_color === 'indigo' ? '#818cf8' : formData.custom_branding.theme_color === 'purple' ? '#c084fc' : formData.custom_branding.theme_color === 'green' ? '#4ade80' : formData.custom_branding.theme_color === 'rose' ? '#fb7185' : '#fb923c') }}
                   >{formData.personal_info?.designation || 'Your Designation'}</p>
+                  
+                  {formData.category_id && (
+                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1 font-medium bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10 w-fit">
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M6 20a2 2 0 002 2h8a2 2 0 002-2V8l-6-6H8a2 2 0 00-2 2v16z"></path></svg>
+                      {categories.find(c => c.id.toString() === formData.category_id)?.name}
+                      {formData.subcategory_id && ` › ${categories.find(c => c.id.toString() === formData.category_id)?.children?.find((sc: any) => sc.id.toString() === formData.subcategory_id)?.name}`}
+                    </p>
+                  )}
+                  
                   <p className="text-gray-400 text-sm mt-1">{formData.company_details?.company_name}</p>
                 </div>
               </div>
@@ -789,6 +1455,11 @@ export default function CardForm({ id }: CardFormProps) {
           </div>
 
           <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm mb-6">
+                {error}
+              </div>
+            )}
             <AnimatePresence mode="wait">
               {renderStepContent()}
             </AnimatePresence>
@@ -845,6 +1516,14 @@ export default function CardForm({ id }: CardFormProps) {
                 
                 <h1 className="mt-2 text-lg font-bold">{formData.personal_info?.name || 'Your Name'}</h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{formData.personal_info?.designation || 'Your Designation'}</p>
+                
+                {formData.category_id && (
+                  <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1 font-medium bg-black/20 px-2 py-0.5 rounded-full border border-white/5 w-fit mx-auto">
+                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M6 20a2 2 0 002 2h8a2 2 0 002-2V8l-6-6H8a2 2 0 00-2 2v16z"></path></svg>
+                    {categories.find(c => c.id.toString() === formData.category_id)?.name}
+                    {formData.subcategory_id && ` › ${categories.find(c => c.id.toString() === formData.category_id)?.children?.find((sc: any) => sc.id.toString() === formData.subcategory_id)?.name}`}
+                  </p>
+                )}
                 
                 <div className="mt-2 flex gap-1">
                   {formData.company_details?.company_name && (
