@@ -791,7 +791,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               <Section title="Business" isDark={isDark} textMuted={textMuted}>
                 <div className={`flex flex-col rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
                   {showCompany && companyDetails.company_name && (
-                    <div className={`px-4 py-3 ${showCompany && (companyDetails.gst || companyDetails.website || fullAddress) ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
+                    <div className={`${showCompany && (companyDetails.gst || companyDetails.website || fullAddress) ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
                       <InfoRow
                         icon={<Icon.Building className="h-5 w-5" style={{ color: primaryColor }} />}
                         label="Company"
@@ -801,7 +801,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                     </div>
                   )}
                   {showCompany && companyDetails.gst && (
-                    <div className={`px-4 py-3 ${showCompany && (companyDetails.website || fullAddress) ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
+                    <div className={`${showCompany && (companyDetails.website || fullAddress) ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
                       <InfoRow
                         icon={<Icon.Wallet className="h-5 w-5" style={{ color: primaryColor }} />}
                         label="GST"
@@ -817,21 +817,11 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                         onCopy={() => copyToClipboard('gst', companyDetails.gst)}
                         copied={copied === 'gst'}
                         isDark={isDark}
-                        action={
-                          <button
-                            onClick={() => handleVerifyGst(companyDetails.gst)}
-                            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
-                            style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
-                          >
-                            <Icon.Check className="h-3.5 w-3.5" />
-                            Verify
-                          </button>
-                        }
                       />
                     </div>
                   )}
                   {showCompany && companyDetails.website && (
-                    <div className={`px-4 py-3 ${showCompany && fullAddress ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
+                    <div className={`${showCompany && fullAddress ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
                       <InfoRow
                         icon={<Icon.Globe className="h-5 w-5" style={{ color: primaryColor }} />}
                         label="Website"
@@ -843,7 +833,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                     </div>
                   )}
                   {showCompany && fullAddress && (
-                    <div className="px-4 py-3">
+                    <div>
                       <InfoRow
                         icon={<Icon.MapPin className="h-5 w-5" style={{ color: primaryColor }} />}
                         label="Address"
