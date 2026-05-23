@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BusinessCardController;
 use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,9 @@ Route::get('/cards/public/{slug}/vcard', [BusinessCardController::class, 'downlo
 
 // Lead Injection Endpoint
 Route::post('/leads', [LeadController::class, 'store']);
+
+// Public Products Listing
+Route::get('/products', [ProductController::class, 'index']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

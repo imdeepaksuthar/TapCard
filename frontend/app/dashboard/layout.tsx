@@ -66,6 +66,7 @@ export default function DashboardLayout({
         <nav className="flex-1 px-4 space-y-1">
           <SidebarLink href="/dashboard" icon="dashboard" active={pathname === '/dashboard'}>Dashboard</SidebarLink>
           <SidebarLink href="/dashboard/cards" icon="cards" active={pathname === '/dashboard/cards'}>My Cards</SidebarLink>
+          <SidebarLink href="/dashboard/products" icon="products" active={pathname === '/dashboard/products'}>Products</SidebarLink>
           <SidebarLink href="/dashboard/leads" icon="leads" active={pathname === '/dashboard/leads'}>Leads</SidebarLink>
           <SidebarLink href="/dashboard/analytics" icon="analytics" active={pathname === '/dashboard/analytics'}>Analytics</SidebarLink>
           <SidebarLink href="/dashboard/settings" icon="settings" active={pathname === '/dashboard/settings'}>Settings</SidebarLink>
@@ -108,6 +109,7 @@ export default function DashboardLayout({
             <h2 className="text-xl font-bold">
               {pathname === '/dashboard' ? 'Dashboard' :
                pathname === '/dashboard/cards' ? 'My Cards' :
+               pathname === '/dashboard/products' ? 'Products' :
                pathname === '/dashboard/leads' ? 'Leads' :
                pathname === '/dashboard/analytics' ? 'Analytics' :
                pathname === '/dashboard/settings' ? 'Settings' : 'Dashboard'}
@@ -174,6 +176,12 @@ function SidebarIcon({ name }: { name: string }) {
       return (
         <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+        </svg>
+      );
+    case 'products':
+      return (
+        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
         </svg>
       );
     case 'leads':

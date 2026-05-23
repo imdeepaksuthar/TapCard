@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\NfcController;
 use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\ProductController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -33,4 +34,9 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\RoleMiddleware::class . '
         Route::post('/themes', [ThemeController::class, 'store'])->name('themes.store');
         Route::put('/themes/{theme}', [ThemeController::class, 'update'])->name('themes.update');
         Route::delete('/themes/{theme}', [ThemeController::class, 'destroy'])->name('themes.destroy');
+
+        Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+        Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 });
