@@ -695,8 +695,8 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                 >
                   <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, opacity: isDark ? 0.2 : 0.15 }} />
                   <div className="absolute inset-0 rounded-full ring-1 ring-inset" style={{ borderColor: primaryColor, opacity: 0.5 }} />
-                  <Icon.Bolt className="relative z-10 h-3 w-3" style={{ color: primaryColor }} />
-                  <span className="relative z-10" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>NFC Enabled</span>
+                  <Icon.Check className="relative z-10 h-3 w-3" style={{ color: primaryColor }} />
+                  <span className="relative z-10" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>Digital Business Card</span>
                 </span>
               </div>
             </div>
@@ -707,8 +707,10 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                 initial="hidden"
                 animate="show"
                 variants={sectionVariants}
-                className="mt-5 mb-2 flex flex-wrap items-center justify-center gap-3"
+                className="mt-5 mb-2 flex flex-col items-center gap-2"
               >
+                <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Connect</p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
                 {filteredSocials.map(([platform, url]) => {
                   const meta = SOCIAL_META[platform.toLowerCase()];
                   return (
@@ -725,6 +727,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                     </a>
                   );
                 })}
+                </div>
               </motion.div>
             )}
 
@@ -773,7 +776,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             {personalInfo.bio && (
               <Section title="About" isDark={isDark} textMuted={textMuted}>
                 <div className={`relative rounded-2xl p-5 ${cardStyle} overflow-hidden`}>
-                  <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[${primaryColor}] to-[${secondaryColor}]`} />
+                  <div className="absolute top-0 left-0 w-1 h-full" style={{ background: `linear-gradient(to bottom, ${primaryColor}, ${secondaryColor})` }} />
                   <p className={`text-[14px] leading-relaxed ${textSubtle} whitespace-pre-wrap`}>
                     {personalInfo.bio}
                   </p>
@@ -924,16 +927,23 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             {/* ---- GALLERY ---- */}
             {hasGalleryBlock && (
               <Section title="Gallery" isDark={isDark} textMuted={textMuted}>
-                <div className="flex overflow-x-auto gap-3 pb-4 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {galleryContent.map((url: string, idx: number) => (
-                    <div 
-                      key={idx} 
-                      onClick={() => setLightboxIndex(idx)} 
-                      className="flex-none w-[130px] sm:w-[150px] aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group cursor-pointer snap-start shadow-sm shrink-0"
-                    >
-                      <img src={url} alt={`Gallery item ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    </div>
-                  ))}
+                <div className="relative">
+                  {/* Right-edge fade to signal overflow */}
+                  <div className={`pointer-events-none absolute right-0 top-0 z-10 h-full w-10 ${isDark ? 'bg-gradient-to-l from-[#0f0f13]' : 'bg-gradient-to-l from-slate-100'}`} />
+                  <div className="flex overflow-x-auto gap-3 pb-3 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {galleryContent.map((url: string, idx: number) => (
+                      <div 
+                        key={idx} 
+                        onClick={() => setLightboxIndex(idx)} 
+                        className="flex-none w-[130px] sm:w-[150px] aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group cursor-pointer snap-start shadow-sm shrink-0"
+                      >
+                        <img src={url} alt={`Gallery item ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      </div>
+                    ))}
+                  </div>
+                  {galleryContent.length > 2 && (
+                    <p className={`mt-2 text-center text-[10px] ${textMuted}`}>← Swipe to see more →</p>
+                  )}
                 </div>
               </Section>
             )}
@@ -961,24 +971,53 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             )}
 
             {/* ---- OPENING HOURS ---- */}
-            {hasHoursBlock && (
-              <Section title="Opening Hours" isDark={isDark} textMuted={textMuted}>
-                <div className={`rounded-2xl divide-y ${isDark ? 'bg-white/[0.04] divide-white/5 ring-1 ring-white/10' : 'bg-slate-50 divide-slate-200 ring-1 ring-slate-200'}`}>
-                  {Object.entries(openingHours).map(([day, hours]: [string, any]) => (
-                    <div key={day} className="flex justify-between items-center p-4">
-                      <span className={`capitalize font-medium text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{day}</span>
-                      {hours.closed ? (
-                        <span className="text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-md">Closed</span>
-                      ) : (
-                        <span className={`text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          {hours.open || '09:00'} - {hours.close || '18:00'}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            )}
+            {hasHoursBlock && (() => {
+              const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+              const todayHours: any = Object.entries(openingHours).find(([d]) => d.toLowerCase() === todayName)?.[1];
+              const isOpenNow = todayHours && !todayHours.closed;
+              return (
+                <Section title="Opening Hours" isDark={isDark} textMuted={textMuted}>
+                  {/* Today's status badge */}
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                      isOpenNow
+                        ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20'
+                        : 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20'
+                    }`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${isOpenNow ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                      {isOpenNow ? `Open Now · ${todayHours.open} – ${todayHours.close}` : 'Closed Now'}
+                    </span>
+                  </div>
+                  <div className={`rounded-2xl divide-y ${isDark ? 'bg-white/[0.04] divide-white/5 ring-1 ring-white/10' : 'bg-slate-50 divide-slate-200 ring-1 ring-slate-200'}`}>
+                    {Object.entries(openingHours).map(([day, hours]: [string, any]) => {
+                      const isToday = day.toLowerCase() === todayName;
+                      return (
+                        <div key={day} className={`flex justify-between items-center px-4 py-3 ${
+                          isToday ? (isDark ? 'bg-white/[0.06]' : 'bg-white') : ''
+                        }`}>
+                          <span className={`capitalize font-medium text-sm flex items-center gap-2 ${
+                            isToday ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-gray-400' : 'text-gray-500')
+                          }`}>
+                            {isToday && <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: primaryColor }} />}
+                            {day}
+                            {isToday && <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: primaryColor }}>Today</span>}
+                          </span>
+                          {hours.closed ? (
+                            <span className="text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-md">Closed</span>
+                          ) : (
+                            <span className={`text-sm font-medium ${
+                              isToday ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-gray-400' : 'text-gray-500')
+                            }`}>
+                              {hours.open || '09:00'} – {hours.close || '18:00'}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Section>
+              );
+            })()}
 
             {/* ---- PAYMENT (PAY ME) ---- */}
             {showPayment && hasPayment && (
@@ -1007,7 +1046,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                         <span className="flex h-6 w-6 items-center justify-center rounded bg-emerald-50 text-emerald-600">
                           <Icon.QrCode className="h-4 w-4" />
                         </span>
-                        <span className={`text-sm font-bold ${textMain}`}>Bar Code</span>
+                        <span className={`text-sm font-bold ${textMain}`}>QR / UPI</span>
                       </div>
                       <span className={`text-[10px] ${textMuted}`}>Scan QR or UPI</span>
                     </button>
@@ -1031,10 +1070,10 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- PRODUCTS (SHOP) ---- */}
             {products && products.length > 0 && (
-              <div className="mt-8 px-1">
-                <div className="mb-4 flex items-end justify-between px-1">
-                  <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Our Products</h2>
-                  <span className={`text-sm font-medium ${textMuted}`}>{products.length} items</span>
+              <div className="mt-6">
+                <div className="mb-2.5 flex items-center justify-between">
+                  <h3 className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Our Products</h3>
+                  <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{products.length} items</span>
                 </div>
 
                 {/* Search Bar */}
@@ -1086,8 +1125,8 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                       return (
                         <div key={product.id} className={`group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg`}>
                           <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-white/5">
-                            {product.image_url ? (
-                              <img src={product.image_url} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            {product.images?.[0] ? (
+                              <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             ) : (
                               <div className="flex h-full items-center justify-center text-slate-300">
                                 <Icon.Image className="h-6 w-6 sm:h-8 sm:w-8 opacity-50" />

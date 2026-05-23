@@ -65,6 +65,7 @@ export default function CardForm({ id }: CardFormProps) {
   const [socialFilter, setSocialFilter] = useState('');
   const [isVerifyingGst, setIsVerifyingGst] = useState(false);
   const [isGstVerified, setIsGstVerified] = useState(false);
+  const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null);
 
   const [villages, setVillages] = useState<string[]>([]);
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
@@ -228,6 +229,9 @@ export default function CardForm({ id }: CardFormProps) {
           opening_hours: data.opening_hours ? { ...prev.opening_hours, ...data.opening_hours } : prev.opening_hours,
           brochure_pdfs: Array.isArray(data.brochure_pdfs) ? data.brochure_pdfs : prev.brochure_pdfs,
         }));
+        // Pre-populate the profile image preview
+        const existingProfileImage = data.profile_image || data.personal_info?.profile_image || null;
+        if (existingProfileImage) setProfileImagePreviewUrl(existingProfileImage);
       } catch (err) {
         console.error(err);
         router.push('/dashboard/cards');
@@ -383,10 +387,17 @@ export default function CardForm({ id }: CardFormProps) {
 
       const data = await res.json();
       if (res.ok) {
+        // Store relative path in the DB (works across all environments)
+        // data.path = e.g. "media/images/uuid.jpg"
+        // data.url  = e.g. "http://localhost:8000/storage/media/images/uuid.jpg"
         setFormData(prev => ({
           ...prev,
+          profile_image: data.url,  // top-level column
           personal_info: { ...prev.personal_info, profile_image: data.url }
         }));
+        setProfileImagePreviewUrl(data.url);
+      } else {
+        console.error('Upload failed:', data);
       }
     } catch (err) {
       console.error('Upload failed', err);
@@ -520,7 +531,16 @@ export default function CardForm({ id }: CardFormProps) {
       subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : null,
       template_id: formData.card_type,
       slug: formData.slug || generateSlug(formData.personal_info.name || 'card'),
+      // Explicitly construct personal_info to ensure all fields are included
+      personal_info: {
+        name: formData.personal_info?.name || '',
+        designation: formData.personal_info?.designation || '',
+        bio: formData.personal_info?.bio || '',
+        profile_image: formData.personal_info?.profile_image || formData.profile_image || '',
+      },
     };
+
+    console.log('[CardForm] Submitting payload personal_info:', payload.personal_info);
 
     try {
       if (id) {
@@ -582,8 +602,8 @@ export default function CardForm({ id }: CardFormProps) {
             </div>
             <div className="space-y-4">
               <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
-                {formData.personal_info?.profile_image ? (
-                  <img src={formData.personal_info.profile_image} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-white/10" />
+                {profileImagePreviewUrl ? (
+                  <img src={profileImagePreviewUrl} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-white/10" />
                 ) : (
                   <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-gray-500 border-2 border-dashed border-white/20">Img</div>
                 )}

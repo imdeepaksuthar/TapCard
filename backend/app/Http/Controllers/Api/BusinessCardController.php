@@ -35,8 +35,13 @@ class BusinessCardController extends Controller
             'template_id' => 'nullable|string',
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'required|exists:categories,id',
+            'profile_image' => 'nullable|string',
+            'company_logo' => 'nullable|string',
             'personal_info' => 'required|array',
             'personal_info.name' => 'required|string',
+            'personal_info.designation' => 'nullable|string',
+            'personal_info.bio' => 'nullable|string',
+            'personal_info.profile_image' => 'nullable|string',
             'contact_buttons' => 'nullable|array',
             'social_links' => 'nullable|array',
             'custom_links' => 'nullable|array',
@@ -59,6 +64,8 @@ class BusinessCardController extends Controller
             'template_id' => $validated['template_id'] ?? null,
             'category_id' => $validated['category_id'],
             'subcategory_id' => $validated['subcategory_id'],
+            'profile_image' => $validated['profile_image'] ?? null,
+            'company_logo' => $validated['company_logo'] ?? null,
             'status' => 'active',
             'personal_info' => $validated['personal_info'] ?? [],
             'contact_buttons' => $validated['contact_buttons'] ?? [],
@@ -114,8 +121,13 @@ class BusinessCardController extends Controller
             'status' => 'nullable|string|in:active,inactive',
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'required|exists:categories,id',
+            'profile_image' => 'nullable|string',
+            'company_logo' => 'nullable|string',
             'personal_info' => 'required|array',
             'personal_info.name' => 'required|string',
+            'personal_info.designation' => 'nullable|string',
+            'personal_info.bio' => 'nullable|string',
+            'personal_info.profile_image' => 'nullable|string',
             'contact_buttons' => 'nullable|array',
             'social_links' => 'nullable|array',
             'custom_links' => 'nullable|array',
@@ -130,6 +142,11 @@ class BusinessCardController extends Controller
             'brochure_pdfs' => 'nullable|array',
             'custom_branding' => 'nullable|array',
             'seo_metadata' => 'nullable|array',
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('Card update - personal_info received', [
+            'personal_info' => $request->input('personal_info'),
+            'validated_personal_info' => $validated['personal_info'] ?? null,
         ]);
 
         $card->update($validated);
