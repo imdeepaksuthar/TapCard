@@ -131,6 +131,16 @@ const Icon = {
       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
     </svg>
   ),
+  ChevronLeft: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  ),
+  ChevronRight: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  ),
   // Social brand glyphs (monochrome)
   Facebook: (p: AnyObj) => (
     <svg viewBox="0 0 24 24" fill="currentColor" {...p}>
@@ -330,6 +340,8 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   // Products state
   const [productSearch, setProductSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [productToView, setProductToView] = useState<any>(null);
+  const [productViewImgIdx, setProductViewImgIdx] = useState(0);
 
   const productCategories = useMemo(() => {
     if (!products) return ['All'];
@@ -1128,7 +1140,11 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                       const inCart = cart.some(item => item.id === product.id);
                       
                       return (
-                        <div key={product.id} className={`group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg`}>
+                        <div 
+                          key={product.id} 
+                          onClick={() => { setProductToView(product); setProductViewImgIdx(0); }}
+                          className={`group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl cursor-pointer ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg`}
+                        >
                           <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-white/5">
                             {product.images?.[0] ? (
                               <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -1151,7 +1167,8 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                             <div className="mt-2 sm:mt-4 flex items-center justify-between">
                               <p className={`text-sm sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   if (inCart) {
                                     setIsCartOpen(true);
                                   } else {
@@ -1454,6 +1471,91 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
           </div>
         </button>
       )}
+
+      {/* ---- PRODUCT VIEW MODAL ---- */}
+      <AnimatePresence>
+        {productToView && (
+          <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-20 sm:pt-24">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setProductToView(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`relative flex w-full max-w-lg flex-col overflow-hidden rounded-3xl shadow-2xl ${isDark ? 'bg-slate-900 border border-white/10' : 'bg-white'} max-h-[85vh]`}
+            >
+              <div className="relative aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800">
+                {productToView.images && productToView.images.length > 0 ? (
+                  <>
+                    <img src={productToView.images[productViewImgIdx]} alt={productToView.name} className="h-full w-full object-cover" />
+                    {productToView.images.length > 1 && (
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+                        {productToView.images.map((_: any, i: number) => (
+                          <button key={i} onClick={(e) => { e.stopPropagation(); setProductViewImgIdx(i); }} className={`h-2 w-2 rounded-full transition-all ${i === productViewImgIdx ? 'w-4 bg-white' : 'bg-white/50'}`} />
+                        ))}
+                      </div>
+                    )}
+                    {productToView.images.length > 1 && (
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setProductViewImgIdx((productViewImgIdx - 1 + productToView.images.length) % productToView.images.length); }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/60"
+                        >
+                          <Icon.ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setProductViewImgIdx((productViewImgIdx + 1) % productToView.images.length); }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/60"
+                        >
+                          <Icon.ChevronRight className="h-5 w-5" />
+                        </button>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-slate-400">
+                    <Icon.Image className="h-12 w-12 opacity-50" />
+                  </div>
+                )}
+                <button
+                  onClick={() => setProductToView(null)}
+                  className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white backdrop-blur transition hover:bg-black/70 z-10"
+                >
+                  <Icon.X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex flex-col p-6 overflow-y-auto">
+                {productToView.category && (
+                  <span className="mb-2 w-max rounded-full bg-slate-100 dark:bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    {productToView.category}
+                  </span>
+                )}
+                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{productToView.name}</h2>
+                <p className={`mt-4 text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{productToView.description}</p>
+                <div className="mt-8 flex items-center justify-between border-t border-slate-200 dark:border-white/10 pt-4">
+                  <p className={`text-2xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    ₹{Number(productToView.price).toLocaleString('en-IN')}
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (cart.some(item => item.id === productToView.id)) {
+                        setIsCartOpen(true);
+                      } else {
+                        addToCart(productToView);
+                      }
+                      setProductToView(null);
+                    }}
+                    className={`rounded-xl px-6 py-3 font-bold text-white shadow-md transition active:scale-95 flex items-center gap-2`}
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <Icon.ShoppingCart className="h-5 w-5" />
+                    {cart.some(item => item.id === productToView.id) ? 'Added to Cart' : 'Add to Cart'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ---- GST VERIFICATION MODAL ---- */}
       <AnimatePresence>

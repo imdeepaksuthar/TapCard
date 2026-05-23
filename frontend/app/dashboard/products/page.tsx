@@ -127,6 +127,7 @@ export default function ProductsPage() {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('type', 'image');
+      fd.append('context', 'product');
       try {
         const data = await apiFetch<{ url: string; path: string }>('/api/upload', {
           method: 'POST',
