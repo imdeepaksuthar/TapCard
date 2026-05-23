@@ -852,33 +852,38 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               <Section title="Proprietor & Team" isDark={isDark} textMuted={textMuted}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {proprietorDetails.map((proprietor: any, idx: number) => (
-                    <div key={idx} className={`p-4 rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
-                      <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{proprietor.name}</h4>
-                      {proprietor.designation && <p className={`text-sm font-medium`} style={{ color: primaryColor }}>{proprietor.designation}</p>}
-                      <div className="mt-3 space-y-2">
-                        {proprietor.email && (
-                          <div className="flex items-center gap-2">
-                            <Icon.Mail className="w-4 h-4 text-gray-500" />
-                            <a href={`mailto:${proprietor.email}`} className={`text-sm hover:underline ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{proprietor.email}</a>
+                    <div key={idx} className={`p-4 rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'} flex flex-col gap-4`}>
+                      <div className="flex items-center gap-4">
+                        {proprietor.image ? (
+                          <img src={proprietor.image} alt={proprietor.name} className="w-14 h-14 rounded-full object-cover shrink-0 ring-2 ring-white/10" />
+                        ) : (
+                          <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${isDark ? 'bg-white/10 text-white/50' : 'bg-slate-200 text-slate-500'}`}>
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                           </div>
                         )}
+                        <div className="min-w-0 flex-1">
+                          <h4 className={`text-lg font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{proprietor.name}</h4>
+                          {proprietor.designation && <p className={`text-sm font-medium truncate`} style={{ color: primaryColor }}>{proprietor.designation}</p>}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
                         {proprietor.phone && (
-                          <div className="flex items-center gap-2">
-                            <Icon.Phone className="w-4 h-4 text-gray-500" />
-                            <a href={`tel:${proprietor.phone}`} className={`text-sm hover:underline ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{proprietor.phone}</a>
-                          </div>
+                          <a href={`tel:${proprietor.phone}`} className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
+                            <Icon.Phone className="w-3.5 h-3.5" />
+                            Call
+                          </a>
                         )}
                         {proprietor.whatsapp && (
-                          <div className="flex items-center gap-2">
-                            <Icon.Whatsapp className="w-4 h-4 text-gray-500" />
-                            <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" className={`text-sm hover:underline ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{proprietor.whatsapp}</a>
-                          </div>
+                          <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90 bg-[#25D366]">
+                            <Icon.Whatsapp className="w-3.5 h-3.5" />
+                            WhatsApp
+                          </a>
                         )}
-                        {proprietor.dob && (
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{proprietor.dob}</span>
-                          </div>
+                        {proprietor.email && (
+                          <a href={`mailto:${proprietor.email}`} className={`flex items-center justify-center p-2 rounded-xl transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
+                            <Icon.Mail className="w-4 h-4" />
+                          </a>
                         )}
                       </div>
                     </div>

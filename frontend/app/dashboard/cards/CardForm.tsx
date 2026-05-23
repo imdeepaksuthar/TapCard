@@ -29,7 +29,7 @@ export default function CardForm({ id }: CardFormProps) {
     social_links: { email: '', phone: '', whatsapp: '', linkedin: '', instagram: '', facebook: '', twitter: '', youtube: '' },
     company_details: { company_name: '', website: '', address: '', gst: '' },
     payment_info: { upi_id: '', bank_name: '', account_number: '', ifsc_code: '', phonepe: '', qr_path: '' },
-    proprietor_details: [{ name: '', email: '', phone: '', whatsapp: '', dob: '', designation: '' }],
+    proprietor_details: [{ name: '', designation: '', email: '', phone: '', whatsapp: '', dob: '', image: '' }],
     gallery_content: [] as string[],
     opening_hours: {
       monday: { open: '', close: '', closed: false },
@@ -387,12 +387,9 @@ export default function CardForm({ id }: CardFormProps) {
 
       const data = await res.json();
       if (res.ok) {
-        // Store relative path in the DB (works across all environments)
-        // data.path = e.g. "media/images/uuid.jpg"
-        // data.url  = e.g. "http://localhost:8000/storage/media/images/uuid.jpg"
         setFormData(prev => ({
           ...prev,
-          profile_image: data.url,  // top-level column
+          profile_image: data.url,
           personal_info: { ...prev.personal_info, profile_image: data.url }
         }));
         setProfileImagePreviewUrl(data.url);
@@ -400,9 +397,39 @@ export default function CardForm({ id }: CardFormProps) {
         console.error('Upload failed:', data);
       }
     } catch (err) {
-      console.error('Upload failed', err);
+      console.error('Upload error:', err);
     }
   };
+
+  const handleProprietorImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formPayload = new FormData();
+    formPayload.append('file', file);
+    formPayload.append('type', 'image');
+
+    try {
+      const token = localStorage.getItem('card-setu-token');
+      const res = await fetch('http://localhost:8000/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formPayload
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        const newDetails = [...formData.proprietor_details];
+        newDetails[index].image = data.url;
+        setFormData({ ...formData, proprietor_details: newDetails });
+      } else {
+        console.error('Upload failed:', data);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+    }
+  };
+
 
   const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1237,24 +1264,41 @@ export default function CardForm({ id }: CardFormProps) {
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                           </button>
                         )}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm text-gray-400 block mb-1">Name</label>
-                            <input type="text" value={proprietor.name} onChange={(e) => {
-                              const newDetails = [...formData.proprietor_details];
-                              newDetails[index].name = e.target.value;
-                              setFormData({ ...formData, proprietor_details: newDetails });
-                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="John Doe" />
+                        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                          <div className="shrink-0">
+                            <label className="text-sm text-gray-400 block mb-2">Photo</label>
+                            <div className="relative w-24 h-24 rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center hover:border-blue-500 transition-colors group cursor-pointer">
+                              {proprietor.image ? (
+                                <img src={proprietor.image} alt={proprietor.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                              )}
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                              </div>
+                              <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleProprietorImageUpload(index, e)} />
+                            </div>
                           </div>
-                          <div>
-                            <label className="text-sm text-gray-400 block mb-1">Designation</label>
-                            <input type="text" value={proprietor.designation} onChange={(e) => {
-                              const newDetails = [...formData.proprietor_details];
-                              newDetails[index].designation = e.target.value;
-                              setFormData({ ...formData, proprietor_details: newDetails });
-                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm text-gray-400 block mb-1">Name</label>
+                              <input type="text" value={proprietor.name} onChange={(e) => {
+                                const newDetails = [...formData.proprietor_details];
+                                newDetails[index].name = e.target.value;
+                                setFormData({ ...formData, proprietor_details: newDetails });
+                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="John Doe" />
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-400 block mb-1">Designation</label>
+                              <input type="text" value={proprietor.designation} onChange={(e) => {
+                                const newDetails = [...formData.proprietor_details];
+                                newDetails[index].designation = e.target.value;
+                                setFormData({ ...formData, proprietor_details: newDetails });
+                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
+                            </div>
                           </div>
                         </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="text-sm text-gray-400 block mb-1">Email</label>
@@ -1299,7 +1343,7 @@ export default function CardForm({ id }: CardFormProps) {
                       onClick={() => {
                         setFormData({
                           ...formData,
-                          proprietor_details: [...formData.proprietor_details, { name: '', email: '', phone: '', whatsapp: '', dob: '', designation: '' }]
+                          proprietor_details: [...formData.proprietor_details, { name: '', designation: '', email: '', phone: '', whatsapp: '', dob: '', image: '' }]
                         });
                       }}
                       className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl text-blue-400 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
