@@ -789,63 +789,72 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             {/* ---- BUSINESS ---- */}
             {hasBusinessBlock && (
               <Section title="Business" isDark={isDark} textMuted={textMuted}>
-                <div className="flex flex-col gap-3">
+                <div className={`flex flex-col rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
                   {showCompany && companyDetails.company_name && (
-                    <InfoRow
-                      icon={<Icon.Building className="h-5 w-5" style={{ color: primaryColor }} />}
-                      label="Company"
-                      value={companyDetails.company_name}
-                      isDark={isDark}
-                    />
+                    <div className={`px-4 py-3 ${showCompany && (companyDetails.gst || companyDetails.website || fullAddress) ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
+                      <InfoRow
+                        icon={<Icon.Building className="h-5 w-5" style={{ color: primaryColor }} />}
+                        label="Company"
+                        value={companyDetails.company_name}
+                        isDark={isDark}
+                      />
+                    </div>
                   )}
                   {showCompany && companyDetails.gst && (
-                    <InfoRow
-                      icon={<Icon.Wallet className="h-5 w-5" style={{ color: primaryColor }} />}
-                      label="GST"
-                      value={
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span>{companyDetails.gst}</span>
-                          <span className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-1.5 py-0.5 text-[9px] font-bold shrink-0">
-                            <Icon.Check className="w-2.5 h-2.5 text-green-400" />
-                            Verified
-                          </span>
-                        </div>
-                      }
-                      onCopy={() => copyToClipboard('gst', companyDetails.gst)}
-                      copied={copied === 'gst'}
-                      isDark={isDark}
-                      action={
-                        <button
-                          onClick={() => handleVerifyGst(companyDetails.gst)}
-                          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
-                          style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
-                        >
-                          <Icon.Check className="h-3.5 w-3.5" />
-                          Verify
-                        </button>
-                      }
-                    />
+                    <div className={`px-4 py-3 ${showCompany && (companyDetails.website || fullAddress) ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
+                      <InfoRow
+                        icon={<Icon.Wallet className="h-5 w-5" style={{ color: primaryColor }} />}
+                        label="GST"
+                        value={
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span>{companyDetails.gst}</span>
+                            <span className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-1.5 py-0.5 text-[9px] font-bold shrink-0">
+                              <Icon.Check className="w-2.5 h-2.5 text-green-400" />
+                              Verified
+                            </span>
+                          </div>
+                        }
+                        onCopy={() => copyToClipboard('gst', companyDetails.gst)}
+                        copied={copied === 'gst'}
+                        isDark={isDark}
+                        action={
+                          <button
+                            onClick={() => handleVerifyGst(companyDetails.gst)}
+                            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
+                            style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
+                          >
+                            <Icon.Check className="h-3.5 w-3.5" />
+                            Verify
+                          </button>
+                        }
+                      />
+                    </div>
                   )}
                   {showCompany && companyDetails.website && (
-                    <InfoRow
-                      icon={<Icon.Globe className="h-5 w-5" style={{ color: primaryColor }} />}
-                      label="Website"
-                      value={companyDetails.website}
-                      href={companyDetails.website}
-                      tint={primaryColor}
-                      isDark={isDark}
-                    />
+                    <div className={`px-4 py-3 ${showCompany && fullAddress ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
+                      <InfoRow
+                        icon={<Icon.Globe className="h-5 w-5" style={{ color: primaryColor }} />}
+                        label="Website"
+                        value={companyDetails.website}
+                        href={companyDetails.website}
+                        tint={primaryColor}
+                        isDark={isDark}
+                      />
+                    </div>
                   )}
                   {showCompany && fullAddress && (
-                    <InfoRow
-                      icon={<Icon.MapPin className="h-5 w-5" style={{ color: primaryColor }} />}
-                      label="Address"
-                      value={fullAddress}
-                      isDark={isDark}
-                    />
+                    <div className="px-4 py-3">
+                      <InfoRow
+                        icon={<Icon.MapPin className="h-5 w-5" style={{ color: primaryColor }} />}
+                        label="Address"
+                        value={fullAddress}
+                        isDark={isDark}
+                      />
+                    </div>
                   )}
                 </div>
               </Section>
+
             )}
 
             {/* ---- PROPRIETOR DETAILS ---- */}
