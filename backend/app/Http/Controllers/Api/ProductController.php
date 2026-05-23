@@ -29,8 +29,7 @@ class ProductController extends Controller
                     'slug' => $product->slug,
                     'description' => $product->description,
                     'price' => (float) $product->price,
-                    'image' => $product->image,
-                    'image_url' => $product->image ? asset('storage/' . $product->image) : null,
+                    'images' => $product->images ?? [],
                     'is_active' => (bool) $product->is_active,
                     'created_at' => $product->created_at,
                 ];
@@ -45,7 +44,8 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
-            'image' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'string',
             'is_active' => 'boolean',
         ]);
 
@@ -56,7 +56,7 @@ class ProductController extends Controller
             'slug' => $slug,
             'description' => $request->description,
             'price' => $request->price,
-            'image' => $request->image,
+            'images' => $request->images ?? [],
             'is_active' => $request->input('is_active', true),
         ]);
 
@@ -68,8 +68,7 @@ class ProductController extends Controller
                 'slug' => $product->slug,
                 'description' => $product->description,
                 'price' => (float) $product->price,
-                'image' => $product->image,
-                'image_url' => $product->image ? asset('storage/' . $product->image) : null,
+                'images' => $product->images ?? [],
                 'is_active' => (bool) $product->is_active,
                 'created_at' => $product->created_at,
             ]
@@ -82,7 +81,8 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
-            'image' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'string',
             'is_active' => 'boolean',
         ]);
 
@@ -93,8 +93,8 @@ class ProductController extends Controller
             'is_active' => $request->input('is_active', $product->is_active),
         ];
 
-        if ($request->has('image')) {
-            $data['image'] = $request->image;
+        if ($request->has('images')) {
+            $data['images'] = $request->images;
         }
 
         $product->update($data);
@@ -107,8 +107,7 @@ class ProductController extends Controller
                 'slug' => $product->slug,
                 'description' => $product->description,
                 'price' => (float) $product->price,
-                'image' => $product->image,
-                'image_url' => $product->image ? asset('storage/' . $product->image) : null,
+                'images' => $product->images ?? [],
                 'is_active' => (bool) $product->is_active,
                 'created_at' => $product->created_at,
             ]

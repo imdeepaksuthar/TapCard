@@ -11,12 +11,13 @@ class Product extends Model
         'slug',
         'description',
         'price',
-        'image',
+        'images',
         'is_active',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'is_active' => 'boolean',
+        'images' => 'array',
     ];
 }

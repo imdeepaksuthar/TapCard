@@ -34,6 +34,9 @@ Route::post('/leads', [LeadController::class, 'store']);
 // Public Products Listing
 Route::get('/products', [ProductController::class, 'index']);
 
+// Order Checkout Endpoint
+Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);

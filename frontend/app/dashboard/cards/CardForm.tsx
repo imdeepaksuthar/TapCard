@@ -24,7 +24,7 @@ export default function CardForm({ id }: CardFormProps) {
     personal_info: { name: '', designation: '', bio: '', profile_image: '' },
     social_links: { email: '', phone: '', whatsapp: '', linkedin: '', instagram: '', facebook: '', twitter: '', youtube: '' },
     company_details: { company_name: '', website: '', address: '', gst: '' },
-    payment_info: { upi_id: '', bank_name: '', account_number: '', ifsc_code: '' },
+    payment_info: { upi_id: '', bank_name: '', account_number: '', ifsc_code: '', phonepe: '', qr_path: '' },
     location_info: { map_url: '', address: '', latitude: '', longitude: '', pincode: '', state: '', city: '', village: '' },
     custom_branding: {
       theme_color: 'blue',
@@ -203,6 +203,34 @@ export default function CardForm({ id }: CardFormProps) {
         setFormData(prev => ({
           ...prev,
           personal_info: { ...prev.personal_info, profile_image: data.url }
+        }));
+      }
+    } catch (err) {
+      console.error('Upload failed', err);
+    }
+  };
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formPayload = new FormData();
+    formPayload.append('file', file);
+    formPayload.append('type', 'image');
+
+    try {
+      const token = localStorage.getItem('card-setu-token');
+      const res = await fetch('http://localhost:8000/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formPayload
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setFormData(prev => ({
+          ...prev,
+          payment_info: { ...(prev.payment_info || {}), qr_path: data.url }
         }));
       }
     } catch (err) {
@@ -431,25 +459,55 @@ export default function CardForm({ id }: CardFormProps) {
                   </label>
                 </div>
                 {formData.custom_branding.show_payment && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-8">
+                    
+                    {/* Bank Details Section */}
                     <div>
-                      <label className="text-sm text-gray-400 block mb-1">UPI ID</label>
-                      <input type="text" value={formData.payment_info?.upi_id || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), upi_id: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="username@upi" />
+                      <h4 className="text-sm font-semibold text-white mb-4 pb-2 border-b border-white/10">
+                        Bank Details
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="text-sm text-gray-400 block mb-1">Bank Name</label>
+                          <input type="text" value={formData.payment_info?.bank_name || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), bank_name: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-400 block mb-1">Account Number</label>
+                          <input type="text" value={formData.payment_info?.account_number || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), account_number: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-400 block mb-1">IFSC Code</label>
+                          <input type="text" value={formData.payment_info?.ifsc_code || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), ifsc_code: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-1">Bank Name</label>
-                        <input type="text" value={formData.payment_info?.bank_name || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), bank_name: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-1">Account Number</label>
-                        <input type="text" value={formData.payment_info?.account_number || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), account_number: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="text-sm text-gray-400 block mb-1">IFSC Code</label>
-                        <input type="text" value={formData.payment_info?.ifsc_code || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), ifsc_code: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+
+                    {/* Bar Code / UPI Section */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-4 pb-2 border-b border-white/10">
+                        Bar Code / UPI
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-gray-400 block mb-1">Payment QR Code</label>
+                          <div className="flex items-center gap-3">
+                            {formData.payment_info?.qr_path && (
+                              <img src={formData.payment_info.qr_path} alt="QR" className="h-10 w-10 rounded-lg object-cover bg-white p-0.5" />
+                            )}
+                            <input type="file" accept="image/*" onChange={handleQrUpload} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-400 block mb-1">UPI ID</label>
+                          <input type="text" value={formData.payment_info?.upi_id || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), upi_id: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="username@upi" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-400 block mb-1">PhonePe Number</label>
+                          <input type="text" value={formData.payment_info?.phonepe || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), phonepe: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 9876543210" />
+                        </div>
                       </div>
                     </div>
+
                   </motion.div>
                 )}
               </div>

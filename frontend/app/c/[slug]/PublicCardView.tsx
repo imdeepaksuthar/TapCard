@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import Hero3DBackground from '@/app/components/Hero3DBackground';
 import LeadForm from '../../../components/LeadForm';
 
 type AnyObj = Record<string, any>;
@@ -176,10 +177,51 @@ const Icon = {
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   ),
+  Search: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  ),
+  Image: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  ),
+  AlertTriangle: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
   X: (p: AnyObj) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
+  QrCode: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+    </svg>
+  ),
+  Download: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+  Smartphone: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
     </svg>
   ),
 };
@@ -218,11 +260,17 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [checkoutName, setCheckoutName] = useState('');
   const [checkoutPhone, setCheckoutPhone] = useState('');
+  const [checkoutEmail, setCheckoutEmail] = useState('');
   const [checkoutPincode, setCheckoutPincode] = useState('');
   const [checkoutVillage, setCheckoutVillage] = useState('');
   const [postOffices, setPostOffices] = useState<any[]>([]);
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [formError, setFormError] = useState('');
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+
+  // Payment Modal State
+  const [activePaymentModal, setActivePaymentModal] = useState<'bank' | 'barcode' | null>(null);
 
   // Fetch Pincode Details
   useEffect(() => {
@@ -257,6 +305,55 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
     }
   }, [checkoutPincode]);
 
+  const [verifyingGst, setVerifyingGst] = useState(false);
+  const [gstData, setGstData] = useState<any>(null);
+  const [showGstModal, setShowGstModal] = useState(false);
+
+  // Products state
+  const [productSearch, setProductSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const productCategories = useMemo(() => {
+    if (!products) return ['All'];
+    const cats = new Set<string>();
+    products.forEach((p: any) => {
+      if (p.category) cats.add(p.category);
+    });
+    return ['All', ...Array.from(cats)];
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter((p: any) => {
+      const matchesSearch = p.name?.toLowerCase().includes(productSearch.toLowerCase()) || p.description?.toLowerCase().includes(productSearch.toLowerCase());
+      const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, productSearch, selectedCategory]);
+
+  const handleVerifyGst = async (gstNo: string) => {
+    setVerifyingGst(true);
+    setShowGstModal(true);
+    setGstData(null);
+    try {
+      const res = await fetch('/api/verify-gst', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gstNo }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGstData(data.data);
+      } else {
+        setGstData({ error: data.error || 'Verification failed' });
+      }
+    } catch (e) {
+      setGstData({ error: 'Network error occurred' });
+    } finally {
+      setVerifyingGst(false);
+    }
+  };
+
   const cartItemCount = cart.length;
   const cartTotal = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
 
@@ -285,7 +382,8 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   };
 
   const themeName    = customBranding.theme_color || card.theme_color || 'indigo';
-  const primaryColor = data.theme?.primary_color || getHexColor(themeName);
+  const primaryColor = customBranding.primary_color || data.theme?.primary_color || getHexColor(themeName);
+  const secondaryColor = customBranding.secondary_color || (isDark ? '#0B0B14' : '#f8fafc');
   const primary15    = hexToRgba(primaryColor, 0.15);
   const primary30    = hexToRgba(primaryColor, 0.3);
 
@@ -307,6 +405,10 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
     }
     if (!checkoutPhone.trim()) {
       setFormError('Phone number is required.');
+      return false;
+    }
+    if (!checkoutEmail.trim() || !/^\S+@\S+\.\S+$/.test(checkoutEmail)) {
+      setFormError('Valid email address is required.');
       return false;
     }
     if (checkoutPincode.length !== 6) {
@@ -342,11 +444,48 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
     }
   };
 
-  const handleEmailCheckout = () => {
+  const handleEmailCheckout = async () => {
     if (!validateForm()) return;
-    const text = generateOrderText();
-    if (email) {
-      window.open(`mailto:${email}?subject=${encodeURIComponent('New Order')}&body=${encodeURIComponent(text)}`, '_blank');
+    
+    setIsSubmittingOrder(true);
+    setFormError('');
+
+    try {
+      const res = await fetch('http://localhost:8000/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          card_slug: card.slug,
+          order_data: {
+            name: checkoutName,
+            phone: checkoutPhone,
+            email: checkoutEmail,
+            pincode: checkoutPincode,
+            village: checkoutVillage
+          },
+          cart_items: cart
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to submit order');
+      }
+
+      setOrderSuccess(true);
+      setCart([]);
+      setTimeout(() => {
+        setIsCartOpen(false);
+        setOrderSuccess(false);
+        setCheckoutName('');
+        setCheckoutPhone('');
+        setCheckoutEmail('');
+        setCheckoutPincode('');
+        setCheckoutVillage('');
+      }, 3000);
+    } catch (err) {
+      setFormError('Something went wrong. Please try again later.');
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -414,15 +553,20 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   };
 
   // Tailwind class helpers
-  const surface       = isDark ? 'bg-[#12121A]' : 'bg-white';
-  const surfaceSoft   = isDark ? 'bg-white/5'   : 'bg-slate-50';
-  const borderSoft    = isDark ? 'border-white/10' : 'border-slate-200/70';
+  const surface       = isDark ? 'bg-[#0f0f13]' : 'bg-white';
+  const surfaceSoft   = isDark ? 'bg-white/[0.04]' : 'bg-slate-50';
+  const borderSoft    = isDark ? 'border-white/10' : 'border-slate-200';
+  const ringSoft      = isDark ? 'ring-white/10' : 'ring-slate-200';
+  
+  // Consistent interactive card style used for Connect, Business, Location, etc.
+  const cardStyle     = `${surfaceSoft} ring-1 ${ringSoft} transition-all hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'hover:bg-white/[0.08]' : 'hover:bg-white shadow-sm'}`;
+
   const textMain      = isDark ? 'text-slate-100' : 'text-slate-900';
   const textMuted     = isDark ? 'text-slate-400' : 'text-slate-500';
   const textSubtle    = isDark ? 'text-slate-300' : 'text-slate-600';
   const pageBg        = isDark ? 'bg-[#08080C]' : 'bg-slate-100';
 
-  const sectionVariants = {
+  const sectionVariants: any = {
     hidden: { opacity: 0, y: 12 },
     show:   { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
   };
@@ -442,10 +586,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
         <div className={`relative overflow-hidden rounded-3xl border ${borderSoft} ${surface} shadow-2xl shadow-black/10 backdrop-blur`}>
           {/* ---- HERO ---- */}
           <div className="relative h-44 w-full overflow-hidden sm:h-52 md:h-60">
-            <div
-              className="absolute inset-0"
-              style={{ background: `linear-gradient(135deg, ${primaryColor} 0%, ${hexToRgba(primaryColor, 0.7)} 45%, #0B0B14 100%)` }}
-            />
+            <Hero3DBackground primaryColor={primaryColor} secondaryColor={secondaryColor} />
             <div
               className="absolute inset-0 opacity-25 mix-blend-overlay"
               style={{
@@ -485,19 +626,22 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             <div className="-mt-16 flex flex-col items-center text-center sm:-mt-20">
               <div className="relative">
                 <div
-                  className={`h-28 w-28 overflow-hidden rounded-full ring-4 sm:h-32 sm:w-32 ${isDark ? 'ring-[#12121A]' : 'ring-white'} shadow-xl`}
-                  style={{ background: `linear-gradient(135deg, ${primaryColor}, ${hexToRgba(primaryColor, 0.55)})` }}
+                  className="absolute -inset-1 rounded-full opacity-60 blur-md transition-opacity duration-500 group-hover:opacity-100"
+                  style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
+                />
+                <div
+                  className={`relative z-10 h-28 w-28 overflow-hidden rounded-full ring-4 sm:h-32 sm:w-32 ${isDark ? 'ring-[#12121A] bg-[#12121A]' : 'ring-white bg-white'} shadow-xl`}
                 >
                   {profileImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={profileImage} alt={personalInfo.name || 'Profile'} className="h-full w-full object-cover" />
+                    <img src={profileImage} alt={personalInfo.name || 'Profile'} className="relative z-10 h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-white">
+                    <div className="relative z-10 flex h-full w-full items-center justify-center text-4xl font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}>
                       {(personalInfo.name || 'U').trim().charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
-                <div className={`absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
+                <div className={`absolute bottom-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
                   <Icon.Check className="h-3.5 w-3.5 text-white" />
                 </div>
               </div>
@@ -517,11 +661,12 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                   </span>
                 )}
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold text-white"
-                  style={{ background: `linear-gradient(135deg, ${primaryColor}, ${hexToRgba(primaryColor, 0.75)})` }}
+                  className="relative inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold shadow-sm overflow-hidden"
                 >
-                  <Icon.Bolt className="h-3 w-3" />
-                  NFC Enabled
+                  <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, opacity: isDark ? 0.2 : 0.15 }} />
+                  <div className="absolute inset-0 rounded-full ring-1 ring-inset" style={{ borderColor: primaryColor, opacity: 0.5 }} />
+                  <Icon.Bolt className="relative z-10 h-3 w-3" style={{ color: primaryColor }} />
+                  <span className="relative z-10" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>NFC Enabled</span>
                 </span>
               </div>
             </div>
@@ -561,7 +706,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               <QuickAction
                 onClick={handleSaveContact}
                 label={saving ? 'Saving…' : 'Save'}
-                tint="#F97316"
+                tint={primaryColor}
                 isDark={isDark}
                 icon={<Icon.Save className="h-5 w-5" />}
               />
@@ -570,7 +715,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             {/* ---- ABOUT ---- */}
             {personalInfo.bio && (
               <Section title="About" isDark={isDark} textMuted={textMuted}>
-                <div className={`rounded-2xl p-4 ${surfaceSoft} ring-1 ${borderSoft}`}>
+                <div className={`rounded-2xl p-4 ${cardStyle}`}>
                   <p className={`text-sm leading-relaxed ${textSubtle}`}>{personalInfo.bio}</p>
                 </div>
               </Section>
@@ -589,7 +734,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                         target="_blank"
                         rel="noreferrer"
                         title={meta?.label || platform}
-                        className={`group flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl ${surfaceSoft} ring-1 ${borderSoft} transition hover:-translate-y-0.5 hover:shadow-md`}
+                        className={`flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl ${cardStyle}`}
                       >
                         <span
                           className="flex h-9 w-9 items-center justify-center rounded-full text-white transition group-hover:scale-105"
@@ -608,10 +753,10 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             {/* ---- BUSINESS ---- */}
             {hasBusinessBlock && (
               <Section title="Business" isDark={isDark} textMuted={textMuted}>
-                <div className={`divide-y ${isDark ? 'divide-white/5' : 'divide-slate-200/60'} overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft}`}>
+                <div className="flex flex-col gap-3">
                   {companyDetails.company_name && (
                     <InfoRow
-                      icon={<Icon.Building className="h-4 w-4" style={{ color: primaryColor }} />}
+                      icon={<Icon.Building className="h-5 w-5" style={{ color: primaryColor }} />}
                       label="Company"
                       value={companyDetails.company_name}
                       isDark={isDark}
@@ -619,17 +764,27 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                   )}
                   {companyDetails.gst && (
                     <InfoRow
-                      icon={<Icon.Wallet className="h-4 w-4" style={{ color: primaryColor }} />}
+                      icon={<Icon.Wallet className="h-5 w-5" style={{ color: primaryColor }} />}
                       label="GST"
                       value={companyDetails.gst}
                       onCopy={() => copyToClipboard('gst', companyDetails.gst)}
                       copied={copied === 'gst'}
                       isDark={isDark}
+                      action={
+                        <button
+                          onClick={() => handleVerifyGst(companyDetails.gst)}
+                          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
+                          style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
+                        >
+                          <Icon.Check className="h-3.5 w-3.5" />
+                          Verify
+                        </button>
+                      }
                     />
                   )}
                   {companyDetails.website && (
                     <InfoRow
-                      icon={<Icon.Globe className="h-4 w-4" style={{ color: primaryColor }} />}
+                      icon={<Icon.Globe className="h-5 w-5" style={{ color: primaryColor }} />}
                       label="Website"
                       value={companyDetails.website}
                       href={companyDetails.website}
@@ -639,7 +794,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                   )}
                   {showAddress && fullAddress && (
                     <InfoRow
-                      icon={<Icon.MapPin className="h-4 w-4" style={{ color: primaryColor }} />}
+                      icon={<Icon.MapPin className="h-5 w-5" style={{ color: primaryColor }} />}
                       label="Address"
                       value={fullAddress}
                       isDark={isDark}
@@ -652,159 +807,227 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             {/* ---- LOCATION ---- */}
             {hasLocationBlock && (
               <Section title="Location" isDark={isDark} textMuted={textMuted}>
-                <div className={`overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft}`}>
-                  <div className="flex items-start gap-3 p-4">
-                    <span
-                      className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                      style={{ backgroundColor: primary15, color: primaryColor }}
-                    >
-                      <Icon.MapPin className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">
-                        {[locationInfo.village, locationInfo.city].filter(Boolean).join(', ') || 'Location'}
-                      </p>
-                      <p className={`mt-0.5 text-xs ${textMuted}`}>
-                        {[locationInfo.state, locationInfo.pincode].filter(Boolean).join(' · ')}
-                      </p>
-                      {locationInfo.map_url && (
-                        <a
-                          href={locationInfo.map_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-2 inline-flex items-center gap-1 text-xs font-medium"
-                          style={{ color: primaryColor }}
-                        >
-                          Open in maps
-                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7M9 7h8v8" /></svg>
-                        </a>
-                      )}
+                <div className={`group overflow-hidden rounded-2xl ${cardStyle}`}>
+                  {/* Embedded Map */}
+                  <div className="h-48 w-full bg-slate-200 dark:bg-slate-800">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      scrolling="no"
+                      marginHeight={0}
+                      marginWidth={0}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent([locationInfo.village, locationInfo.city, locationInfo.state, locationInfo.pincode].filter(Boolean).join(', '))}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                      style={{ border: 0, filter: isDark ? 'invert(90%) hue-rotate(180deg)' : 'none' }}
+                      allowFullScreen
+                    />
+                  </div>
+                  
+                  {/* Location Details */}
+                  <div className="flex items-center justify-between gap-4 p-4">
+                    <div className="flex items-start gap-4 min-w-0 flex-1">
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${isDark ? 'bg-black/20 group-hover:bg-black/40' : 'bg-slate-100 group-hover:bg-slate-200'}`}>
+                        <Icon.MapPin className="h-5 w-5" style={{ color: primaryColor }} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Address</p>
+                        <p className={`mt-1 break-words text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {[locationInfo.village, locationInfo.city].filter(Boolean).join(', ') || 'Location'}
+                        </p>
+                        <p className={`mt-0.5 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {[locationInfo.state, locationInfo.pincode].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
                     </div>
+
+                    {locationInfo.map_url && (
+                      <a
+                        href={locationInfo.map_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
+                        style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
+                      >
+                        Directions
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7M9 7h8v8" /></svg>
+                      </a>
+                    )}
                   </div>
                 </div>
               </Section>
             )}
 
-            {/* ---- PAYMENT ---- */}
+            {/* ---- PAYMENT (PAY ME) ---- */}
             {showPayment && hasPayment && (
-              <Section title="Payment" isDark={isDark} textMuted={textMuted}>
-                <div className={`rounded-2xl ${surfaceSoft} ring-1 ${borderSoft} p-4`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="flex h-10 w-10 items-center justify-center rounded-full"
-                        style={{ backgroundColor: primary15, color: primaryColor }}
-                      >
-                        <Icon.Wallet className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold">Pay via UPI / Bank</p>
-                        <p className={`text-xs ${textMuted}`}>Secure quick transfer</p>
+              <Section title="Pay Me" isDark={isDark} textMuted={textMuted}>
+                <div className={`grid grid-cols-2 gap-3`}>
+                  {(paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.ifsc_code) && (
+                    <button
+                      onClick={() => setActivePaymentModal('bank')}
+                      className={`flex flex-col items-start justify-center gap-1 rounded-2xl p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200 shadow-sm'}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded bg-indigo-50 text-indigo-600">
+                          <Icon.Wallet className="h-4 w-4" />
+                        </span>
+                        <span className={`text-sm font-bold ${textMain}`}>Bank</span>
                       </div>
-                    </div>
-                    {paymentInfo.qr_path && (
-                      <div className="h-16 w-16 overflow-hidden rounded-lg bg-white p-1 ring-1 ring-slate-200">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={paymentInfo.qr_path} alt="Payment QR" className="h-full w-full object-cover" />
+                      <span className={`text-[10px] ${textMuted}`}>Pay via Bank Transfer</span>
+                    </button>
+                  )}
+                  {(paymentInfo.qr_path || paymentInfo.upi_id || paymentInfo.upi || paymentInfo.phonepe) && (
+                    <button
+                      onClick={() => setActivePaymentModal('barcode')}
+                      className={`flex flex-col items-start justify-center gap-1 rounded-2xl p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200 shadow-sm'}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded bg-emerald-50 text-emerald-600">
+                          <Icon.QrCode className="h-4 w-4" />
+                        </span>
+                        <span className={`text-sm font-bold ${textMain}`}>Bar Code</span>
                       </div>
-                    )}
-                  </div>
-
-                  <div className={`mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2`}>
-                    {(paymentInfo.upi_id || paymentInfo.upi) && (
-                      <PayRow
-                        label="UPI ID"
-                        value={paymentInfo.upi_id || paymentInfo.upi}
-                        onCopy={() => copyToClipboard('upi', paymentInfo.upi_id || paymentInfo.upi)}
-                        copied={copied === 'upi'}
-                        isDark={isDark}
-                      />
-                    )}
-                    {paymentInfo.bank_name && (
-                      <PayRow label="Bank" value={paymentInfo.bank_name} isDark={isDark} />
-                    )}
-                    {paymentInfo.account_number && (
-                      <PayRow
-                        label="A/C No."
-                        value={paymentInfo.account_number}
-                        onCopy={() => copyToClipboard('acc', paymentInfo.account_number)}
-                        copied={copied === 'acc'}
-                        isDark={isDark}
-                        mono
-                      />
-                    )}
-                    {paymentInfo.ifsc_code && (
-                      <PayRow
-                        label="IFSC"
-                        value={paymentInfo.ifsc_code}
-                        onCopy={() => copyToClipboard('ifsc', paymentInfo.ifsc_code)}
-                        copied={copied === 'ifsc'}
-                        isDark={isDark}
-                        mono
-                      />
-                    )}
-                  </div>
+                      <span className={`text-[10px] ${textMuted}`}>Scan QR or UPI</span>
+                    </button>
+                  )}
                 </div>
+
+                {/* Download Brochure (If exists) */}
+                {companyDetails.brochure_url && (
+                  <a
+                    href={companyDetails.brochure_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-500 py-3 text-sm font-semibold text-indigo-500 transition hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-500/10`}
+                  >
+                    <Icon.Download className="h-4 w-4" />
+                    Download Brochure (PDF)
+                  </a>
+                )}
               </Section>
             )}
 
             {/* ---- PRODUCTS (SHOP) ---- */}
             {products && products.length > 0 && (
-              <Section title="Products" isDark={isDark} textMuted={textMuted}>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {products.map((product) => {
-                    const inCart = cart.some(item => item.id === product.id);
-                    
-                    return (
-                      <div key={product.id} className={`flex flex-col overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft} group`}>
-                        <div className="aspect-square w-full bg-black/5 dark:bg-white/5 relative overflow-hidden">
-                          {product.image_url ? (
-                            <img src={product.image_url} alt={product.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-slate-400">
-                              <Icon.Building className="h-6 w-6 opacity-20" />
+              <div className="mt-8 px-1">
+                <div className="mb-4 flex items-end justify-between px-1">
+                  <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Our Products</h2>
+                  <span className={`text-sm font-medium ${textMuted}`}>{products.length} items</span>
+                </div>
+
+                {/* Search Bar */}
+                <div className="mb-4 relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                    <Icon.Search className={`h-4 w-4 ${isDark ? 'text-slate-400' : 'text-slate-400'}`} />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className={`w-full rounded-2xl py-3 pl-11 pr-4 text-sm font-medium outline-none transition ${
+                      isDark ? 'bg-white/5 text-white placeholder-slate-500 focus:bg-white/10 focus:ring-1 focus:ring-white/20' : 'bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-transparent focus:ring-2 focus:ring-black/5'
+                    }`}
+                  />
+                </div>
+
+                {/* Categories */}
+                {productCategories.length > 1 && (
+                  <div className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {productCategories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                          selectedCategory === cat
+                            ? isDark
+                              ? 'bg-white text-black'
+                              : `text-white`
+                            : isDark
+                            ? 'bg-white/5 text-slate-300 hover:bg-white/10'
+                            : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                        }`}
+                        style={selectedCategory === cat && !isDark ? { backgroundColor: primaryColor } : {}}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Product Grid */}
+                {filteredProducts.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
+                    {filteredProducts.map((product: any) => {
+                      const inCart = cart.some(item => item.id === product.id);
+                      
+                      return (
+                        <div key={product.id} className={`group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg`}>
+                          <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-white/5">
+                            {product.image_url ? (
+                              <img src={product.image_url} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-slate-300">
+                                <Icon.Image className="h-6 w-6 sm:h-8 sm:w-8 opacity-50" />
+                              </div>
+                            )}
+                            {product.category && (
+                              <div className="absolute left-2 top-2 sm:left-3 sm:top-3 rounded-full bg-white/90 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[8px] sm:text-[9px] font-extrabold uppercase tracking-widest text-slate-800 backdrop-blur-md shadow-sm">
+                                {product.category}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-1 flex-col p-2.5 sm:p-4">
+                            <h4 className={`text-sm sm:text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'} line-clamp-1`}>{product.name}</h4>
+                            {product.description && (
+                              <p className={`mt-0.5 sm:mt-1 text-[10px] sm:text-xs font-medium line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{product.description}</p>
+                            )}
+                            <div className="mt-2 sm:mt-4 flex items-center justify-between">
+                              <p className={`text-sm sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
+                              <button
+                                onClick={() => {
+                                  if (inCart) {
+                                    setIsCartOpen(true);
+                                  } else {
+                                    addToCart(product);
+                                  }
+                                }}
+                                className={`flex items-center gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl px-2.5 py-1 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-bold transition-all hover:scale-105 active:scale-95 ${
+                                  inCart ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-white shadow-md'
+                                }`}
+                                style={inCart ? {} : { backgroundColor: primaryColor }}
+                              >
+                                {inCart ? <Icon.Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <Icon.ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />}
+                                <span className="hidden sm:inline">{inCart ? 'Added' : 'Add'}</span>
+                                <span className="sm:hidden">{inCart ? 'In Cart' : 'Add'}</span>
+                              </button>
                             </div>
-                          )}
-                        </div>
-                        <div className="flex flex-1 flex-col p-3">
-                          <h4 className={`line-clamp-1 text-sm font-semibold ${textMain}`}>{product.name}</h4>
-                          <div className="mt-auto pt-1 flex items-center justify-between">
-                            <p className={`text-[12px] font-bold`} style={{ color: primaryColor }}>₹{Number(product.price).toFixed(2)}</p>
-                            <button
-                              onClick={() => {
-                                if (inCart) {
-                                  setIsCartOpen(true);
-                                } else {
-                                  addToCart(product);
-                                }
-                              }}
-                              className={`group flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 active:scale-95 shadow-md hover:shadow-lg hover:-translate-y-1 ${
-                                inCart ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'text-white'
-                              }`}
-                              style={inCart ? {} : { backgroundColor: primaryColor, boxShadow: `0 4px 12px ${hexToRgba(primaryColor, 0.4)}` }}
-                              title={inCart ? "View Cart" : "Add to Cart"}
-                            >
-                              {inCart ? <Icon.Check className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" /> : <Icon.ShoppingCart className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />}
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Section>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={`flex flex-col items-center justify-center rounded-3xl py-12 text-center ${cardStyle}`}>
+                    <Icon.Search className={`mb-3 h-8 w-8 opacity-20 ${isDark ? 'text-white' : 'text-slate-900'}`} />
+                    <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>No products found</p>
+                    <p className={`mt-1 text-xs ${textMuted}`}>Try adjusting your search or category filter.</p>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* ---- INQUIRY FORM ---- */}
-            <Section title="Send an Inquiry" isDark={isDark} textMuted={textMuted}>
-              <div className={`rounded-2xl ${surfaceSoft} ring-1 ${borderSoft} p-5`}>
-                <p className="text-base font-semibold">Get in touch</p>
-                <p className={`mt-0.5 text-xs ${textMuted}`}>We'll reply within 24 hours.</p>
-                <div className="mt-4">
-                  <LeadForm cardId={card.id} bare isDark={isDark} primaryColor={primaryColor} />
+            {customBranding.show_lead_form !== false && (
+              <Section title="Send an Inquiry" isDark={isDark} textMuted={textMuted}>
+                <div className={`rounded-2xl p-5 ${cardStyle}`}>
+                  <p className="text-base font-semibold">Get in touch</p>
+                  <p className={`mt-0.5 text-xs ${textMuted}`}>We'll reply within 24 hours.</p>
+                  <div className="mt-4">
+                    <LeadForm cardId={card.id} bare isDark={isDark} primaryColor={primaryColor} />
+                  </div>
                 </div>
-              </div>
-            </Section>
+              </Section>
+            )}
 
             {/* Footer */}
             <div className={`mt-8 pb-6 text-center text-[11px] ${textMuted}`}>
@@ -873,7 +1096,14 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             className={`w-full max-w-md overflow-hidden rounded-3xl ${surface} shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[90vh]`}
           >
             <div className={`flex items-center justify-between border-b ${borderSoft} px-5 py-4`}>
-              <h2 className="text-lg font-bold">Your Cart</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-bold">Your Cart</h2>
+                {cart.length > 0 && !orderSuccess && (
+                  <button onClick={() => setCart([])} className="text-xs font-semibold text-rose-500 hover:text-rose-600 transition underline underline-offset-2">
+                    Reset Cart
+                  </button>
+                )}
+              </div>
               <button onClick={() => setIsCartOpen(false)} className={`rounded-full p-2 hover:bg-slate-200 dark:hover:bg-white/10 transition`}>
                 <Icon.X className="h-5 w-5" />
               </button>
@@ -950,6 +1180,14 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                       style={{ outlineColor: primaryColor }}
                     />
                     <input
+                      type="email"
+                      placeholder="Email Address *"
+                      value={checkoutEmail}
+                      onChange={e => setCheckoutEmail(e.target.value)}
+                      className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
+                      style={{ outlineColor: primaryColor }}
+                    />
+                    <input
                       type="text"
                       placeholder="Pincode (6 digits) *"
                       maxLength={6}
@@ -983,7 +1221,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               )}
             </div>
 
-            {cart.length > 0 && (
+            {cart.length > 0 && !orderSuccess && (
               <div className={`border-t ${borderSoft} p-5 flex flex-col gap-2 bg-black/5 dark:bg-white/5`}>
                 <button
                   onClick={handleWhatsAppCheckout}
@@ -996,13 +1234,38 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                 {email && (
                   <button
                     onClick={handleEmailCheckout}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98]"
+                    disabled={isSubmittingOrder}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98] disabled:opacity-70"
                     style={{ backgroundColor: primaryColor }}
                   >
-                    <Icon.Mail className="h-5 w-5" />
-                    Order via Email
+                    {isSubmittingOrder ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending...
+                      </span>
+                    ) : (
+                      <>
+                        <Icon.Mail className="h-5 w-5" />
+                        Order via Email
+                      </>
+                    )}
                   </button>
                 )}
+              </div>
+            )}
+            
+            {orderSuccess && (
+              <div className={`border-t ${borderSoft} p-5 flex flex-col items-center justify-center gap-3 bg-emerald-500/10`}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
+                  <Icon.Check className="h-6 w-6" />
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-emerald-600 dark:text-emerald-400">Order Placed Successfully!</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Check your email for the receipt.</p>
+                </div>
               </div>
             )}
           </motion.div>
@@ -1024,6 +1287,205 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
           </div>
         </button>
       )}
+
+      {/* ---- GST VERIFICATION MODAL ---- */}
+      <AnimatePresence>
+        {showGstModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowGstModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className={`relative w-full max-w-sm overflow-hidden rounded-3xl ${isDark ? 'bg-[#12121A] ring-white/10' : 'bg-white ring-slate-200'} p-6 shadow-2xl ring-1`}
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
+                    <Icon.Check className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>GST Verification</h3>
+                </div>
+                <button onClick={() => setShowGstModal(false)} className={`rounded-full p-2 transition ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100'}`}>
+                  <Icon.X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {verifyingGst ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: primaryColor, borderTopColor: 'transparent' }} />
+                  <p className="mt-4 text-sm font-medium text-slate-400">Fetching Govt. Records...</p>
+                </div>
+              ) : gstData?.error ? (
+                <div className="rounded-2xl bg-red-500/10 p-4 text-center text-red-500 ring-1 ring-red-500/20">
+                  <Icon.AlertTriangle className="mx-auto mb-2 h-6 w-6" />
+                  <p className="text-sm font-semibold">{gstData.error}</p>
+                </div>
+              ) : gstData ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Legal Name</p>
+                    <p className={`mt-1 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{gstData.legal_name}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</p>
+                      <p className="mt-1 font-semibold text-emerald-500">{gstData.status}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Taxpayer Type</p>
+                      <p className={`mt-1 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{gstData.taxpayer_type}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Principal Place of Business</p>
+                    <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{gstData.principal_place_of_business}</p>
+                  </div>
+                </div>
+              ) : null}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ---- PAYMENT MODAL ---- */}
+      <AnimatePresence>
+        {activePaymentModal && (
+          <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActivePaymentModal(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className={`relative w-full max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl ${surface} shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[90vh]`}
+            >
+              <div className="flex flex-col items-center p-6">
+                <div className="mb-4 h-1.5 w-12 rounded-full bg-slate-200 dark:bg-white/20" />
+                
+                <div className="absolute right-4 top-4">
+                  <button
+                    onClick={() => setActivePaymentModal(null)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-100 hover:bg-slate-200'}`}
+                  >
+                    <Icon.X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <h2 className="text-xl font-bold">{activePaymentModal === 'bank' ? 'Bank Details' : 'Bar Code / UPI'}</h2>
+                <p className={`mt-1 text-sm ${textMuted}`}>{activePaymentModal === 'bank' ? 'Pay directly to bank account' : 'Scan or use UPI to pay'}</p>
+
+                {activePaymentModal === 'bank' ? (
+                  <div className="mt-6 w-full space-y-3">
+                    {paymentInfo.bank_name && (
+                      <div className={`w-full rounded-2xl p-4 ${surfaceSoft} ring-1 ${borderSoft} flex flex-col`}>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>Bank Name</p>
+                        <p className="mt-0.5 text-sm font-semibold">{paymentInfo.bank_name}</p>
+                      </div>
+                    )}
+                    {paymentInfo.account_number && (
+                      <div className={`w-full rounded-2xl p-4 ${surfaceSoft} ring-1 ${borderSoft} flex items-center justify-between`}>
+                        <div>
+                          <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>Account Number</p>
+                          <p className="mt-0.5 text-sm font-semibold">{paymentInfo.account_number}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard('modal_acc', paymentInfo.account_number)}
+                          className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white transition ${copied === 'modal_acc' ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                        >
+                          {copied === 'modal_acc' ? <Icon.Check className="h-4 w-4" /> : <Icon.Copy className="h-4 w-4" />}
+                          {copied === 'modal_acc' ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                    )}
+                    {paymentInfo.ifsc_code && (
+                      <div className={`w-full rounded-2xl p-4 ${surfaceSoft} ring-1 ${borderSoft} flex items-center justify-between`}>
+                        <div>
+                          <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>IFSC Code</p>
+                          <p className="mt-0.5 text-sm font-semibold uppercase">{paymentInfo.ifsc_code}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard('modal_ifsc', paymentInfo.ifsc_code)}
+                          className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white transition ${copied === 'modal_ifsc' ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                        >
+                          {copied === 'modal_ifsc' ? <Icon.Check className="h-4 w-4" /> : <Icon.Copy className="h-4 w-4" />}
+                          {copied === 'modal_ifsc' ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className={`mt-6 flex h-48 w-48 items-center justify-center overflow-hidden rounded-3xl ${isDark ? 'bg-white' : 'bg-slate-50 ring-1 ring-slate-200'} p-3 shadow-sm`}>
+                      {paymentInfo.qr_path ? (
+                        <img src={paymentInfo.qr_path} alt="QR Code" className="h-full w-full object-contain" />
+                      ) : (
+                        <Icon.QrCode className="h-12 w-12 text-slate-300" />
+                      )}
+                    </div>
+
+                    <div className="mt-8 w-full space-y-3">
+                      {(paymentInfo.upi_id || paymentInfo.upi) && (
+                        <div className={`w-full rounded-2xl p-4 ${surfaceSoft} ring-1 ${borderSoft} flex items-center justify-between`}>
+                          <div className="min-w-0 pr-4">
+                            <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>UPI ID</p>
+                            <p className="mt-0.5 truncate text-sm font-semibold">{paymentInfo.upi_id || paymentInfo.upi}</p>
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard('modal_upi', paymentInfo.upi_id || paymentInfo.upi)}
+                            className={`shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-white transition ${copied === 'modal_upi' ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                          >
+                            {copied === 'modal_upi' ? <Icon.Check className="h-4 w-4" /> : <Icon.Copy className="h-4 w-4" />}
+                            {copied === 'modal_upi' ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
+                      )}
+                      {paymentInfo.phonepe && (
+                        <div className={`w-full rounded-2xl p-4 ${surfaceSoft} ring-1 ${borderSoft} flex items-center justify-between`}>
+                          <div className="min-w-0 pr-4">
+                            <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>PhonePe Number</p>
+                            <p className="mt-0.5 truncate text-sm font-semibold">{paymentInfo.phonepe}</p>
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard('modal_phonepe', paymentInfo.phonepe)}
+                            className={`shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-white transition ${copied === 'modal_phonepe' ? 'bg-emerald-500' : 'bg-purple-600 hover:bg-purple-700'}`}
+                          >
+                            {copied === 'modal_phonepe' ? <Icon.Check className="h-4 w-4" /> : <Icon.Copy className="h-4 w-4" />}
+                            {copied === 'modal_phonepe' ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {paymentInfo.qr_path && (
+                      <a
+                        href={paymentInfo.qr_path}
+                        download="payment_qr.png"
+                        className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition ${isDark ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}
+                      >
+                        <Icon.Download className="h-4 w-4" />
+                        Download QR Code
+                      </a>
+                    )}
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </main>
   );
@@ -1119,6 +1581,8 @@ function InfoRow({
   onCopy,
   copied,
   isDark,
+  action,
+  cardStyle,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -1128,39 +1592,46 @@ function InfoRow({
   onCopy?: () => void;
   copied?: boolean;
   isDark: boolean;
+  action?: React.ReactNode;
+  cardStyle?: string;
 }) {
   return (
-    <div className="flex items-start gap-3 px-4 py-3">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/5 dark:bg-white/5">
-        {icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className={`text-[11px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
-        {href ? (
-          <a
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            className="block truncate text-sm font-medium hover:underline"
-            style={{ color: tint }}
+    <div className={`group flex items-center justify-between gap-4 rounded-2xl p-4 ${cardStyle || ''}`}>
+      <div className="flex items-start gap-4 min-w-0 flex-1">
+        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${isDark ? 'bg-black/20 group-hover:bg-black/40' : 'bg-slate-100 group-hover:bg-slate-200'}`}>
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className={`text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
+          {href ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 block truncate text-sm font-medium hover:underline"
+              style={{ color: tint }}
+            >
+              {value}
+            </a>
+          ) : (
+            <p className={`mt-1 break-words text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{value}</p>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {action}
+        {onCopy && (
+          <button
+            onClick={onCopy}
+            aria-label={`Copy ${label}`}
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${
+              isDark ? 'bg-white/10 text-slate-300 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
           >
-            {value}
-          </a>
-        ) : (
-          <p className="break-words text-sm font-medium">{value}</p>
+            {copied ? <Icon.Check className="h-4 w-4 text-emerald-500" /> : <Icon.Copy className="h-4 w-4" />}
+          </button>
         )}
       </div>
-      {onCopy && (
-        <button
-          onClick={onCopy}
-          aria-label={`Copy ${label}`}
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition ${
-            isDark ? 'bg-white/5 text-slate-300 hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          {copied ? <Icon.Check className="h-3.5 w-3.5 text-emerald-500" /> : <Icon.Copy className="h-3.5 w-3.5" />}
-        </button>
-      )}
     </div>
   );
 }
@@ -1172,6 +1643,7 @@ function PayRow({
   copied,
   isDark,
   mono,
+  cardStyle,
 }: {
   label: string;
   value: string;
@@ -1179,13 +1651,10 @@ function PayRow({
   copied?: boolean;
   isDark: boolean;
   mono?: boolean;
+  cardStyle?: string;
 }) {
   return (
-    <div
-      className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 ring-1 ${
-        isDark ? 'bg-white/[0.03] ring-white/5' : 'bg-white ring-slate-200/70'
-      }`}
-    >
+    <div className={`group flex items-center justify-between gap-2 rounded-2xl p-3 ${cardStyle || ''}`}>
       <div className="min-w-0 flex-1">
         <p className={`text-[10px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
         <p className={`truncate text-xs ${mono ? 'font-mono' : 'font-medium'}`}>{value}</p>
