@@ -45,6 +45,10 @@ class BusinessCardController extends Controller
             'gallery' => 'nullable|array',
             'documents' => 'nullable|array',
             'location_info' => 'nullable|array',
+            'proprietor_details' => 'nullable|array',
+            'gallery_content' => 'nullable|array',
+            'opening_hours' => 'nullable|array',
+            'brochure_pdfs' => 'nullable|array',
             'custom_branding' => 'nullable|array',
             'seo_metadata' => 'nullable|array',
         ]);
@@ -65,6 +69,10 @@ class BusinessCardController extends Controller
             'gallery' => $validated['gallery'] ?? [],
             'documents' => $validated['documents'] ?? [],
             'location_info' => $validated['location_info'] ?? [],
+            'proprietor_details' => $validated['proprietor_details'] ?? [],
+            'gallery_content' => $validated['gallery_content'] ?? [],
+            'opening_hours' => $validated['opening_hours'] ?? [],
+            'brochure_pdfs' => $validated['brochure_pdfs'] ?? [],
             'custom_branding' => $validated['custom_branding'] ?? [],
             'seo_metadata' => $validated['seo_metadata'] ?? [],
             'views_count' => 0,
@@ -116,6 +124,10 @@ class BusinessCardController extends Controller
             'gallery' => 'nullable|array',
             'documents' => 'nullable|array',
             'location_info' => 'nullable|array',
+            'proprietor_details' => 'nullable|array',
+            'gallery_content' => 'nullable|array',
+            'opening_hours' => 'nullable|array',
+            'brochure_pdfs' => 'nullable|array',
             'custom_branding' => 'nullable|array',
             'seo_metadata' => 'nullable|array',
         ]);
@@ -215,5 +227,21 @@ class BusinessCardController extends Controller
             'optimized_content' => 'This is a mock optimized content by AI. Real integration would call Gemini API.',
             'suggestions' => ['Use professional tone', 'Add clear call to action']
         ]);
+    }
+
+    /**
+     * Verify and fetch details for a given pincode.
+     */
+    public function verifyPincode(string $pincode): JsonResponse
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::get("https://api.postalpincode.in/pincode/{$pincode}");
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+            return response()->json(['error' => 'Failed to fetch pincode details.'], 500);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Pincode API is currently unavailable.'], 500);
+        }
     }
 }

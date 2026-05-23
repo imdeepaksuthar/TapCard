@@ -29,7 +29,19 @@ export default function CardForm({ id }: CardFormProps) {
     social_links: { email: '', phone: '', whatsapp: '', linkedin: '', instagram: '', facebook: '', twitter: '', youtube: '' },
     company_details: { company_name: '', website: '', address: '', gst: '' },
     payment_info: { upi_id: '', bank_name: '', account_number: '', ifsc_code: '', phonepe: '', qr_path: '' },
+    proprietor_details: [{ name: '', email: '', phone: '', whatsapp: '', dob: '', designation: '' }],
+    gallery_content: [] as string[],
+    opening_hours: {
+      monday: { open: '', close: '', closed: false },
+      tuesday: { open: '', close: '', closed: false },
+      wednesday: { open: '', close: '', closed: false },
+      thursday: { open: '', close: '', closed: false },
+      friday: { open: '', close: '', closed: false },
+      saturday: { open: '', close: '', closed: false },
+      sunday: { open: '', close: '', closed: true },
+    },
     location_info: { map_url: '', address: '', latitude: '', longitude: '', pincode: '', state: '', city: '', village: '' },
+    brochure_pdfs: [] as string[],
     custom_branding: {
       theme_color: 'blue',
       primary_color: '#3b82f6',
@@ -37,8 +49,12 @@ export default function CardForm({ id }: CardFormProps) {
       show_social: true,
       show_company: true,
       show_payment: true,
+      show_proprietor: true,
+      show_gallery: true,
+      show_hours: true,
       show_address: true,
       show_location: false,
+      show_brochures: true,
       dark_mode_enabled: true
     }
   });
@@ -46,12 +62,69 @@ export default function CardForm({ id }: CardFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [villages, setVillages] = useState<string[]>([]);
-  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
-  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [socialFilter, setSocialFilter] = useState('');
   const [isVerifyingGst, setIsVerifyingGst] = useState(false);
   const [isGstVerified, setIsGstVerified] = useState(false);
+
+  const [villages, setVillages] = useState<string[]>([]);
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
+  const handlePincodeChange = async (pincode: string) => {
+    setFormData(prev => ({ ...prev, location_info: { ...prev.location_info, pincode } }));
+
+    if (pincode.length === 6) {
+      setIsFetchingPincode(true);
+      try {
+        const res = await fetch(`http://localhost:8000/api/verify-pincode/${pincode}`);
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0 && data[0]?.Status === "Success" && Array.isArray(data[0].PostOffice) && data[0].PostOffice.length > 0) {
+          const postOffices = data[0].PostOffice;
+          const state = postOffices[0].State;
+          const city = postOffices[0].District;
+          const villageList = postOffices.map((po: any) => po.Name);
+
+          setVillages(villageList);
+          setFormData(prev => ({
+            ...prev,
+            location_info: {
+              ...prev.location_info,
+              state,
+              city,
+              village: ''
+            }
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching pincode", err);
+      } finally {
+        setIsFetchingPincode(false);
+      }
+    }
+  };
+
+  const getCurrentLocation = () => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      setIsFetchingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData(prev => ({
+            ...prev,
+            location_info: {
+              ...prev.location_info,
+              latitude: position.coords.latitude.toString(),
+              longitude: position.coords.longitude.toString()
+            }
+          }));
+          setIsFetchingLocation(false);
+        },
+        (err) => {
+          console.error("Geolocation error", err);
+          setIsFetchingLocation(false);
+        }
+      );
+    }
+  };
 
   const verifyGstin = async (gstin: string) => {
     setIsVerifyingGst(true);
@@ -96,82 +169,6 @@ export default function CardForm({ id }: CardFormProps) {
       }));
     } finally {
       setIsVerifyingGst(false);
-    }
-  };
-
-  const handlePincodeChange = async (pincode: string) => {
-    setFormData(prev => ({ ...prev, location_info: { ...prev.location_info, pincode } }));
-
-    if (pincode.length === 6) {
-      setIsFetchingPincode(true);
-      try {
-        // Chain .catch directly to resolve with null and prevent Next.js/Turbopack error overlay
-        const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`).catch(() => null);
-        if (!res || !res.ok) {
-          console.warn("Pincode API offline or unreachable");
-          return;
-        }
-        
-        const data = await res.json().catch(() => null);
-        if (data && Array.isArray(data) && data[0] && data[0].Status === "Success") {
-          const postOffices = data[0].PostOffice;
-          if (postOffices && postOffices.length > 0) {
-            const state = postOffices[0].State;
-            const city = postOffices[0].District;
-            const villageList = postOffices.map((po: any) => po.Name);
-
-            setVillages(villageList);
-            setFormData(prev => ({
-              ...prev,
-              location_info: {
-                ...prev.location_info,
-                state,
-                city,
-                village: ''
-              }
-            }));
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching pincode", err);
-      } finally {
-        setIsFetchingPincode(false);
-      }
-    }
-  };
-
-  const getCurrentLocation = () => {
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      setIsFetchingLocation(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFormData(prev => ({
-            ...prev,
-            location_info: {
-              ...prev.location_info,
-              latitude: position.coords.latitude.toString(),
-              longitude: position.coords.longitude.toString()
-            }
-          }));
-          setIsFetchingLocation(false);
-        },
-        (error) => {
-          console.warn("Error getting location", error);
-          let msg = "Unable to retrieve your location.";
-          if (error.code === error.PERMISSION_DENIED) {
-            msg = "Location permission denied. Please enable it in your browser settings.";
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            msg = "Location information is unavailable.";
-          } else if (error.code === error.TIMEOUT) {
-            msg = "Location request timed out.";
-          }
-          setError(msg);
-          setIsFetchingLocation(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      alert("Geolocation is not supported by this browser.");
     }
   };
 
@@ -223,7 +220,13 @@ export default function CardForm({ id }: CardFormProps) {
           social_links: { ...prev.social_links, ...(data.social_links || {}) },
           payment_info: { ...prev.payment_info, ...(data.payment_info || {}) },
           location_info: { ...prev.location_info, ...(data.location_info || {}) },
-          custom_branding: { ...prev.custom_branding, ...(data.custom_branding || {}) }
+          custom_branding: { ...prev.custom_branding, ...(data.custom_branding || {}) },
+          proprietor_details: Array.isArray(data.proprietor_details) && data.proprietor_details.length > 0
+            ? data.proprietor_details
+            : prev.proprietor_details,
+          gallery_content: Array.isArray(data.gallery_content) ? data.gallery_content : prev.gallery_content,
+          opening_hours: data.opening_hours ? { ...prev.opening_hours, ...data.opening_hours } : prev.opening_hours,
+          brochure_pdfs: Array.isArray(data.brochure_pdfs) ? data.brochure_pdfs : prev.brochure_pdfs,
         }));
       } catch (err) {
         console.error(err);
@@ -313,6 +316,13 @@ export default function CardForm({ id }: CardFormProps) {
         if (gst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gst)) {
           newErrors.gst = 'Please enter a valid 15-character GST number.';
         }
+      }
+      if (formData.custom_branding.show_proprietor) {
+        formData.proprietor_details.forEach((proprietor, index) => {
+          if (proprietor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proprietor.email)) {
+            newErrors[`proprietor_${index}_email`] = 'Please enter a valid email address.';
+          }
+        });
       }
       if (formData.custom_branding.show_payment) {
         const upi_id = formData.payment_info?.upi_id?.trim();
@@ -470,6 +480,13 @@ export default function CardForm({ id }: CardFormProps) {
       if (gst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gst)) {
         newErrors.gst = 'Please enter a valid 15-character GST number.';
       }
+    }
+    if (formData.custom_branding.show_proprietor) {
+      formData.proprietor_details.forEach((proprietor, index) => {
+        if (proprietor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proprietor.email)) {
+          newErrors[`proprietor_${index}_email`] = 'Please enter a valid email address.';
+        }
+      });
     }
     if (formData.custom_branding.show_payment) {
       const upi_id = formData.payment_info?.upi_id?.trim();
@@ -1171,6 +1188,216 @@ export default function CardForm({ id }: CardFormProps) {
                 )}
               </div>
 
+              {/* Proprietor / Team Details */}
+              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div>
+                    <h3 className="font-semibold text-white">Proprietor / Team Details</h3>
+                    <p className="text-sm text-gray-400">Add founders, co-founders, or key team members</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_proprietor} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_proprietor: e.target.checked } })} />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                  </label>
+                </div>
+                {formData.custom_branding.show_proprietor && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-6">
+                    {formData.proprietor_details.map((proprietor, index) => (
+                      <div key={index} className="space-y-4 p-4 border border-white/10 rounded-xl bg-black/10 relative">
+                        {formData.proprietor_details.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newDetails = [...formData.proprietor_details];
+                              newDetails.splice(index, 1);
+                              setFormData({ ...formData, proprietor_details: newDetails });
+                            }}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                          </button>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm text-gray-400 block mb-1">Name</label>
+                            <input type="text" value={proprietor.name} onChange={(e) => {
+                              const newDetails = [...formData.proprietor_details];
+                              newDetails[index].name = e.target.value;
+                              setFormData({ ...formData, proprietor_details: newDetails });
+                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="John Doe" />
+                          </div>
+                          <div>
+                            <label className="text-sm text-gray-400 block mb-1">Designation</label>
+                            <input type="text" value={proprietor.designation} onChange={(e) => {
+                              const newDetails = [...formData.proprietor_details];
+                              newDetails[index].designation = e.target.value;
+                              setFormData({ ...formData, proprietor_details: newDetails });
+                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm text-gray-400 block mb-1">Email</label>
+                            <input type="email" value={proprietor.email} onChange={(e) => {
+                              const newDetails = [...formData.proprietor_details];
+                              newDetails[index].email = e.target.value;
+                              setFormData({ ...formData, proprietor_details: newDetails });
+                            }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_email`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="john@example.com" />
+                            {validationErrors[`proprietor_${index}_email`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_email`]}</p>}
+                          </div>
+                          <div>
+                            <label className="text-sm text-gray-400 block mb-1">Phone Number</label>
+                            <input type="tel" value={proprietor.phone} onChange={(e) => {
+                              const newDetails = [...formData.proprietor_details];
+                              newDetails[index].phone = e.target.value;
+                              setFormData({ ...formData, proprietor_details: newDetails });
+                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm text-gray-400 block mb-1">WhatsApp Number</label>
+                            <input type="tel" value={proprietor.whatsapp} onChange={(e) => {
+                              const newDetails = [...formData.proprietor_details];
+                              newDetails[index].whatsapp = e.target.value;
+                              setFormData({ ...formData, proprietor_details: newDetails });
+                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
+                          </div>
+                          <div>
+                            <label className="text-sm text-gray-400 block mb-1">Date of Birth</label>
+                            <input type="date" value={proprietor.dob} onChange={(e) => {
+                              const newDetails = [...formData.proprietor_details];
+                              newDetails[index].dob = e.target.value;
+                              setFormData({ ...formData, proprietor_details: newDetails });
+                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          proprietor_details: [...formData.proprietor_details, { name: '', email: '', phone: '', whatsapp: '', dob: '', designation: '' }]
+                        });
+                      }}
+                      className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl text-blue-400 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                      Add Another Member
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Gallery Content */}
+              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div>
+                    <h3 className="font-semibold text-white">Gallery Content</h3>
+                    <p className="text-sm text-gray-400">Add photos, videos, or graphics</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_gallery} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_gallery: e.target.checked } })} />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                  </label>
+                </div>
+                {formData.custom_branding.show_gallery && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
+                    <p className="text-sm text-gray-400 mb-2">Upload images to your gallery.</p>
+                    {/* Placeholder for actual file upload mapping. In real integration, upload to API and save URLs. */}
+                    <input type="file" multiple accept="image/*,video/*" onChange={async (e) => {
+                      if (!e.target.files) return;
+                      const files = Array.from(e.target.files);
+                      const newGallery = [...formData.gallery_content];
+                      for (const file of files) {
+                        const formPayload = new FormData();
+                        formPayload.append('file', file);
+                        formPayload.append('type', 'image');
+                        try {
+                          const token = localStorage.getItem('card-setu-token');
+                          const res = await fetch('http://localhost:8000/api/upload', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            body: formPayload
+                          });
+                          const data = await res.json();
+                          if (res.ok && data.url) {
+                            newGallery.push(data.url);
+                          }
+                        } catch (err) {
+                          console.error('Gallery upload failed', err);
+                        }
+                      }
+                      setFormData({ ...formData, gallery_content: newGallery });
+                    }} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                    <div className="flex flex-wrap gap-4 mt-4">
+                      {formData.gallery_content.map((url: string, idx: number) => (
+                        <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-white/10 group">
+                          <img src={url} alt="Gallery item" className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => {
+                            const newGallery = [...formData.gallery_content];
+                            newGallery.splice(idx, 1);
+                            setFormData({ ...formData, gallery_content: newGallery });
+                          }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Operational Details */}
+              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div>
+                    <h3 className="font-semibold text-white">Operational Details</h3>
+                    <p className="text-sm text-gray-400">Shop / business opening hours</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_hours} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_hours: e.target.checked } })} />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                  </label>
+                </div>
+                {formData.custom_branding.show_hours && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-3">
+                    {Object.entries(formData.opening_hours).map(([day, hours]: [string, any]) => (
+                      <div key={day} className="flex items-center justify-between gap-4 py-2 border-b border-white/5 last:border-0">
+                        <div className="w-24 capitalize text-gray-300 text-sm font-medium">{day}</div>
+                        <div className="flex items-center gap-2 flex-1">
+                          <input type="time" value={hours.open || ''} disabled={hours.closed} onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              opening_hours: { ...formData.opening_hours, [day]: { ...hours, open: e.target.value } }
+                            });
+                          }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
+                          <span className="text-gray-500 text-sm">to</span>
+                          <input type="time" value={hours.close || ''} disabled={hours.closed} onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              opening_hours: { ...formData.opening_hours, [day]: { ...hours, close: e.target.value } }
+                            });
+                          }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
+                        </div>
+                        <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                          <input type="checkbox" checked={hours.closed} onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              opening_hours: { ...formData.opening_hours, [day]: { ...hours, closed: e.target.checked } }
+                            });
+                          }} className="rounded bg-black/20 border-white/20 text-blue-500 focus:ring-0" />
+                          Closed
+                        </label>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Physical Address */}
               <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
                   <div>
@@ -1205,10 +1432,8 @@ export default function CardForm({ id }: CardFormProps) {
                         <label className="text-sm text-gray-400 block mb-1">Village / Area</label>
                         {villages.length > 0 ? (
                           <select value={formData.location_info?.village || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), village: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500">
-                            <option value="" className="bg-gray-900">Select Village</option>
-                            {villages.map((v, i) => (
-                              <option key={i} value={v} className="bg-gray-900">{v}</option>
-                            ))}
+                            <option value="">Select Village/Area</option>
+                            {villages.map((v, i) => <option key={i} value={v} className="bg-gray-900">{v}</option>)}
                           </select>
                         ) : (
                           <input type="text" value={formData.location_info?.village || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), village: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Village / Area" />
@@ -1224,6 +1449,7 @@ export default function CardForm({ id }: CardFormProps) {
                 )}
               </div>
 
+              {/* Google Maps Location */}
               <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
                   <div>
@@ -1267,6 +1493,64 @@ export default function CardForm({ id }: CardFormProps) {
                         <input type="text" value={formData.location_info?.longitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), longitude: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 72.5714" />
                       </div>
                     </div>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Brochures PDF */}
+              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div>
+                    <h3 className="font-semibold text-white">Brochures PDF</h3>
+                    <p className="text-sm text-gray-400">Upload business brochures</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_brochures} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_brochures: e.target.checked } })} />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                  </label>
+                </div>
+                {formData.custom_branding.show_brochures && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
+                    <input type="file" accept=".pdf" onChange={async (e) => {
+                      if (!e.target.files) return;
+                      const file = e.target.files[0];
+                      const formPayload = new FormData();
+                      formPayload.append('file', file);
+                      formPayload.append('type', 'document');
+                      try {
+                        const token = localStorage.getItem('card-setu-token');
+                        const res = await fetch('http://localhost:8000/api/upload', {
+                          method: 'POST',
+                          headers: { 'Authorization': `Bearer ${token}` },
+                          body: formPayload
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.url) {
+                          setFormData({ ...formData, brochure_pdfs: [...formData.brochure_pdfs, data.url] });
+                        }
+                      } catch (err) {
+                        console.error('Brochure upload failed', err);
+                      }
+                    }} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                    {formData.brochure_pdfs.length > 0 && (
+                      <div className="space-y-2 mt-4">
+                        {formData.brochure_pdfs.map((url: string, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                            <div className="flex items-center gap-3">
+                              <svg className="w-6 h-6 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"></path></svg>
+                              <a href={url} target="_blank" rel="noreferrer" className="text-sm text-blue-400 hover:underline">Brochure_{idx + 1}.pdf</a>
+                            </div>
+                            <button type="button" onClick={() => {
+                              const newPdfs = [...formData.brochure_pdfs];
+                              newPdfs.splice(idx, 1);
+                              setFormData({ ...formData, brochure_pdfs: newPdfs });
+                            }} className="text-gray-400 hover:text-red-500 transition-colors">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </div>

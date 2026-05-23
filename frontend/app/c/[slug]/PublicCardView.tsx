@@ -247,14 +247,23 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   const socialLinks    = asObject(card.social_links);
   const paymentInfo    = asObject(card.payment_info);
   const companyDetails = asObject(card.company_details);
-  const locationInfo   = asObject(card.location_info);
   const customBranding = asObject(card.custom_branding);
 
-  const showSocial   = customBranding.show_social   !== false;
-  const showCompany  = customBranding.show_company  !== false;
-  const showAddress  = customBranding.show_address  !== false;
-  const showLocation = customBranding.show_location !== false;
-  const showPayment  = customBranding.show_payment  !== false;
+  const proprietorDetails  = Array.isArray(card.proprietor_details) ? card.proprietor_details : [];
+  const galleryContent     = Array.isArray(card.gallery_content) ? card.gallery_content : [];
+  const openingHours       = asObject(card.opening_hours);
+  const locationInfo       = asObject(card.location_info);
+  const brochurePdfs       = Array.isArray(card.brochure_pdfs) ? card.brochure_pdfs : [];
+
+  const showSocial      = customBranding.show_social      !== false;
+  const showCompany     = customBranding.show_company     !== false;
+  const showPayment     = customBranding.show_payment     !== false;
+  const showProprietor  = customBranding.show_proprietor  !== false;
+  const showGallery     = customBranding.show_gallery     !== false;
+  const showHours       = customBranding.show_hours       !== false;
+  const showAddress     = customBranding.show_address     !== false;
+  const showLocation    = customBranding.show_location    !== false;
+  const showBrochures   = customBranding.show_brochures   !== false;
 
   const [isDark, setIsDark]   = useState<boolean>(customBranding.dark_mode_enabled ?? true);
   const [copied, setCopied]   = useState<string | null>(null);
@@ -277,6 +286,9 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
   // Payment Modal State
   const [activePaymentModal, setActivePaymentModal] = useState<'bank' | 'barcode' | null>(null);
+
+  // Gallery Lightbox State
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Fetch Pincode Details
   useEffect(() => {
@@ -512,7 +524,12 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
   const hasPayment = !!(paymentInfo.upi_id || paymentInfo.upi || paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.qr_path);
   const hasLocationBlock = showLocation && (locationInfo.city || locationInfo.state || locationInfo.map_url);
-  const hasBusinessBlock = (showCompany && (companyDetails.company_name || companyDetails.gst || companyDetails.website)) || (showAddress && fullAddress);
+  const hasBusinessBlock = showCompany && (companyDetails.company_name || companyDetails.gst || companyDetails.website || (showAddress && fullAddress));
+  
+  const hasProprietorBlock = showProprietor && proprietorDetails.length > 0 && proprietorDetails.some((p: any) => p.name);
+  const hasGalleryBlock = showGallery && galleryContent.length > 0;
+  const hasHoursBlock = showHours && Object.keys(openingHours).length > 0;
+  const hasBrochuresBlock = showBrochures && brochurePdfs.length > 0;
 
   const copyToClipboard = async (label: string, value: string) => {
     try {
@@ -684,6 +701,33 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               </div>
             </div>
 
+            {/* ---- SOCIAL LINKS (SMALL) ---- */}
+            {showSocial && filteredSocials.length > 0 && (
+              <motion.div
+                initial="hidden"
+                animate="show"
+                variants={sectionVariants}
+                className="mt-5 mb-2 flex flex-wrap items-center justify-center gap-3"
+              >
+                {filteredSocials.map(([platform, url]) => {
+                  const meta = SOCIAL_META[platform.toLowerCase()];
+                  return (
+                    <a
+                      key={platform}
+                      href={String(url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={meta?.label || platform}
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:-translate-y-1 shadow-sm ring-2 ring-white/10"
+                      style={{ backgroundColor: meta?.color || primaryColor }}
+                    >
+                      {meta ? <meta.Icon className="h-4 w-4" /> : <Icon.Globe className="h-4 w-4" />}
+                    </a>
+                  );
+                })}
+              </motion.div>
+            )}
+
             {/* ---- QUICK ACTIONS ---- */}
             <motion.div
               initial="hidden"
@@ -728,40 +772,16 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
             {/* ---- ABOUT ---- */}
             {personalInfo.bio && (
               <Section title="About" isDark={isDark} textMuted={textMuted}>
-                <div className={`rounded-2xl p-4 ${cardStyle}`}>
-                  <p className={`text-sm leading-relaxed ${textSubtle}`}>{personalInfo.bio}</p>
+                <div className={`relative rounded-2xl p-5 ${cardStyle} overflow-hidden`}>
+                  <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[${primaryColor}] to-[${secondaryColor}]`} />
+                  <p className={`text-[14px] leading-relaxed ${textSubtle} whitespace-pre-wrap`}>
+                    {personalInfo.bio}
+                  </p>
                 </div>
               </Section>
             )}
 
-            {/* ---- CONNECT (SOCIAL) ---- */}
-            {showSocial && filteredSocials.length > 0 && (
-              <Section title="Connect" isDark={isDark} textMuted={textMuted}>
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-3">
-                  {filteredSocials.map(([platform, url]) => {
-                    const meta = SOCIAL_META[platform.toLowerCase()];
-                    return (
-                      <a
-                        key={platform}
-                        href={String(url)}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={meta?.label || platform}
-                        className={`flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl ${cardStyle}`}
-                      >
-                        <span
-                          className="flex h-9 w-9 items-center justify-center rounded-full text-white transition group-hover:scale-105"
-                          style={{ backgroundColor: meta?.color || primaryColor }}
-                        >
-                          {meta ? <meta.Icon className="h-4 w-4" /> : <Icon.Globe className="h-4 w-4" />}
-                        </span>
-                        <span className={`text-[10px] font-medium ${textMuted} capitalize`}>{meta?.label || platform}</span>
-                      </a>
-                    );
-                  })}
-                </div>
-              </Section>
-            )}
+
 
             {/* ---- BUSINESS ---- */}
             {hasBusinessBlock && (
@@ -813,7 +833,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                       isDark={isDark}
                     />
                   )}
-                  {showAddress && fullAddress && (
+                  {showCompany && fullAddress && (
                     <InfoRow
                       icon={<Icon.MapPin className="h-5 w-5" style={{ color: primaryColor }} />}
                       label="Address"
@@ -825,55 +845,137 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               </Section>
             )}
 
+            {/* ---- PROPRIETOR DETAILS ---- */}
+            {hasProprietorBlock && (
+              <Section title="Proprietor & Team" isDark={isDark} textMuted={textMuted}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {proprietorDetails.map((proprietor: any, idx: number) => (
+                    <div key={idx} className={`p-4 rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
+                      <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{proprietor.name}</h4>
+                      {proprietor.designation && <p className={`text-sm font-medium`} style={{ color: primaryColor }}>{proprietor.designation}</p>}
+                      <div className="mt-3 space-y-2">
+                        {proprietor.email && (
+                          <div className="flex items-center gap-2">
+                            <Icon.Mail className="w-4 h-4 text-gray-500" />
+                            <a href={`mailto:${proprietor.email}`} className={`text-sm hover:underline ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{proprietor.email}</a>
+                          </div>
+                        )}
+                        {proprietor.phone && (
+                          <div className="flex items-center gap-2">
+                            <Icon.Phone className="w-4 h-4 text-gray-500" />
+                            <a href={`tel:${proprietor.phone}`} className={`text-sm hover:underline ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{proprietor.phone}</a>
+                          </div>
+                        )}
+                        {proprietor.whatsapp && (
+                          <div className="flex items-center gap-2">
+                            <Icon.Whatsapp className="w-4 h-4 text-gray-500" />
+                            <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" className={`text-sm hover:underline ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{proprietor.whatsapp}</a>
+                          </div>
+                        )}
+                        {proprietor.dob && (
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{proprietor.dob}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
             {/* ---- LOCATION ---- */}
             {hasLocationBlock && (
               <Section title="Location" isDark={isDark} textMuted={textMuted}>
-                <div className={`group overflow-hidden rounded-2xl ${cardStyle}`}>
-                  {/* Embedded Map */}
-                  <div className="h-48 w-full bg-slate-200 dark:bg-slate-800">
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      frameBorder="0"
-                      scrolling="no"
-                      marginHeight={0}
-                      marginWidth={0}
-                      src={`https://maps.google.com/maps?q=${encodeURIComponent([locationInfo.village, locationInfo.city, locationInfo.state, locationInfo.pincode].filter(Boolean).join(', '))}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
-                      style={{ border: 0, filter: isDark ? 'invert(90%) hue-rotate(180deg)' : 'none' }}
-                      allowFullScreen
-                    />
-                  </div>
-                  
-                  {/* Location Details */}
-                  <div className="flex items-center justify-between gap-4 p-4">
-                    <div className="flex items-start gap-4 min-w-0 flex-1">
-                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${isDark ? 'bg-black/20 group-hover:bg-black/40' : 'bg-slate-100 group-hover:bg-slate-200'}`}>
-                        <Icon.MapPin className="h-5 w-5" style={{ color: primaryColor }} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className={`text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Address</p>
-                        <p className={`mt-1 break-words text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          {[locationInfo.village, locationInfo.city].filter(Boolean).join(', ') || 'Location'}
-                        </p>
-                        <p className={`mt-0.5 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {[locationInfo.state, locationInfo.pincode].filter(Boolean).join(' · ')}
-                        </p>
-                      </div>
+                <div className={`overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft}`}>
+                  <div className="flex items-start gap-3 p-4">
+                    <span
+                      className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                      style={{ backgroundColor: primary15, color: primaryColor }}
+                    >
+                      <Icon.MapPin className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">
+                        {[locationInfo.village, locationInfo.city].filter(Boolean).join(', ') || 'Location'}
+                      </p>
+                      <p className={`mt-0.5 text-xs ${textMuted}`}>
+                        {[locationInfo.state, locationInfo.pincode].filter(Boolean).join(' · ')}
+                      </p>
+                      {locationInfo.map_url && (
+                        <a
+                          href={locationInfo.map_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-medium"
+                          style={{ color: primaryColor }}
+                        >
+                          Open in maps
+                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7M9 7h8v8" /></svg>
+                        </a>
+                      )}
                     </div>
-
-                    {locationInfo.map_url && (
-                      <a
-                        href={locationInfo.map_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
-                        style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
-                      >
-                        Directions
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7M9 7h8v8" /></svg>
-                      </a>
-                    )}
                   </div>
+                </div>
+              </Section>
+            )}
+
+            {/* ---- GALLERY ---- */}
+            {hasGalleryBlock && (
+              <Section title="Gallery" isDark={isDark} textMuted={textMuted}>
+                <div className="flex overflow-x-auto gap-3 pb-4 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {galleryContent.map((url: string, idx: number) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => setLightboxIndex(idx)} 
+                      className="flex-none w-[130px] sm:w-[150px] aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group cursor-pointer snap-start shadow-sm shrink-0"
+                    >
+                      <img src={url} alt={`Gallery item ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* ---- BROCHURES ---- */}
+            {hasBrochuresBlock && (
+              <Section title="Brochures & Documents" isDark={isDark} textMuted={textMuted}>
+                <div className="space-y-3">
+                  {brochurePdfs.map((url: string, idx: number) => (
+                    <a key={idx} href={url} target="_blank" rel="noreferrer" className={`flex items-center justify-between p-4 rounded-xl transition hover:-translate-y-0.5 ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200'}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-red-500/10 text-red-500">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"></path></svg>
+                        </div>
+                        <div>
+                          <p className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>Brochure {idx + 1}</p>
+                          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>PDF Document</p>
+                        </div>
+                      </div>
+                      <Icon.Download className="w-4 h-4" style={{ color: primaryColor }} />
+                    </a>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* ---- OPENING HOURS ---- */}
+            {hasHoursBlock && (
+              <Section title="Opening Hours" isDark={isDark} textMuted={textMuted}>
+                <div className={`rounded-2xl divide-y ${isDark ? 'bg-white/[0.04] divide-white/5 ring-1 ring-white/10' : 'bg-slate-50 divide-slate-200 ring-1 ring-slate-200'}`}>
+                  {Object.entries(openingHours).map(([day, hours]: [string, any]) => (
+                    <div key={day} className="flex justify-between items-center p-4">
+                      <span className={`capitalize font-medium text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{day}</span>
+                      {hours.closed ? (
+                        <span className="text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-md">Closed</span>
+                      ) : (
+                        <span className={`text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {hours.open || '09:00'} - {hours.close || '18:00'}
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </Section>
             )}
@@ -1505,6 +1607,62 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {lightboxIndex !== null && galleryContent[lightboxIndex] && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 backdrop-blur-md"
+            onClick={() => setLightboxIndex(null)}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-white hover:text-gray-300 transition-colors bg-white/10 hover:bg-white/20 rounded-full z-10"
+            >
+              <Icon.X className="w-6 h-6" />
+            </button>
+
+            {galleryContent.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(lightboxIndex === 0 ? galleryContent.length - 1 : lightboxIndex - 1);
+                }}
+                className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full z-10"
+              >
+                <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+            )}
+
+            {galleryContent.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(lightboxIndex === galleryContent.length - 1 ? 0 : lightboxIndex + 1);
+                }}
+                className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full z-10"
+              >
+                <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+              </button>
+            )}
+
+            <motion.img 
+              key={lightboxIndex}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2, delay: 0.05 }}
+              src={galleryContent[lightboxIndex]} 
+              alt={`Enlarged view ${lightboxIndex + 1}`} 
+              className="w-full max-w-4xl max-h-[85vh] object-contain rounded-xl shadow-2xl" 
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 

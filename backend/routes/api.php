@@ -59,6 +59,9 @@ Route::get('/homepage-stats', [\App\Http\Controllers\Api\PublicController::class
 // Order Checkout Endpoint
 Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store']);
 
+// Pincode Verification Endpoint
+Route::get('/verify-pincode/{pincode}', [BusinessCardController::class, 'verifyPincode']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
