@@ -15,7 +15,8 @@ class BusinessCardController extends Controller
      */
     public function index(): JsonResponse
     {
-        $cards = BusinessCard::where('user_id', auth()->id())
+        $cards = BusinessCard::with(['category', 'subcategory'])
+            ->where('user_id', auth()->id())
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -32,7 +33,10 @@ class BusinessCardController extends Controller
         $validated = $request->validate([
             'slug' => 'required|string|unique:business_cards,slug',
             'template_id' => 'nullable|string',
-            'personal_info' => 'nullable|array',
+            'category_id' => 'required|exists:categories,id',
+            'subcategory_id' => 'required|exists:categories,id',
+            'personal_info' => 'required|array',
+            'personal_info.name' => 'required|string',
             'contact_buttons' => 'nullable|array',
             'social_links' => 'nullable|array',
             'custom_links' => 'nullable|array',
@@ -49,6 +53,8 @@ class BusinessCardController extends Controller
             'user_id' => auth()->id(),
             'slug' => $validated['slug'],
             'template_id' => $validated['template_id'] ?? null,
+            'category_id' => $validated['category_id'],
+            'subcategory_id' => $validated['subcategory_id'],
             'status' => 'active',
             'personal_info' => $validated['personal_info'] ?? [],
             'contact_buttons' => $validated['contact_buttons'] ?? [],
@@ -66,7 +72,7 @@ class BusinessCardController extends Controller
 
         return response()->json([
             'message' => 'Business card created successfully',
-            'card' => $card
+            'card' => $card->load(['category', 'subcategory'])
         ], 201);
     }
 
@@ -75,7 +81,8 @@ class BusinessCardController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $card = BusinessCard::where('user_id', auth()->id())
+        $card = BusinessCard::with(['category', 'subcategory'])
+            ->where('user_id', auth()->id())
             ->where('id', $id)
             ->firstOrFail();
 
@@ -97,7 +104,10 @@ class BusinessCardController extends Controller
             'slug' => 'nullable|string|unique:business_cards,slug,' . $id,
             'template_id' => 'nullable|string',
             'status' => 'nullable|string|in:active,inactive',
-            'personal_info' => 'nullable|array',
+            'category_id' => 'required|exists:categories,id',
+            'subcategory_id' => 'required|exists:categories,id',
+            'personal_info' => 'required|array',
+            'personal_info.name' => 'required|string',
             'contact_buttons' => 'nullable|array',
             'social_links' => 'nullable|array',
             'custom_links' => 'nullable|array',
@@ -110,11 +120,11 @@ class BusinessCardController extends Controller
             'seo_metadata' => 'nullable|array',
         ]);
 
-        $card->update(array_filter($validated));
+        $card->update($validated);
 
         return response()->json([
             'message' => 'Business card updated successfully',
-            'card' => $card
+            'card' => $card->load(['category', 'subcategory'])
         ]);
     }
 
@@ -139,7 +149,8 @@ class BusinessCardController extends Controller
      */
     public function showPublic(string $slug): JsonResponse
     {
-        $card = BusinessCard::where('slug', $slug)
+        $card = BusinessCard::with(['category', 'subcategory'])
+            ->where('slug', $slug)
             ->where('status', 'active')
             ->firstOrFail();
 

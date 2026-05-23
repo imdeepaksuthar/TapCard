@@ -14,6 +14,8 @@ class BusinessCard extends Model
         'slug',
         'template_id',
         'status',
+        'category_id',
+        'subcategory_id',
         'profile_image',
         'company_logo',
         'brochure_path',
@@ -44,7 +46,25 @@ class BusinessCard extends Model
         'custom_branding' => 'array',
         'seo_metadata' => 'array',
         'views_count' => 'integer',
+        'category_id' => 'integer',
+        'subcategory_id' => 'integer',
     ];
+
+    /**
+     * Get the category for the card.
+     */
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    /**
+     * Get the subcategory for the card.
+     */
+    public function subcategory()
+    {
+        return $this->belongsTo(Category::class, 'subcategory_id');
+    }
 
     /**
      * Get the user that owns the business card.

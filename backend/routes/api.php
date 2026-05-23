@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BusinessCardController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\SocialAuthController;
+use App\Http\Controllers\Api\OTPAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +19,7 @@ use App\Http\Controllers\Api\ProductController;
 | routes are loaded by the RouteServiceProvider within a group which
 | is assigned the "api" middleware group. Enjoy building your API!
 |
+|
 */
 
 // Public routes
@@ -23,6 +27,18 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
     ->name('verification.verify');
+
+// Forgot Password routes
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+
+// Google OAuth routes
+Route::get('/auth/google/redirect', [SocialAuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
+
+// Email OTP routes
+Route::post('/auth/otp/send', [OTPAuthController::class, 'sendOTP']);
+Route::post('/auth/otp/login', [OTPAuthController::class, 'loginWithOTP']);
 
 // Public Profile Fetch by Slug
 Route::get('/cards/public/{slug}', [BusinessCardController::class, 'showPublic']);
@@ -33,6 +49,12 @@ Route::post('/leads', [LeadController::class, 'store']);
 
 // Public Products Listing
 Route::get('/products', [ProductController::class, 'index']);
+
+// Public Categories Listing
+Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+
+// Homepage Stats
+Route::get('/homepage-stats', [\App\Http\Controllers\Api\PublicController::class, 'homepageStats']);
 
 // Order Checkout Endpoint
 Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store']);

@@ -47,5 +47,8 @@ class DatabaseSeeder extends Seeder
                 'status' => 'active',
             ]
         );
+
+        // Call Category Seeder
+        $this->call(CategorySeeder::class);
     }
 }
