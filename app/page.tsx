@@ -3,12 +3,13 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import Header from './components/Header';
-import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, Palette, CheckCircle2, QrCode, Contact, Share2 } from 'lucide-react';
+import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, Palette, CheckCircle2, QrCode, Contact, Share2, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../lib/api';
 
 export default function Home() {
   const [stats, setStats] = useState({ users: 0, cards: 0 });
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const { scrollYProgress } = useScroll();
   const yHero = useTransform(scrollYProgress, [0, 1], [0, 300]);
   const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
@@ -71,10 +72,13 @@ export default function Home() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-20 md:pt-32 md:pb-32 px-6 flex flex-col items-center justify-center text-center min-h-screen overflow-hidden">
+      <section className="relative pt-24 pb-32 md:pt-32 md:pb-40 px-6 flex flex-col items-center justify-center text-center min-h-screen overflow-hidden">
         
+        {/* Animated Background Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+
         {/* Apple-style subtle background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none" />
 
         <motion.div 
           style={{ y: yHero, opacity: opacityHero }}
@@ -116,9 +120,9 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto z-20"
           >
-            <Link href="/register" className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+            <Link href="/register" className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.3)]">
               Get Started Free
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -126,11 +130,51 @@ export default function Home() {
               Sign In
             </Link>
           </motion.div>
+
+          {/* Premium Floating Card Mockup */}
+          <motion.div
+            initial={{ opacity: 0, y: 100, rotateX: 20 }}
+            animate={{ opacity: 1, y: 0, rotateX: 0 }}
+            transition={{ duration: 1.2, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-20 relative w-[300px] sm:w-[480px] aspect-[1.586] rounded-3xl border border-white/20 shadow-2xl z-10"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))',
+              backdropFilter: 'blur(24px)',
+              transformStyle: 'preserve-3d',
+              perspective: '1200px'
+            }}
+          >
+             <motion.div
+               animate={{ y: [-15, 15, -15], rotateY: [-5, 5, -5], rotateX: [2, -2, 2] }}
+               transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+               className="w-full h-full p-8 flex flex-col justify-between relative z-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blend-overlay"
+             >
+                <div className="flex justify-between items-start">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <Smartphone className="text-white w-7 h-7" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10"><Contact size={14} className="text-white/70" /></div>
+                    <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10"><Share2 size={14} className="text-white/70" /></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="w-3/4 h-8 bg-white/30 rounded-lg mb-4" />
+                  <div className="w-1/2 h-5 bg-white/20 rounded-md" />
+                </div>
+             </motion.div>
+             {/* Dynamic Glow behind card */}
+             <motion.div 
+               animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.05, 1] }}
+               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+               className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-[2.5rem] blur-3xl opacity-40 -z-10" 
+             />
+          </motion.div>
         </motion.div>
       </section>
 
       {/* Bento Grid Features */}
-      <section className="relative z-10 py-32 px-6">
+      <section id="features" className="relative z-10 py-32 px-6">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -169,7 +213,7 @@ export default function Home() {
       </section>
 
       {/* Sticky Step Section */}
-      <section className="relative bg-zinc-950 py-32 px-6 border-t border-zinc-900">
+      <section id="how-it-works" className="relative bg-zinc-950 py-32 px-6 border-t border-zinc-900">
         <div className="max-w-6xl mx-auto">
           <motion.h2 
             initial={{ opacity: 0, y: 40 }}
@@ -221,6 +265,122 @@ export default function Home() {
         </div>
       </section>
 
+
+      {/* Pricing Section */}
+      <section id="pricing" className="relative z-10 py-32 px-6 bg-black border-t border-zinc-900">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="text-center mb-20"
+          >
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Simple, transparent <br/> <span className="text-zinc-500">pricing.</span></h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Free */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 flex flex-col"
+            >
+              <h3 className="text-xl font-semibold mb-2">Starter</h3>
+              <p className="text-zinc-400 mb-6 text-sm">Perfect for individuals starting out.</p>
+              <div className="text-4xl font-bold mb-8">Free</div>
+              <ul className="space-y-4 mb-8 flex-grow text-zinc-300 text-sm">
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> 1 Digital Business Card</li>
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Basic Analytics</li>
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Standard Templates</li>
+              </ul>
+              <Link href="/register" className="block text-center w-full py-3 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-medium">Get Started</Link>
+            </motion.div>
+
+            {/* Pro */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="bg-gradient-to-b from-blue-900/20 to-zinc-900 border border-blue-500/30 rounded-3xl p-8 flex flex-col relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>
+              <h3 className="text-xl font-semibold mb-2">Pro</h3>
+              <p className="text-zinc-400 mb-6 text-sm">For active professionals.</p>
+              <div className="text-4xl font-bold mb-8">$5<span className="text-lg text-zinc-500 font-normal">/mo</span></div>
+              <ul className="space-y-4 mb-8 flex-grow text-zinc-300 text-sm">
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Unlimited Cards</li>
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Advanced Analytics</li>
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Custom NFC Programming</li>
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Lead Capture</li>
+              </ul>
+              <Link href="/register" className="block text-center w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors font-medium">Upgrade to Pro</Link>
+            </motion.div>
+
+            {/* Enterprise */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 flex flex-col"
+            >
+              <h3 className="text-xl font-semibold mb-2">Enterprise</h3>
+              <p className="text-zinc-400 mb-6 text-sm">For teams and companies.</p>
+              <div className="text-4xl font-bold mb-8">Custom</div>
+              <ul className="space-y-4 mb-8 flex-grow text-zinc-300 text-sm">
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Team Management</li>
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Centralized Billing</li>
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> CRM Integrations</li>
+                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Dedicated Manager</li>
+              </ul>
+              <Link href="/contact" className="block text-center w-full py-3 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-medium">Contact Sales</Link>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="relative z-10 py-32 px-6 bg-zinc-950 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">Frequently Asked Questions</h2>
+            <p className="text-zinc-400">Everything you need to know about the product and billing.</p>
+          </motion.div>
+
+          <div className="space-y-4">
+            {[
+              { q: 'How does the NFC card work?', a: 'Our NFC cards contain a tiny microchip that sends your digital profile link to any modern smartphone when tapped against it. No app is required by the receiver.' },
+              { q: 'Can I update my info after sharing?', a: 'Yes! Your card links to your digital profile. Any updates you make in your dashboard are instantly reflected for anyone who has your link or taps your card.' },
+              { q: 'Is there a monthly fee?', a: 'The basic digital profile is 100% free forever. We offer a Pro plan for $5/month that includes advanced analytics, custom colors, and lead capture features.' },
+              { q: 'What if they don\'t have NFC?', a: 'Every digital profile comes with a dynamic QR code. You can have them scan the QR code from your phone screen or print it on physical marketing materials.' }
+            ].map((faq, i) => (
+              <div key={i} className="bg-black border border-zinc-800 rounded-2xl overflow-hidden transition-all duration-300 hover:border-zinc-700">
+                <button 
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full text-left px-6 py-5 font-medium flex justify-between items-center focus:outline-none"
+                >
+                  <span className="pr-4">{faq.q}</span>
+                  <ChevronDown className={`transform transition-transform duration-300 text-zinc-500 ${openFaq === i ? 'rotate-180' : ''}`} size={20} />
+                </button>
+                <div className={`px-6 pb-5 text-zinc-400 text-sm overflow-hidden transition-all duration-300 ${openFaq === i ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 pb-0'}`}>
+                  {faq.a}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Premium CTA */}
       <section className="relative z-10 py-40 px-6 text-center overflow-hidden">
         {/* Background glow for CTA */}
@@ -246,9 +406,51 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Minimal Footer */}
-      <footer className="border-t border-zinc-900 bg-black py-12 px-6 text-center text-zinc-600 text-sm font-medium">
-        <p>&copy; {new Date().getFullYear()} Card Setu. Crafted for the modern professional.</p>
+
+      {/* Comprehensive Footer */}
+      <footer className="border-t border-zinc-900 bg-black pt-24 pb-12 px-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-12 mb-16">
+          <div className="col-span-2">
+            <img src="/logo-dark.png" alt="Card Setu" className="h-8 mb-6" />
+            <p className="text-zinc-400 text-sm max-w-sm mb-6 leading-relaxed">
+              The premium digital business card for modern professionals. Networking reimagined with a single tap.
+            </p>
+          </div>
+          <div>
+            <h4 className="text-white font-semibold mb-6">Product</h4>
+            <ul className="space-y-4 text-sm text-zinc-400">
+              <li><Link href="#features" className="hover:text-white transition-colors">Features</Link></li>
+              <li><Link href="#how-it-works" className="hover:text-white transition-colors">How it Works</Link></li>
+              <li><Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+              <li><Link href="#faq" className="hover:text-white transition-colors">FAQ</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-white font-semibold mb-6">Company</h4>
+            <ul className="space-y-4 text-sm text-zinc-400">
+              <li><Link href="#" className="hover:text-white transition-colors">About Us</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Contact</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Blog</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-white font-semibold mb-6">Legal</h4>
+            <ul className="space-y-4 text-sm text-zinc-400">
+              <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Refund Policy</Link></li>
+            </ul>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto border-t border-zinc-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-zinc-600 text-sm font-medium">
+          <p>&copy; {new Date().getFullYear()} Card Setu. All rights reserved.</p>
+          <div className="flex gap-4">
+            <Link href="#" className="hover:text-zinc-400 transition-colors">Twitter</Link>
+            <Link href="#" className="hover:text-zinc-400 transition-colors">LinkedIn</Link>
+            <Link href="#" className="hover:text-zinc-400 transition-colors">Instagram</Link>
+          </div>
+        </div>
       </footer>
     </main>
   );

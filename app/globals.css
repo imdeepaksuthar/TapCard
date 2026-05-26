@@ -4,3 +4,7 @@
   --color-blue-600: #2563eb;
   --color-indigo-700: #4338ca;
 }
+
+html {
+  scroll-behavior: smooth;
+}

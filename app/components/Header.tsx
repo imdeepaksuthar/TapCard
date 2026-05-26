@@ -9,13 +9,36 @@ import { useState, useEffect } from 'react';
 export default function Header() {
   const { user, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
 
   useEffect(() => {
+    // 1. Simple passive scroll listener for the header background
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    // Initial check
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    // 2. Performant Intersection Observer for Scroll Spy
+    const sections = ['features', 'how-it-works', 'pricing', 'faq'];
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    }, {
+      rootMargin: '-40% 0px -40% 0px', // Triggers when section is near the middle
+      threshold: 0
+    });
+
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    };
   }, []);
 
   return (
@@ -33,6 +56,29 @@ export default function Header() {
         >
           <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 sm:h-10 w-auto" />
         </Link>
+
+        {/* Navigation Links */}
+        <nav className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1 backdrop-blur-md">
+          {[
+            { id: 'features', label: 'Features' },
+            { id: 'how-it-works', label: 'How it Works' },
+            { id: 'pricing', label: 'Pricing' },
+            { id: 'faq', label: 'FAQ' },
+          ].map((item) => (
+            <Link 
+              key={item.id} 
+              href={`#${item.id}`} 
+              className={`text-sm font-medium transition-all duration-300 px-4 py-1.5 rounded-full ${
+                activeSection === item.id 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
         <div className="flex gap-4 items-center">
           {user ? (
             <div className="flex items-center gap-3 sm:gap-4">
