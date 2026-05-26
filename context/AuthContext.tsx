@@ -91,8 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(payload),
     });
     
-    // Registration now requires email verification before login
-    router.push('/verify-email?email=' + encodeURIComponent(payload.email));
+    // Registration successful: redirect to login page with verification options
+    router.push('/login?email=' + encodeURIComponent(payload.email) + '&registered=true');
   };
 
   const logout = async () => {

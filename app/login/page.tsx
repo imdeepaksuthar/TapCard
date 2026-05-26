@@ -2,14 +2,17 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../lib/api';
 
 export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const { login } = useAuth();
@@ -27,7 +30,17 @@ export default function Login() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const err = params.get('error');
-      if (err) {
+      const registered = params.get('registered');
+      const emailParam = params.get('email');
+      
+      if (emailParam) {
+        setEmail(decodeURIComponent(emailParam));
+      }
+      
+      if (registered === 'true') {
+        setSuccessMessage("Registration successful! We've sent a verification email to your address. Please check your inbox and click the link to activate your account.");
+        setNeedsVerification(true);
+      } else if (err) {
         setError(err);
       }
     }
@@ -103,12 +116,14 @@ export default function Login() {
 
   const handleResendVerification = async () => {
     setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
     try {
       await apiFetch('/api/email/verification-notification', {
         method: 'POST',
         body: JSON.stringify({ email })
       });
-      setError('Verification link sent! Please check your email.');
+      setSuccessMessage('Verification link sent! Please check your email.');
       setNeedsVerification(false);
     } catch (err: any) {
       setError(err.message || 'Failed to resend email.');
@@ -123,6 +138,7 @@ export default function Login() {
       return;
     }
     setError('');
+    setSuccessMessage('');
     setOtpLoading(true);
     try {
       await apiFetch<{ message: string }>('/api/auth/otp/send', {
@@ -141,6 +157,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
 
     if (loginMethod === 'otp' && !otpSent) {
       handleSendOTP();
@@ -168,8 +185,11 @@ export default function Login() {
         window.location.href = '/dashboard';
       }
     } catch (err: any) {
-      if (err.data?.needs_verification) {
-        setError(err.message);
+      const isVerificationPending = err.data?.needs_verification || 
+                                    err.message?.toLowerCase().includes('verify');
+      
+      if (isVerificationPending) {
+        setError(err.message || 'Please verify your email address to log in.');
         setNeedsVerification(true);
       } else {
         setError(err.message || 'Authentication failed. Please try again.');
@@ -284,9 +304,59 @@ export default function Login() {
           }}>
             <h2 style={{ fontSize: '20px', fontWeight: 700, textAlign: 'center', marginBottom: '28px', color: '#ffffff' }}>Sign In</h2>
 
+            {successMessage && (
+              <div style={{ marginBottom: '20px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', color: '#a7f3d0', fontSize: '13px', textAlign: 'center' }}>
+                <div>{successMessage}</div>
+                {needsVerification && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={isLoading}
+                    style={{
+                      marginTop: '12px',
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      padding: '8px 16px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      width: '100%',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                    }}
+                  >
+                    {isLoading ? 'Resending...' : 'Resend Verification Email'}
+                  </button>
+                )}
+              </div>
+            )}
+
             {error && (
               <div style={{ marginBottom: '20px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#fca5a5', fontSize: '13px', textAlign: 'center' }}>
-                {error}
+                <div>{error}</div>
+                {needsVerification && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={isLoading}
+                    style={{
+                      marginTop: '12px',
+                      background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      padding: '8px 16px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      width: '100%',
+                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                    }}
+                  >
+                    {isLoading ? 'Resending...' : 'Resend Verification Email'}
+                  </button>
+                )}
               </div>
             )}
 

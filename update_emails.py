@@ -165,6 +165,16 @@ contents = {
             <div class="btn-wrapper">
                 <a href="{{ env('FRONTEND_URL', 'http://127.0.0.1:3000') }}/dashboard/leads" class="btn">View All Leads</a>
             </div>
+""",
+    r'c:\laragon\www\TapCard\backend\resources\views\emails\verify_email.blade.php': """
+            <h1>Verify your email</h1>
+            <p>Hi {{ $userName }},</p>
+            <p>Thank you for creating an account with Card Setu. Please click the button below to verify your email address and activate your account.</p>
+            <div class="btn-wrapper">
+                <a href="{{ $verifyUrl }}" class="btn" target="_blank">Verify Email Address</a>
+            </div>
+            <p>If you did not create an account, no further action is required.</p>
+            <p class="footer-text" style="text-align:left;">If you're having trouble clicking the button, copy and paste this URL into your browser:<br><a href="{{ $verifyUrl }}">{{ $verifyUrl }}</a></p>
 """
 }
 

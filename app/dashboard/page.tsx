@@ -17,8 +17,20 @@ export default function Dashboard() {
     profileViews: 0,
   });
 
+  const [cards, setCards] = useState<any[]>([]);
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Modal & Action states
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isScanOpen, setIsScanOpen] = useState(false);
+  const [qrCopied, setQrCopied] = useState(false);
+
+  // Lead Simulator states
+  const [simulatorData, setSimulatorData] = useState({ name: '', email: '', phone: '', message: '' });
+  const [simulatorLoading, setSimulatorLoading] = useState(false);
+  const [simulatorSuccess, setSimulatorSuccess] = useState(false);
+  const [simulatorError, setSimulatorError] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -30,12 +42,14 @@ export default function Dashboard() {
           apiFetch<{ leads: any[] }>('/api/leads')
         ]);
 
-        const cards = cardsRes.cards || [];
+        const fetchedCards = cardsRes.cards || [];
         const leads = leadsRes.leads || [];
 
-        const totalCards = cards.length;
-        const activeCards = cards.filter((c: any) => c.status === 'active').length;
-        const profileViews = cards.reduce((sum: number, c: any) => sum + (c.views_count || 0), 0);
+        setCards(fetchedCards);
+
+        const totalCards = fetchedCards.length;
+        const activeCards = fetchedCards.filter((c: any) => c.status === 'active').length;
+        const profileViews = fetchedCards.reduce((sum: number, c: any) => sum + (c.views_count || 0), 0);
         const totalLeads = leads.length;
 
         setStats({
@@ -56,6 +70,106 @@ export default function Dashboard() {
 
     fetchDashboardData();
   }, [user]);
+
+  const handleExportLeads = async () => {
+    try {
+      const res = await apiFetch<{ leads: any[] }>('/api/leads');
+      const leads = res.leads || [];
+      if (leads.length === 0) {
+        alert('No leads available to export.');
+        return;
+      }
+      
+      // Generate CSV
+      const headers = ['Name', 'Email', 'Phone', 'Message', 'Date'];
+      const rows = leads.map(lead => [
+        `"${(lead.name || '').replace(/"/g, '""')}"`,
+        `"${(lead.email || '').replace(/"/g, '""')}"`,
+        `"${(lead.phone || '').replace(/"/g, '""')}"`,
+        `"${(lead.message || '').replace(/"/g, '""')}"`,
+        `"${new Date(lead.created_at).toLocaleDateString()}"`
+      ]);
+      
+      const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "leads_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Failed to export leads:', err);
+      alert('Failed to export leads. Please try again.');
+    }
+  };
+
+  const handleSimulateLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSimulatorError('');
+    setSimulatorLoading(true);
+
+    if (!simulatorData.name.trim()) {
+      setSimulatorError('Please enter a name.');
+      setSimulatorLoading(false);
+      return;
+    }
+    if (!simulatorData.email.trim() && !simulatorData.phone.trim()) {
+      setSimulatorError('Please provide either an email or a phone number.');
+      setSimulatorLoading(false);
+      return;
+    }
+
+    try {
+      const firstCard = cards[0];
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          name: simulatorData.name,
+          email: simulatorData.email,
+          phone: simulatorData.phone,
+          message: simulatorData.message || 'Simulated lead scan',
+          card_id: firstCard.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.message || 'Failed to submit simulated lead.');
+      }
+
+      setSimulatorSuccess(true);
+      setSimulatorData({ name: '', email: '', phone: '', message: '' });
+
+      // Refresh dashboard data instantly
+      const [cardsRes, leadsRes] = await Promise.all([
+        apiFetch<{ cards: any[] }>('/api/cards'),
+        apiFetch<{ leads: any[] }>('/api/leads')
+      ]);
+
+      const updatedCards = cardsRes.cards || [];
+      const updatedLeads = leadsRes.leads || [];
+
+      setStats({
+        totalCards: updatedCards.length,
+        activeCards: updatedCards.filter((c: any) => c.status === 'active').length,
+        profileViews: updatedCards.reduce((sum: number, c: any) => sum + (c.views_count || 0), 0),
+        totalLeads: updatedLeads.length,
+      });
+      setRecentLeads(updatedLeads.slice(0, 5));
+
+    } catch (err: any) {
+      setSimulatorError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setSimulatorLoading(false);
+    }
+  };
 
   if (!user) return null; // Handled by layout/middleware
 
@@ -151,12 +265,222 @@ export default function Dashboard() {
         <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6">
           <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <QuickActionButton icon="qr" title="Share QR Code" description="Show your card QR" />
-            <QuickActionButton icon="scan" title="Scan Card" description="Capture new lead" />
-            <QuickActionButton icon="export" title="Export Leads" description="Download as CSV" />
+            <QuickActionButton 
+              icon="qr" 
+              title="Share QR Code" 
+              description="Show your card QR" 
+              onClick={() => {
+                if (cards.length === 0) {
+                  alert('Please create a business card first!');
+                  return;
+                }
+                setIsQrOpen(true);
+              }}
+            />
+            <QuickActionButton 
+              icon="scan" 
+              title="Scan Card" 
+              description="Capture new lead" 
+              onClick={() => {
+                if (cards.length === 0) {
+                  alert('Please create a business card first!');
+                  return;
+                }
+                setIsScanOpen(true);
+                setSimulatorSuccess(false);
+                setSimulatorError('');
+              }}
+            />
+            <QuickActionButton 
+              icon="export" 
+              title="Export Leads" 
+              description="Download as CSV" 
+              onClick={handleExportLeads}
+            />
           </div>
         </div>
       </div>
+
+      {/* Share QR Code Modal */}
+      {isQrOpen && cards[0] && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-[#090f1e] border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center"
+          >
+            <button 
+              onClick={() => setIsQrOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+            <h3 className="text-xl font-bold mb-2">Share Your Card</h3>
+            <p className="text-sm text-gray-400 mb-6">Scan the QR code below to view your digital business card.</p>
+            
+            <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-inner">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/c/${cards[0].slug}`)}`} 
+                alt="Card QR Code" 
+                className="w-48 h-48"
+              />
+            </div>
+
+            <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between gap-3 mb-6">
+              <span className="text-xs text-gray-300 truncate select-all">{`${typeof window !== 'undefined' ? window.location.origin : ''}/c/${cards[0].slug}`}</span>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/c/${cards[0].slug}`);
+                  setQrCopied(true);
+                  setTimeout(() => setQrCopied(false), 2000);
+                }}
+                className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold py-1.5 px-3 rounded-lg transition-colors whitespace-nowrap"
+              >
+                {qrCopied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+
+            <a 
+              href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/c/${cards[0].slug}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              download="card_qr.png"
+              className="w-full block bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-3 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20"
+            >
+              Download QR Image
+            </a>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Scan Card / Lead Simulator Modal */}
+      {isScanOpen && cards[0] && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-[#090f1e] border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl"
+          >
+            <button 
+              onClick={() => setIsScanOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+            
+            <h3 className="text-xl font-bold mb-2">Scan Business Card</h3>
+            <p className="text-sm text-gray-400 mb-6">Simulate a high-tech NFC tap or QR scan to capture a lead instantly.</p>
+
+            {simulatorSuccess ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-green-500/20 border border-green-500/30 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+                <h4 className="text-lg font-semibold text-green-400 mb-1">Lead Captured Successfully!</h4>
+                <p className="text-sm text-gray-400 mb-6">The simulated lead was added to your profile.</p>
+                <button 
+                  onClick={() => setSimulatorSuccess(false)}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold py-2.5 px-5 rounded-xl transition-all w-full"
+                >
+                  Capture Another Lead
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSimulateLeadSubmit} className="space-y-4">
+                {/* High-tech scanner simulation visualization */}
+                <div className="relative h-28 bg-[#040812] border border-white/5 rounded-2xl overflow-hidden flex items-center justify-center mb-4">
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-500 shadow-[0_0_10px_#3b82f6] animate-[pulse_1.5s_infinite]" style={{ animationName: 'scanLine' }} />
+                  <style>{`
+                    @keyframes scanLine {
+                      0% { top: 0%; }
+                      50% { top: 100%; }
+                      100% { top: 0%; }
+                    }
+                  `}</style>
+                  <svg className="w-10 h-10 text-blue-500/40 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 4h3m-9-4h3m-3 4h3m-6-4h3m-3 4h3m-3 4h3m-3-12h3m-3 4h3m-3 4h3m-3-12h3m-3 4h3m-3 4h3"></path>
+                  </svg>
+                  <span className="absolute bottom-2 text-[10px] text-blue-500/60 font-semibold tracking-wider uppercase">READY FOR DEVICE TAP...</span>
+                </div>
+
+                {simulatorError && (
+                  <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-xl text-center">
+                    {simulatorError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Full Name</label>
+                  <input 
+                    type="text" 
+                    required 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
+                    placeholder="Enter name"
+                    value={simulatorData.name}
+                    onChange={e => setSimulatorData({ ...simulatorData, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Email</label>
+                    <input 
+                      type="email" 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
+                      placeholder="Email Address"
+                      value={simulatorData.email}
+                      onChange={e => setSimulatorData({ ...simulatorData, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Phone</label>
+                    <input 
+                      type="tel" 
+                      required 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
+                      placeholder="Phone number"
+                      value={simulatorData.phone}
+                      onChange={e => setSimulatorData({ ...simulatorData, phone: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Message / Note</label>
+                  <textarea 
+                    rows={2} 
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors resize-none"
+                    placeholder="Simulated inquiry note..."
+                    value={simulatorData.message}
+                    onChange={e => setSimulatorData({ ...simulatorData, message: e.target.value })}
+                  />
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={simulatorLoading}
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-3 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                >
+                  {simulatorLoading ? (
+                    <>
+                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                      Capturing...
+                    </>
+                  ) : (
+                    'Simulate Successful Scan'
+                  )}
+                </button>
+              </form>
+            )}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
@@ -234,11 +558,15 @@ interface QuickActionButtonProps {
   icon: string;
   title: string;
   description: string;
+  onClick?: () => void;
 }
 
-function QuickActionButton({ icon, title, description }: QuickActionButtonProps) {
+function QuickActionButton({ icon, title, description, onClick }: QuickActionButtonProps) {
   return (
-    <button className="w-full bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-4 flex items-center gap-4 transition-all duration-300 group">
+    <button 
+      onClick={onClick}
+      className="w-full bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-4 flex items-center gap-4 transition-all duration-300 group"
+    >
       <div className="w-10 h-10 bg-white/5 group-hover:bg-blue-500/20 rounded-lg flex items-center justify-center transition-all duration-300">
         <QuickActionIcon name={icon} />
       </div>

@@ -28,5 +28,14 @@ class AppServiceProvider extends ServiceProvider
             
             return "{$frontendUrl}/verify-email/{$id}/{$hash}";
         });
+
+        VerifyEmail::toMailUsing(function ($notifiable, $url) {
+            return (new \Illuminate\Notifications\Messages\MailMessage)
+                ->subject('Verify Email Address - Card Setu')
+                ->view('emails.verify_email', [
+                    'userName' => $notifiable->name,
+                    'verifyUrl' => $url,
+                ]);
+        });
     }
 }
