@@ -86,13 +86,16 @@ export default function Home() {
     <main className="relative min-h-screen bg-black text-white selection:bg-blue-500/30 font-sans overflow-x-hidden">
       <Header />
 
-      {/* Fixed scroll-driven 3D scene — sits behind hero, naturally hidden when later sections (with solid backgrounds) scroll over it */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      {/* Fixed scroll-driven 3D scene — sits behind hero, naturally hidden when later sections scroll over it */}
+      <div 
+        className="fixed inset-0 z-0 pointer-events-none transition-opacity duration-300"
+        style={{ opacity: heroProgress >= 1 ? 0 : 1 }}
+      >
         <Scene3D scrollProgress={heroProgress} />
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-32 md:pt-32 md:pb-40 px-6 flex flex-col items-center justify-center text-center min-h-screen overflow-hidden">
+      <section className="relative pt-24 pb-32 md:pt-32 md:pb-40 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between min-h-screen overflow-hidden">
 
         {/* Animated Background Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
@@ -102,57 +105,63 @@ export default function Home() {
 
         <motion.div 
           style={{ y: yHero, opacity: opacityHero }}
-          className="relative z-10 flex flex-col items-center"
+          className="relative z-10 flex flex-col lg:flex-row items-center justify-between w-full gap-12"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 px-4 py-2 rounded-full text-xs font-semibold tracking-wide text-zinc-300 mb-8 backdrop-blur-xl"
-          >
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            INTRODUCING THE FUTURE OF NETWORKING
-          </motion.div>
+          {/* Left Text Content */}
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:w-1/2">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="inline-flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 px-4 py-2 rounded-full text-xs font-semibold tracking-wide text-zinc-300 mb-8 backdrop-blur-xl"
+            >
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              </span>
+              INTRODUCING THE FUTURE OF NETWORKING
+            </motion.div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-6xl md:text-8xl lg:text-[7rem] font-bold tracking-tighter mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 leading-[1.1]"
-          >
-            Networking. <br className="hidden md:block"/>
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Reimagined.</span>
-          </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="text-5xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tighter mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 leading-[1.05]"
+            >
+              Networking. <br className="hidden lg:block"/>
+              <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Reimagined.</span>
+            </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="text-xl md:text-2xl text-zinc-400 max-w-2xl mb-12 font-medium tracking-tight"
-          >
-            The premium digital business card for modern professionals. Share your identity with a single tap.
-          </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="text-lg md:text-xl text-zinc-400 max-w-xl mb-10 font-medium tracking-tight leading-relaxed"
+            >
+              The premium digital business card for modern professionals. Share your identity with a single tap.
+            </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto z-20"
-          >
-            <Link href="/register" className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.3)]">
-              Get Started Free
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link href="/login" className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 px-8 py-4 rounded-full font-semibold text-white transition-colors flex items-center justify-center">
-              Sign In
-            </Link>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto z-20 justify-center lg:justify-start"
+            >
+              <Link href="/register" className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.25)]">
+                Get Started Free
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link href="/login" className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 px-8 py-4 rounded-full font-semibold text-white transition-colors flex items-center justify-center">
+                Sign In
+              </Link>
+            </motion.div>
+          </div>
 
-          {/* Spacer to push scroll-cue down — the real 3D card lives in the fixed canvas behind */}
-          <div className="mt-20 h-[320px] sm:h-[420px] pointer-events-none" />
+          {/* Right Spacer Column (NFC Card shifts right on desktop, rendering here) */}
+          <div className="hidden lg:block lg:w-1/2 h-[450px] pointer-events-none" />
+
+          {/* Mobile Spacer (for centered card below text) */}
+          <div className="mt-12 h-[260px] sm:h-[320px] lg:hidden pointer-events-none" />
         </motion.div>
 
         {/* Scroll cue */}

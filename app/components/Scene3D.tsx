@@ -7,7 +7,7 @@ import {
   Float,
   RoundedBox,
 } from '@react-three/drei';
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 interface Scene3DProps {
@@ -18,6 +18,21 @@ function NFCCard({ scrollProgress }: { scrollProgress: number }) {
   const groupRef = useRef<THREE.Group>(null!);
   const mouseRef = useRef({ x: 0, y: 0 });
   const progressRef = useRef(0);
+  const [screenSize, setScreenSize] = useState({ isMobile: false, isTablet: false, isDesktop: false });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const w = window.innerWidth;
+      setScreenSize({
+        isMobile: w < 640,
+        isTablet: w >= 640 && w < 1024,
+        isDesktop: w >= 1024,
+      });
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -38,11 +53,30 @@ function NFCCard({ scrollProgress }: { scrollProgress: number }) {
     if (!groupRef.current) return;
     const p = progressRef.current;
 
+    // Shift to the right (X = 1.3) on desktop when p = 0, and transition to center as scrolled
+    const targetPosX = screenSize.isDesktop ? 1.3 - p * 1.3 : 0;
     const targetRotY = p * Math.PI * 2.4 + mouseRef.current.x * 0.35;
     const targetRotX = -p * 0.45 + mouseRef.current.y * 0.22;
-    const targetPosY = -p * 1.8;
-    const targetScale = 1 - p * 0.18;
+    
+    // Shift card down on mobile/tablet so it sits perfectly in the spacer below text/buttons
+    let targetPosY = -p * 1.8;
+    if (!screenSize.isDesktop) {
+      targetPosY = -0.5 - p * 1.3;
+    }
 
+    let baseScale = 1.0;
+    if (screenSize.isMobile) {
+      baseScale = 0.46; // Perfectly fits mobile aspect ratios without clipping
+    } else if (screenSize.isTablet) {
+      baseScale = 0.65; // Tablet fit
+    }
+    const targetScale = baseScale * (1 - p * 0.18);
+
+    groupRef.current.position.x = THREE.MathUtils.lerp(
+      groupRef.current.position.x,
+      targetPosX,
+      0.07,
+    );
     groupRef.current.rotation.y = THREE.MathUtils.lerp(
       groupRef.current.rotation.y,
       targetRotY,
