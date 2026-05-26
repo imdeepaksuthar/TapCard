@@ -2,8 +2,9 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
-export default function VerifyEmailPrompt() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || 'your email';
 
@@ -40,5 +41,24 @@ export default function VerifyEmailPrompt() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPrompt() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        background: '#060d1f',
+        minHeight: '100vh',
+        color: '#ffffff',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        Loading...
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

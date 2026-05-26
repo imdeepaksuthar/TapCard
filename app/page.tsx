@@ -2,14 +2,18 @@
 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import Header from './components/Header';
 import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, Palette, CheckCircle2, QrCode, Contact, Share2, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../lib/api';
 
+const Scene3D = dynamic(() => import('./components/Scene3D'), { ssr: false });
+
 export default function Home() {
   const [stats, setStats] = useState({ users: 0, cards: 0 });
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [heroProgress, setHeroProgress] = useState(0);
   const { scrollYProgress } = useScroll();
   const yHero = useTransform(scrollYProgress, [0, 1], [0, 300]);
   const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
@@ -24,6 +28,17 @@ export default function Home() {
       }
     };
     fetchStats();
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const heroH = window.innerHeight || 1;
+      const p = Math.min(1, Math.max(0, window.scrollY / heroH));
+      setHeroProgress(p);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const bentoFeatures = [
@@ -71,9 +86,14 @@ export default function Home() {
     <main className="relative min-h-screen bg-black text-white selection:bg-blue-500/30 font-sans overflow-x-hidden">
       <Header />
 
+      {/* Fixed scroll-driven 3D scene — sits behind hero, naturally hidden when later sections (with solid backgrounds) scroll over it */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <Scene3D scrollProgress={heroProgress} />
+      </div>
+
       {/* Hero Section */}
       <section className="relative pt-24 pb-32 md:pt-32 md:pb-40 px-6 flex flex-col items-center justify-center text-center min-h-screen overflow-hidden">
-        
+
         {/* Animated Background Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
@@ -131,45 +151,23 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          {/* Premium Floating Card Mockup */}
+          {/* Spacer to push scroll-cue down — the real 3D card lives in the fixed canvas behind */}
+          <div className="mt-20 h-[320px] sm:h-[420px] pointer-events-none" />
+        </motion.div>
+
+        {/* Scroll cue */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.4, duration: 1 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-500 text-[10px] tracking-[0.3em] font-semibold z-10"
+        >
+          <span>SCROLL TO EXPLORE</span>
           <motion.div
-            initial={{ opacity: 0, y: 100, rotateX: 20 }}
-            animate={{ opacity: 1, y: 0, rotateX: 0 }}
-            transition={{ duration: 1.2, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-20 relative w-[300px] sm:w-[480px] aspect-[1.586] rounded-3xl border border-white/20 shadow-2xl z-10"
-            style={{ 
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))',
-              backdropFilter: 'blur(24px)',
-              transformStyle: 'preserve-3d',
-              perspective: '1200px'
-            }}
-          >
-             <motion.div
-               animate={{ y: [-15, 15, -15], rotateY: [-5, 5, -5], rotateX: [2, -2, 2] }}
-               transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-               className="w-full h-full p-8 flex flex-col justify-between relative z-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blend-overlay"
-             >
-                <div className="flex justify-between items-start">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
-                    <Smartphone className="text-white w-7 h-7" />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10"><Contact size={14} className="text-white/70" /></div>
-                    <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10"><Share2 size={14} className="text-white/70" /></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="w-3/4 h-8 bg-white/30 rounded-lg mb-4" />
-                  <div className="w-1/2 h-5 bg-white/20 rounded-md" />
-                </div>
-             </motion.div>
-             {/* Dynamic Glow behind card */}
-             <motion.div 
-               animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.05, 1] }}
-               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-               className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-[2.5rem] blur-3xl opacity-40 -z-10" 
-             />
-          </motion.div>
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+            className="w-px h-8 bg-gradient-to-b from-zinc-500 to-transparent"
+          />
         </motion.div>
       </section>
 
