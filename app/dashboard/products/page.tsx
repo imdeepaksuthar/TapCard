@@ -24,7 +24,8 @@ interface UploadedImage {
 
 export default function ProductsPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  // Changed to true permanently as requested so users can manage products
+  const isAdmin = true;
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);

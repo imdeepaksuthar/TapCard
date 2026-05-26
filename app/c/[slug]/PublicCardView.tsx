@@ -275,10 +275,22 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   const showLocation    = customBranding.show_location    !== false;
   const showBrochures   = customBranding.show_brochures   !== false;
 
-  const [isDark, setIsDark]   = useState<boolean>(customBranding.dark_mode_enabled ?? true);
+  const [isDark, setIsDark]   = useState<boolean>(true); // Default SSR
   const [copied, setCopied]   = useState<string | null>(null);
   const [saving, setSaving]   = useState(false);
   const [shareOk, setShareOk] = useState(false);
+
+  // Sync theme with system preference on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      setIsDark(mediaQuery.matches);
+      
+      const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    }
+  }, []);
 
   // Cart State
   const [cart, setCart] = useState<any[]>([]);
@@ -703,14 +715,6 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                     {companyDetails.company_name || personalInfo.company}
                   </span>
                 )}
-                <span
-                  className="relative inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold shadow-sm overflow-hidden"
-                >
-                  <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, opacity: isDark ? 0.2 : 0.15 }} />
-                  <div className="absolute inset-0 rounded-full ring-1 ring-inset" style={{ borderColor: primaryColor, opacity: 0.5 }} />
-                  <Icon.Check className="relative z-10 h-3 w-3" style={{ color: primaryColor }} />
-                  <span className="relative z-10" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>Digital Business Card</span>
-                </span>
               </div>
             </div>
 
