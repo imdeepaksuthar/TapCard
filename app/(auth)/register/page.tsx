@@ -102,8 +102,8 @@ export default function Register() {
         <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '420px' }}>
           {/* Brand */}
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <Link href="/" style={{ fontSize: '28px', fontWeight: 800, background: 'linear-gradient(135deg, #60a5fa, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', textDecoration: 'none' }}>
-              Card Setu
+            <Link href="/" style={{ display: 'flex', justifyContent: 'center' }}>
+              <img src="/logo-dark.png" alt="Card Setu Logo" style={{ height: '48px', width: 'auto' }} />
             </Link>
             <p style={{ color: '#9ca3af', marginTop: '8px', fontSize: '14px' }}>Join us and bridge your digital presence.</p>
           </div>

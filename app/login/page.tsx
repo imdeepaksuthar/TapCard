@@ -11,6 +11,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const { login } = useAuth();
 
   // OTP Login States
@@ -100,6 +101,22 @@ export default function Login() {
     }
   };
 
+  const handleResendVerification = async () => {
+    setIsLoading(true);
+    try {
+      await apiFetch('/api/email/verification-notification', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      });
+      setError('Verification link sent! Please check your email.');
+      setNeedsVerification(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend email.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendOTP = async () => {
     if (!email) {
       setError('Please enter your email address.');
@@ -151,7 +168,12 @@ export default function Login() {
         window.location.href = '/dashboard';
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please try again.');
+      if (err.data?.needs_verification) {
+        setError(err.message);
+        setNeedsVerification(true);
+      } else {
+        setError(err.message || 'Authentication failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -244,8 +266,8 @@ export default function Login() {
         <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '420px' }}>
           {/* Brand */}
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <Link href="/" style={{ fontSize: '28px', fontWeight: 800, background: 'linear-gradient(135deg, #60a5fa, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', textDecoration: 'none' }}>
-              Card Setu
+            <Link href="/" style={{ display: 'flex', justifyContent: 'center' }}>
+              <img src="/logo-dark.png" alt="Card Setu Logo" style={{ height: '48px', width: 'auto' }} />
             </Link>
             <p style={{ color: '#9ca3af', marginTop: '8px', fontSize: '14px' }}>Welcome back! Sign in to your account.</p>
           </div>

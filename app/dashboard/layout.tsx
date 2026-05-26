@@ -53,9 +53,7 @@ export default function DashboardLayout({
         }`}
       >
         <div className="p-6 flex justify-between items-center">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
-            Card Setu
-          </h1>
+          <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 w-auto" />
           <button
             onClick={() => setIsSidebarOpen(false)}
             className="text-gray-400 hover:text-white md:hidden"

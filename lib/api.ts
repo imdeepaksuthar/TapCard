@@ -3,12 +3,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export class ApiError extends Error {
   errors: Record<string, string[]>;
   status: number;
+  data: any;
 
-  constructor(message: string, errors: Record<string, string[]> = {}, status: number = 400) {
+  constructor(message: string, errors: Record<string, string[]> = {}, status: number = 400, data: any = null) {
     super(message);
     this.name = 'ApiError';
     this.errors = errors;
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -21,7 +23,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
       throw new ApiError(
         data.message || 'Something went wrong',
         data.errors || {},
-        response.status
+        response.status,
+        data
       );
     }
     return data as T;

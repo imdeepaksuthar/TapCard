@@ -36,19 +36,9 @@ class AuthController extends Controller
 
         $user->sendEmailVerificationNotification();
 
-        $token = $user->createToken('card-setu-token')->plainTextToken;
-
         return response()->json([
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role' => $user->role,
-                'status' => $user->status,
-                'email_verified_at' => $user->email_verified_at,
-            ],
+            'message' => 'Registration successful. Please check your email to verify your account.',
+            'needs_verification' => true,
         ], 201);
     }
 
@@ -70,6 +60,15 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = auth()->user();
+
+        if (!$user->hasVerifiedEmail()) {
+            auth()->logout();
+            return response()->json([
+                'message' => 'Please verify your email address to log in.',
+                'needs_verification' => true
+            ], 403);
+        }
+
         $token = $user->createToken('card-setu-token')->plainTextToken;
 
         return response()->json([
@@ -173,11 +172,18 @@ class AuthController extends Controller
      */
     public function resendVerificationEmail(Request $request): JsonResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
+        $request->validate(['email' => 'required|email']);
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        if ($user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email already verified.'], 400);
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        $user->sendEmailVerificationNotification();
 
         return response()->json(['message' => 'Verification link sent.']);
     }

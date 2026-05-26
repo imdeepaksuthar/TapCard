@@ -86,16 +86,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (payload: RegisterPayload) => {
-    const data = await apiFetch<AuthResponse>('/api/register', {
+    await apiFetch<any>('/api/register', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
     
-    localStorage.setItem('card-setu-token', data.token);
-    document.cookie = `card-setu-token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
-    setToken(data.token);
-    setUser(data.user);
-    router.push('/verify-email');
+    // Registration now requires email verification before login
+    router.push('/verify-email?email=' + encodeURIComponent(payload.email));
   };
 
   const logout = async () => {

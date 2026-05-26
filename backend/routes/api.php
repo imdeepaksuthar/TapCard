@@ -28,6 +28,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
     ->name('verification.verify');
+Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail']);
 
 // Forgot Password routes
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
@@ -68,7 +69,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail']);
 
     // Media Upload
     Route::post('/upload', [\App\Http\Controllers\Api\MediaController::class, 'upload']);

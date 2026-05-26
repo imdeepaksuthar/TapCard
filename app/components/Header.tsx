@@ -29,9 +29,9 @@ export default function Header() {
       >
         <Link
           href="/"
-          className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent whitespace-nowrap"
+          className="flex items-center"
         >
-          Card Setu
+          <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 sm:h-10 w-auto" />
         </Link>
         <div className="flex gap-4 items-center">
           {user ? (
