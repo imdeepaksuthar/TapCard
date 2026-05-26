@@ -563,7 +563,7 @@ export default function CardForm({ id }: CardFormProps) {
         name: formData.personal_info?.name || '',
         designation: formData.personal_info?.designation || '',
         bio: formData.personal_info?.bio || '',
-        profile_image: formData.personal_info?.profile_image || formData.profile_image || '',
+        profile_image: formData.personal_info?.profile_image || '',
       },
     };
 
