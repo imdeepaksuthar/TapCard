@@ -62,12 +62,19 @@ export default function LeadForm({
       }
 
       setStatus('success');
+      if (typeof window !== 'undefined' && (window as any).playUISound) {
+        (window as any).playUISound('success');
+      }
       setFormData({ name: '', email: '', phone: '', message: '' });
     } catch (error: any) {
       console.error(error);
       setErrorMsg(error?.message || 'Something went wrong. Please try again.');
       setStatus('error');
+      if (typeof window !== 'undefined' && (window as any).playUISound) {
+        (window as any).playUISound('pop');
+      }
     }
+
   };
 
   // Tailwind palette per theme — shared between bare and standalone variants

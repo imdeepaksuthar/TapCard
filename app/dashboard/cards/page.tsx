@@ -137,6 +137,77 @@ export default function MyCards() {
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const playUISound = (type: 'click' | 'pop' | 'success' | 'save') => {
+    if (typeof window === 'undefined') return;
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      if (type === 'click') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1000, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.04, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+      } else if (type === 'pop') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(350, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } else if (type === 'success') {
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(750, ctx.currentTime);
+        gain1.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start();
+        osc1.stop(ctx.currentTime + 0.12);
+        
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(1150, ctx.currentTime);
+          gain2.gain.setValueAtTime(0.05, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start();
+          osc2.stop(ctx.currentTime + 0.22);
+        }, 65);
+      } else if (type === 'save') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(250, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.22);
+        gain.gain.setValueAtTime(0.03, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.22);
+      }
+    } catch {}
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -165,8 +236,10 @@ export default function MyCards() {
     try {
       await apiFetch(`/api/cards/${deleteTargetId}`, { method: 'DELETE' });
       setCards(cards.filter(card => card.id !== deleteTargetId));
+      playUISound('success');
     } catch (error) {
       console.error('Failed to delete card:', error);
+      playUISound('pop');
     } finally {
       setIsDeleting(false);
       setDeleteTargetId(null);
@@ -186,7 +259,7 @@ export default function MyCards() {
       <ConfirmDeleteModal
         isOpen={deleteTargetId !== null}
         onConfirm={handleDeleteConfirm}
-        onCancel={() => setDeleteTargetId(null)}
+        onCancel={() => { setDeleteTargetId(null); playUISound('click'); }}
         isDeleting={isDeleting}
       />
 
@@ -199,7 +272,7 @@ export default function MyCards() {
           </div>
           {cards.length === 0 && (
             <button
-              onClick={() => router.push('/dashboard/cards/create')}
+              onClick={() => { router.push('/dashboard/cards/create'); playUISound('click'); }}
               className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-2.5 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,14 +301,14 @@ export default function MyCards() {
               Create your first digital business card and start sharing your professional profile.
             </p>
             <button
-              onClick={() => router.push('/dashboard/cards/create')}
+              onClick={() => { router.push('/dashboard/cards/create'); playUISound('click'); }}
               className="bg-white/5 hover:bg-white/10 border border-white/10 py-3 px-6 rounded-xl font-semibold text-white transition-all duration-300"
             >
               Create Your First Card
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto justify-center justify-items-center">
+          <div className={`grid gap-8 max-w-6xl mx-auto justify-center justify-items-center ${cards.length === 1 ? 'grid-cols-1 w-full max-w-2xl' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {cards.map((card) => {
               const primaryColor = card.custom_branding?.primary_color || '#3b82f6';
               const secondaryColor = card.custom_branding?.secondary_color || '#eff6ff';
@@ -248,7 +321,7 @@ export default function MyCards() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="w-full max-w-md bg-[#0D1527]/60 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden hover:border-white/10 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between group relative min-h-[250px]"
+                  className={`w-full ${cards.length === 1 ? 'max-w-2xl' : 'max-w-md'} bg-[#0D1527]/60 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden hover:border-white/10 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between group relative min-h-[250px]`}
                 >
                   {/* Left accent bar */}
                   <div
@@ -329,6 +402,7 @@ export default function MyCards() {
                       href={`/c/${card.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => playUISound('click')}
                       className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1.5 transition-colors"
                     >
                       View Live Profile
@@ -339,7 +413,7 @@ export default function MyCards() {
                     </a>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => router.push(`/dashboard/cards/edit/${card.id}`)}
+                        onClick={() => { router.push(`/dashboard/cards/edit/${card.id}`); playUISound('click'); }}
                         className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/20 transition-all"
                         title="Edit Card"
                       >
@@ -349,7 +423,7 @@ export default function MyCards() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => setDeleteTargetId(card.id)}
+                        onClick={() => { setDeleteTargetId(card.id); playUISound('pop'); }}
                         className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all"
                         title="Delete Card"
                       >
