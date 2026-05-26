@@ -37,13 +37,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  console.log('API_URL:', API_URL);
   const url = `${API_URL}${endpoint}`;
-  console.log('Fetching URL:', url);
-  
+
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
-  
+
   // Only set Content-Type if not sending FormData
   if (!(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
@@ -56,10 +54,23 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
     }
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  // Abort after 10 seconds to prevent infinite loading
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  return handleResponse<T>(response);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return handleResponse<T>(response);
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new ApiError('Request timed out. Please check your connection.', {}, 408);
+    }
+    throw err;
+  }
 }

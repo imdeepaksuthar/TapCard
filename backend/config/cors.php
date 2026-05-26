@@ -26,6 +26,9 @@ return [
         'http://127.0.0.1:3001',
         'http://localhost',
         'http://127.0.0.1',
+        'https://tapcard.mamtastationery.com/',
+        'https://tapcard.mamtastationery.com/backend/public',
+
     ],
 
     'allowed_origins_patterns' => [],

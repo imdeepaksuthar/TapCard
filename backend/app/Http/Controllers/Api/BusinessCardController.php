@@ -247,18 +247,64 @@ class BusinessCardController extends Controller
     }
 
     /**
-     * Verify and fetch details for a given pincode.
+     * Verify and fetch details for a given pincode using raw cURL.
      */
     public function verifyPincode(string $pincode): JsonResponse
     {
+        if (!preg_match('/^\d{6}$/', $pincode)) {
+            return response()->json(['error' => 'Invalid pincode. Must be 6 digits.'], 422);
+        }
+
         try {
-            $response = \Illuminate\Support\Facades\Http::get("https://api.postalpincode.in/pincode/{$pincode}");
-            if ($response->successful()) {
-                return response()->json($response->json());
+            $url = "https://api.postalpincode.in/pincode/{$pincode}";
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']);
+
+            $responseBody = curl_exec($ch);
+            $curlError    = curl_error($ch);
+            $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($curlError) {
+                \Illuminate\Support\Facades\Log::error('Pincode cURL error', ['error' => $curlError]);
+                return response()->json(['error' => 'Could not reach pincode service.'], 503);
             }
-            return response()->json(['error' => 'Failed to fetch pincode details.'], 500);
+
+            if ($httpCode !== 200) {
+                return response()->json(['error' => 'Pincode service returned an error.'], 502);
+            }
+
+            $data   = json_decode($responseBody, true);
+            $result = $data[0] ?? null;
+
+            if (!$result || ($result['Status'] ?? '') !== 'Success' || empty($result['PostOffice'])) {
+                return response()->json(['error' => 'No data found for this pincode.'], 404);
+            }
+
+            $postOffice = $result['PostOffice'][0];
+
+            return response()->json([
+                'status'       => 'Success',
+                'pincode'      => $pincode,
+                'city'         => $postOffice['District'] ?? '',
+                'state'        => $postOffice['State']    ?? '',
+                'district'     => $postOffice['District'] ?? '',
+                'block'        => $postOffice['Block']    ?? '',
+                'region'       => $postOffice['Region']   ?? '',
+                'country'      => $postOffice['Country']  ?? 'India',
+                'post_offices' => $result['PostOffice'],
+            ]);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Pincode API is currently unavailable.'], 500);
+            \Illuminate\Support\Facades\Log::error('Pincode lookup exception', ['message' => $e->getMessage()]);
+            return response()->json(['error' => 'Pincode API is currently unavailable.'], 503);
         }
     }
 }

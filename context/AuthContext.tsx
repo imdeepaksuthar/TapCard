@@ -23,7 +23,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('card-setu-token');
+    // On public auth pages, skip token check entirely.
+    // The server-side middleware already redirects logged-in users away from these pages.
+    const isAuthPage = typeof window !== 'undefined' &&
+      (window.location.pathname === '/login' || window.location.pathname === '/register');
+
+    if (isAuthPage) {
+      setIsLoading(false);
+      return;
+    }
+
+    let storedToken = localStorage.getItem('card-setu-token');
+
+    // Fallback to reading the token from cookies if localStorage is empty
+    if (!storedToken && typeof document !== 'undefined') {
+      const match = document.cookie.match(/(?:^|; )card-setu-token=([^;]*)/);
+      if (match && match[1]) {
+        storedToken = match[1];
+        // Resync localStorage
+        localStorage.setItem('card-setu-token', storedToken);
+      }
+    }
+
     if (storedToken) {
       setToken(storedToken);
       rehydrateUser();
@@ -43,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to rehydrate user:', error?.message || 'Unknown error');
       }
       localStorage.removeItem('card-setu-token');
-      document.cookie = 'card-setu-token=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'card-setu-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
       setToken(null);
       setUser(null);
     } finally {
@@ -84,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore error if already logged out on server
     }
     localStorage.removeItem('card-setu-token');
-    document.cookie = 'card-setu-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    document.cookie = 'card-setu-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
     setToken(null);
     setUser(null);
     router.push('/login');
