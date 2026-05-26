@@ -1,180 +1,254 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import Header from './components/Header';
-import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, Palette } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, Palette, CheckCircle2, QrCode, Contact, Share2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../lib/api';
 
 export default function Home() {
   const [stats, setStats] = useState({ users: 0, cards: 0 });
+  const { scrollYProgress } = useScroll();
+  const yHero = useTransform(scrollYProgress, [0, 1], [0, 300]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
 
   useEffect(() => {
-    // Simulated fetch or actual fetch if endpoint exists
     const fetchStats = async () => {
       try {
         const data = await apiFetch<{ users: number, cards: number }>('/api/homepage-stats', { method: 'GET' });
         setStats(data);
       } catch (err) {
-        // Fallback demo data
-        setStats({ users: 12500, cards: 48300 });
+        setStats({ users: 15420, cards: 52100 });
       }
     };
     fetchStats();
   }, []);
 
-  const features = [
-    { icon: <Smartphone className="text-blue-400" size={24} />, title: "Mobile Optimized", desc: "Perfect display on every device screen." },
-    { icon: <Zap className="text-indigo-400" size={24} />, title: "Lightning Fast", desc: "NFC enabled for instant card sharing." },
-    { icon: <Shield className="text-purple-400" size={24} />, title: "Secure Data", desc: "Bank-level encryption for your contacts." },
-    { icon: <Globe className="text-blue-400" size={24} />, title: "Global Access", desc: "Share your identity anywhere, anytime." },
-    { icon: <Users className="text-indigo-400" size={24} />, title: "Lead Generation", desc: "Capture prospect info effortlessly." },
-    { icon: <Palette className="text-purple-400" size={24} />, title: "Custom Themes", desc: "Express your brand with premium designs." }
+  const bentoFeatures = [
+    {
+      title: "Tap to Share",
+      desc: "Instantly transfer your contact details using NFC technology. No app required.",
+      icon: <Smartphone className="text-white w-8 h-8" />,
+      colSpan: "col-span-1 md:col-span-2",
+      bg: "bg-gradient-to-br from-zinc-800/50 to-zinc-900/50",
+      delay: 0.1
+    },
+    {
+      title: "QR Ready",
+      desc: "For older phones, simply scan the dynamic QR code.",
+      icon: <QrCode className="text-white w-8 h-8" />,
+      colSpan: "col-span-1",
+      bg: "bg-gradient-to-br from-blue-900/40 to-zinc-900/50",
+      delay: 0.2
+    },
+    {
+      title: "Bank-Level Security",
+      desc: "Your data is encrypted and securely stored. Total control over what you share.",
+      icon: <Shield className="text-white w-8 h-8" />,
+      colSpan: "col-span-1",
+      bg: "bg-gradient-to-br from-indigo-900/40 to-zinc-900/50",
+      delay: 0.3
+    },
+    {
+      title: "Lead Generation",
+      desc: "Capture incoming leads automatically. Export directly to your CRM.",
+      icon: <Users className="text-white w-8 h-8" />,
+      colSpan: "col-span-1 md:col-span-2",
+      bg: "bg-gradient-to-br from-zinc-800/50 to-zinc-900/50",
+      delay: 0.4
+    }
+  ];
+
+  const steps = [
+    { num: "01", title: "Create Your Profile", desc: "Sign up and build your digital identity in minutes. Add links, socials, and payment methods." },
+    { num: "02", title: "Customize Design", desc: "Choose from premium templates. Add your logo, colors, and completely own the look." },
+    { num: "03", title: "Share Instantly", desc: "Tap your NFC card or share your unique link. Connections are saved immediately." }
   ];
 
   return (
-    <main className="relative min-h-screen bg-[#030712] text-white overflow-hidden flex flex-col">
-      {/* Dynamic Animated Header */}
+    <main className="relative min-h-screen bg-black text-white selection:bg-blue-500/30 font-sans overflow-x-hidden">
       <Header />
 
-      {/* Background Gradients */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-[40%] -left-[20%] w-[80%] h-[80%] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.08)_0%,rgba(0,0,0,0)_70%)]" />
-        <div className="absolute -bottom-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.08)_0%,rgba(0,0,0,0)_70%)]" />
-      </div>
+      {/* Hero Section */}
+      <section className="relative pt-24 pb-20 md:pt-32 md:pb-32 px-6 flex flex-col items-center justify-center text-center min-h-screen overflow-hidden">
+        
+        {/* Apple-style subtle background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none" />
 
-      {/* Grid Pattern */}
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_80%,transparent_100%)] opacity-10 pointer-events-none z-0" />
-
-      {/* Hero Content */}
-      <section className="relative z-10 pt-48 pb-20 px-6 flex flex-col items-center text-center min-h-[90vh] justify-center">
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-5 py-2.5 rounded-full text-sm font-medium mb-8 backdrop-blur-md shadow-xl"
+        <motion.div 
+          style={{ y: yHero, opacity: opacityHero }}
+          className="relative z-10 flex flex-col items-center"
         >
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-          </span>
-          Next-Gen Digital Business Cards
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="inline-flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 px-4 py-2 rounded-full text-xs font-semibold tracking-wide text-zinc-300 mb-8 backdrop-blur-xl"
+          >
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            INTRODUCING THE FUTURE OF NETWORKING
+          </motion.div>
 
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent leading-tight"
-        >
-          Networking, <br />
-          <span className="text-transparent bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 bg-clip-text">Reimagined.</span>
-        </motion.h1>
+          <motion.h1
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-6xl md:text-8xl lg:text-[7rem] font-bold tracking-tighter mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 leading-[1.1]"
+          >
+            Networking. <br className="hidden md:block"/>
+            <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Reimagined.</span>
+          </motion.h1>
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg md:text-xl text-gray-400 max-w-2xl mb-12 font-light leading-relaxed"
-        >
-          Create stunning, interactive digital cards that showcase your professional identity. 
-          Connect, share, and manage your contacts with a single tap.
-        </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-xl md:text-2xl text-zinc-400 max-w-2xl mb-12 font-medium tracking-tight"
+          >
+            The premium digital business card for modern professionals. Share your identity with a single tap.
+          </motion.p>
 
-        {/* CTA Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
-        >
-          <Link href="/register" className="group relative overflow-hidden bg-white text-gray-900 px-8 py-4 rounded-full font-bold shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2">
-            <span className="relative z-10">Get Started Free</span>
-            <ArrowRight size={18} className="relative z-10 group-hover:translate-x-1 transition-transform" />
-          </Link>
-          
-          <Link href="/login" className="bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 rounded-full font-semibold text-white transition-all duration-300 backdrop-blur-md flex items-center justify-center">
-            Sign In
-          </Link>
-        </motion.div>
-
-        {/* Dynamic Stats */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.8 }}
-          className="mt-16 flex gap-12 text-center"
-        >
-          <div>
-            <div className="text-3xl font-bold text-white mb-1">{stats.users.toLocaleString()}+</div>
-            <div className="text-sm text-gray-500 uppercase tracking-wider">Active Users</div>
-          </div>
-          <div className="w-px bg-white/10" />
-          <div>
-            <div className="text-3xl font-bold text-white mb-1">{stats.cards.toLocaleString()}+</div>
-            <div className="text-sm text-gray-500 uppercase tracking-wider">Cards Created</div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+          >
+            <Link href="/register" className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+              Get Started Free
+              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <Link href="/login" className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 px-8 py-4 rounded-full font-semibold text-white transition-colors flex items-center justify-center">
+              Sign In
+            </Link>
+          </motion.div>
         </motion.div>
       </section>
 
-      {/* 6-Column UI Feature Grid Section */}
-      <section className="relative z-10 py-32 px-6 bg-gradient-to-b from-transparent to-[#0a0f1d]">
-        <div className="max-w-7xl mx-auto">
+      {/* Bento Grid Features */}
+      <section className="relative z-10 py-32 px-6">
+        <div className="max-w-6xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            className="text-center mb-16"
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="text-center mb-20"
           >
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Everything you need to <span className="text-transparent bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text">succeed</span></h2>
-            <p className="text-gray-400 max-w-2xl mx-auto text-lg">Our premium suite of tools empowers you to grow your network and capture leads effortlessly.</p>
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Designed for <br/> <span className="text-zinc-500">seamless connection.</span></h2>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {features.map((feature, idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {bentoFeatures.map((f, i) => (
               <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: idx * 0.1, duration: 0.5 }}
-                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 hover:-translate-y-2 group cursor-pointer"
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.8, delay: f.delay, ease: [0.16, 1, 0.3, 1] }}
+                className={`relative overflow-hidden rounded-[2.5rem] border border-zinc-800/50 p-10 ${f.colSpan} ${f.bg} group`}
               >
-                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 group-hover:bg-white/10">
-                  {feature.icon}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 h-full flex flex-col justify-between">
+                  <div className="w-14 h-14 bg-black/50 border border-zinc-700/50 rounded-2xl flex items-center justify-center mb-12 backdrop-blur-md">
+                    {f.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-3 tracking-tight">{f.title}</h3>
+                    <p className="text-zinc-400 font-medium leading-relaxed">{f.desc}</p>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{feature.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer CTA */}
-      <section className="relative z-10 py-32 px-6 text-center">
+      {/* Sticky Step Section */}
+      <section className="relative bg-zinc-950 py-32 px-6 border-t border-zinc-900">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="text-4xl md:text-6xl font-bold tracking-tighter mb-24 text-center"
+          >
+            How it works.
+          </motion.h2>
+
+          <div className="grid md:grid-cols-2 gap-16 md:gap-24 relative">
+            {/* Sticky Visual Side */}
+            <div className="hidden md:block relative h-full">
+              <div className="sticky top-1/4 h-[500px] bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-[3rem] overflow-hidden flex items-center justify-center shadow-2xl">
+                 {/* Abstract representation of a card */}
+                 <motion.div 
+                   animate={{ rotateY: [0, 10, -10, 0] }}
+                   transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                   className="w-64 h-96 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl p-6 shadow-2xl shadow-blue-500/20 border border-white/20"
+                 >
+                   <div className="w-12 h-12 rounded-full bg-white/20 mb-4" />
+                   <div className="w-3/4 h-4 bg-white/20 rounded-full mb-2" />
+                   <div className="w-1/2 h-3 bg-white/10 rounded-full" />
+                 </motion.div>
+              </div>
+            </div>
+
+            {/* Scrolling Steps */}
+            <div className="flex flex-col gap-24 py-12 md:py-32">
+              {steps.map((step, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: "-20%" }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex gap-8 items-start"
+                >
+                  <div className="text-2xl font-mono text-zinc-600 font-bold mt-1">{step.num}</div>
+                  <div>
+                    <h3 className="text-3xl font-bold tracking-tight mb-4">{step.title}</h3>
+                    <p className="text-xl text-zinc-400 leading-relaxed">{step.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Premium CTA */}
+      <section className="relative z-10 py-40 px-6 text-center overflow-hidden">
+        {/* Background glow for CTA */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] h-[500px] bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
+        
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-4xl mx-auto bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border border-blue-500/20 rounded-[3rem] p-12 md:p-20 backdrop-blur-xl"
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-4xl mx-auto relative z-10"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Ready to upgrade your networking?</h2>
-          <p className="text-xl text-blue-200/70 mb-10 max-w-2xl mx-auto">Join thousands of professionals already using Card Setu to make lasting impressions.</p>
-          <Link href="/register" className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-10 py-4 rounded-full font-bold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all hover:-translate-y-1">
-            Create Your Card Now
-            <ArrowRight size={20} />
-          </Link>
+          <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-8 text-white">Elevate your brand.</h2>
+          <p className="text-xl md:text-2xl text-zinc-400 mb-12 max-w-2xl mx-auto tracking-tight">
+            Join {stats.users.toLocaleString()}+ professionals already using Card Setu to make lasting impressions.
+          </p>
+          <div className="flex justify-center">
+            <Link href="/register" className="group relative bg-white text-black px-12 py-5 rounded-full font-bold text-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-3">
+              Create Your Card Now
+              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </motion.div>
       </section>
 
-      {/* Simple Footer */}
-      <footer className="relative z-10 border-t border-white/10 py-8 px-6 text-center text-gray-500 text-sm">
-        <p>&copy; {new Date().getFullYear()} Card Setu. All rights reserved.</p>
+      {/* Minimal Footer */}
+      <footer className="border-t border-zinc-900 bg-black py-12 px-6 text-center text-zinc-600 text-sm font-medium">
+        <p>&copy; {new Date().getFullYear()} Card Setu. Crafted for the modern professional.</p>
       </footer>
     </main>
   );
