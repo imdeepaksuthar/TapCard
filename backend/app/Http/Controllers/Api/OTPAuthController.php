@@ -38,8 +38,9 @@ class OTPAuthController extends Controller
         try {
             Mail::to($request->email)->send(new OTPMail($otpCode, $user->name));
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('OTP Mail Error: ' . $e->getMessage());
             return response()->json([
-                'message' => 'Failed to send verification code. Please try again.'
+                'message' => 'Failed to send verification code. Error: ' . $e->getMessage()
             ], 500);
         }
 

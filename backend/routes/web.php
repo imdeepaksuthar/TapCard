@@ -7,9 +7,7 @@ use App\Http\Controllers\Admin\NfcController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ProductController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::view('/', 'welcome');
 
 use App\Http\Controllers\Auth\LoginController;
 
