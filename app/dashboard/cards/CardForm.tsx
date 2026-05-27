@@ -4023,7 +4023,7 @@ export default function CardForm({ id }: CardFormProps) {
                       <div className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 border ${
                         isDark ? 'bg-white/[0.04] border-white/5' : 'bg-slate-50 border-slate-100'
                       } ${!cleanedPhone ? 'opacity-40' : 'opacity-80'}`}>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba('#10B981', 0.14), color: '#10B981' }}>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, 0.14), color: primaryColor }}>
                           <PreviewIcon.Phone className="w-4 h-4" />
                         </span>
                         <span className={`text-[9px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Call</span>
@@ -4032,7 +4032,7 @@ export default function CardForm({ id }: CardFormProps) {
                       <div className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 border ${
                         isDark ? 'bg-white/[0.04] border-white/5' : 'bg-slate-50 border-slate-100'
                       } ${!cleanedWhatsapp ? 'opacity-40' : 'opacity-80'}`}>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba('#25D366', 0.14), color: '#25D366' }}>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, 0.14), color: primaryColor }}>
                           <PreviewIcon.Whatsapp className="w-4 h-4" />
                         </span>
                         <span className={`text-[9px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>WhatsApp</span>
@@ -4181,7 +4181,7 @@ export default function CardForm({ id }: CardFormProps) {
                                   </div>
                                 )}
                                 {proprietor.whatsapp && (
-                                  <div className="flex-1 flex items-center justify-center gap-1 py-1 rounded text-white bg-[#25D366] text-[8px] font-bold">
+                                  <div className="flex-1 flex items-center justify-center gap-1 py-1 rounded text-white text-[8px] font-bold" style={{ backgroundColor: primaryColor }}>
                                     <PreviewIcon.Whatsapp className="w-2 h-2" />
                                     WhatsApp
                                   </div>

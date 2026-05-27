@@ -3,6 +3,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Hero3DBackground from '@/app/components/Hero3DBackground';
+import MeshGradient from '@/app/components/MeshGradient';
+import Tilt3D from '@/app/components/Tilt3D';
+import FlipCard3D from '@/app/components/FlipCard3D';
+import SectionDivider3D from '@/app/components/SectionDivider3D';
+import { derivePalette } from '@/lib/colorUtils';
 import LeadForm from '../../../components/LeadForm';
 
 type AnyObj = Record<string, any>;
@@ -500,7 +505,8 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
   const themeName    = customBranding.theme_color || card.theme_color || 'indigo';
   const primaryColor = customBranding.primary_color || data.theme?.primary_color || getHexColor(themeName);
-  const secondaryColor = customBranding.secondary_color || (isDark ? '#0B0B14' : '#f8fafc');
+  const palette      = useMemo(() => derivePalette(primaryColor), [primaryColor]);
+  const secondaryColor = customBranding.secondary_color || palette.accent;
   const primary15    = hexToRgba(primaryColor, 0.15);
   const primary30    = hexToRgba(primaryColor, 0.3);
 
@@ -695,13 +701,10 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   };
 
   return (
-    <main className={`min-h-screen w-full ${pageBg} ${textMain} font-sans transition-colors duration-300`}>
-      {/* Decorative backdrop on large screens */}
+    <main className={`relative min-h-screen w-full ${pageBg} ${textMain} font-sans transition-colors duration-300`}>
+      {/* Animated mesh gradient backdrop — derived from brand color */}
       <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
-        <div
-          className="absolute -top-32 left-1/2 h-[420px] w-[820px] -translate-x-1/2 rounded-full opacity-30 blur-3xl"
-          style={{ backgroundImage: `radial-gradient(circle at 50% 50%, ${primaryColor}, transparent 60%)` }}
-        />
+        <MeshGradient color={primaryColor} isDark={isDark} intensity={0.4} />
       </div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col px-3 pb-32 pt-4 sm:max-w-xl sm:px-5 sm:pt-6 md:max-w-2xl md:pb-36 md:pt-8">
@@ -709,7 +712,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
         <div className={`relative overflow-hidden rounded-3xl border ${borderSoft} ${surface} shadow-2xl shadow-black/10 backdrop-blur`}>
           {/* ---- HERO ---- */}
           <div className="relative h-44 w-full overflow-hidden sm:h-52 md:h-60">
-            <Hero3DBackground primaryColor={primaryColor} secondaryColor={secondaryColor} />
+            <Hero3DBackground primaryColor={primaryColor} secondaryColor={secondaryColor} isDark={isDark} />
             <div
               className="absolute inset-0 opacity-25 mix-blend-overlay"
               style={{
@@ -747,23 +750,37 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
           {/* ---- PROFILE ---- */}
           <div className="relative px-5 pb-2 sm:px-7">
             <div className="-mt-16 flex flex-col items-center text-center sm:-mt-20">
-              <div className="relative">
+              <div className="relative h-28 w-28 sm:h-32 sm:w-32">
                 <div
-                  className="absolute -inset-1 rounded-full opacity-60 blur-md transition-opacity duration-500 group-hover:opacity-100"
-                  style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
+                  className="absolute -inset-1 rounded-full opacity-70 blur-md animate-pulse"
+                  style={{ background: `conic-gradient(from 0deg, ${primaryColor}, ${palette.accent}, ${palette.complement}, ${primaryColor})` }}
                 />
-                <div
-                  className={`relative z-10 h-28 w-28 overflow-hidden rounded-full ring-4 sm:h-32 sm:w-32 ${isDark ? 'ring-[#12121A] bg-[#12121A]' : 'ring-white bg-white'} shadow-xl`}
-                >
-                  {profileImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={profileImage} alt={personalInfo.name || 'Profile'} className="relative z-10 h-full w-full object-cover" />
-                  ) : (
-                    <div className="relative z-10 flex h-full w-full items-center justify-center text-4xl font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}>
-                      {(personalInfo.name || 'U').trim().charAt(0).toUpperCase()}
+                <FlipCard3D
+                  className="relative z-10 h-full w-full rounded-full"
+                  height="100%"
+                  flipHint={false}
+                  front={
+                    <div className={`relative h-full w-full overflow-hidden rounded-full ring-4 ${isDark ? 'ring-[#12121A] bg-[#12121A]' : 'ring-white bg-white'} shadow-xl`}>
+                      {profileImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={profileImage} alt={personalInfo.name || 'Profile'} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${palette.accent})` }}>
+                          {(personalInfo.name || 'U').trim().charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  }
+                  back={
+                    <div
+                      className={`flex h-full w-full flex-col items-center justify-center rounded-full ring-4 text-white shadow-xl ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}
+                      style={{ background: `radial-gradient(circle at 30% 30%, ${palette.accent}, ${palette.dark})` }}
+                    >
+                      <Icon.QrCode className="h-7 w-7 opacity-90" />
+                      <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] opacity-80">Tap to flip</span>
+                    </div>
+                  }
+                />
                 <div className={`absolute bottom-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
                   <Icon.Check className="h-3.5 w-3.5 text-white" />
                 </div>
@@ -834,7 +851,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                 disabled={!cleanedPhone}
                 href={cleanedPhone ? `tel:${cleanedPhone}` : undefined}
                 label="Call"
-                tint="#10B981"
+                tint={primaryColor}
                 isDark={isDark}
                 icon={<Icon.Phone className="h-5 w-5" />}
               />
@@ -843,7 +860,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                 href={cleanedWhatsapp ? `https://wa.me/${cleanedWhatsapp}` : undefined}
                 external
                 label="WhatsApp"
-                tint="#25D366"
+                tint={primaryColor}
                 isDark={isDark}
                 icon={<Icon.Whatsapp className="h-5 w-5" />}
               />
@@ -866,7 +883,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- ABOUT ---- */}
             {personalInfo.bio && (
-              <Section title="About" isDark={isDark} textMuted={textMuted}>
+              <Section title="About" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 <div className={`relative rounded-2xl p-5 ${cardStyle} overflow-hidden`}>
                   <div className="absolute top-0 left-0 w-1 h-full" style={{ background: `linear-gradient(to bottom, ${primaryColor}, ${secondaryColor})` }} />
                   <p className={`text-[14px] leading-relaxed ${textSubtle} whitespace-pre-wrap`}>
@@ -880,7 +897,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- BUSINESS ---- */}
             {hasBusinessBlock && (
-              <Section title="Business" isDark={isDark} textMuted={textMuted}>
+              <Section title="Business" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 <div className={`flex flex-col rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
                   {showCompany && companyDetails.company_name && (
                     <div className={`${showCompany && (companyDetails.gst || companyDetails.website || fullAddress) ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
@@ -941,7 +958,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- PROPRIETOR DETAILS ---- */}
             {hasProprietorBlock && (
-              <Section title="Proprietor & Team" isDark={isDark} textMuted={textMuted}>
+              <Section title="Proprietor & Team" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 <div className={`grid grid-cols-1 ${proprietorDetails.length === 1 ? 'w-full' : 'sm:grid-cols-2'} gap-4`}>
                   {proprietorDetails.map((proprietor: any, idx: number) => (
                     <div key={idx} className={`p-4 rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'} flex flex-col gap-4`}>
@@ -967,7 +984,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                           </a>
                         )}
                         {proprietor.whatsapp && (
-                          <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" rel="noreferrer" onClick={() => playUISound('click')} className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90 bg-[#25D366]">
+                          <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" rel="noreferrer" onClick={() => playUISound('click')} className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: primaryColor }}>
                             <Icon.Whatsapp className="w-3.5 h-3.5" />
                             WhatsApp
                           </a>
@@ -986,7 +1003,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- LOCATION ---- */}
             {hasLocationBlock && (
-              <Section title="Location" isDark={isDark} textMuted={textMuted}>
+              <Section title="Location" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 <div className={`overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft}`}>
                   <div className="flex items-start gap-3 p-4">
                     <span
@@ -1022,31 +1039,41 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- GALLERY ---- */}
             {hasGalleryBlock && (
-              <Section title="Gallery" isDark={isDark} textMuted={textMuted}>
+              <Section title="Gallery" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 {galleryContent.length === 1 ? (
-                  <div 
-                    onClick={() => { setLightboxIndex(0); playUISound('pop'); }} 
-                    className={`w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-2xl border ${borderSoft} group cursor-pointer shadow-md`}
+                  <Tilt3D
+                    max={8}
+                    scale={1.02}
+                    glareColor={hexToRgba(primaryColor, 0.25)}
+                    className={`w-full rounded-2xl`}
+                    onClick={() => { setLightboxIndex(0); playUISound('pop'); }}
                   >
-                    <img 
-                      src={galleryContent[0]} 
-                      alt="Gallery image" 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  <div className={`w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-2xl border ${borderSoft} group cursor-pointer shadow-md`}>
+                    <img
+                      src={galleryContent[0]}
+                      alt="Gallery image"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
+                  </Tilt3D>
                 ) : (
                   <div className="relative">
                     {/* Right-edge fade to signal overflow */}
                     <div className={`pointer-events-none absolute right-0 top-0 z-10 h-full w-10 ${isDark ? 'bg-gradient-to-l from-[#0f0f13]' : 'bg-gradient-to-l from-slate-100'}`} />
                     <div className="flex overflow-x-auto gap-3 pb-3 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       {galleryContent.map((url: string, idx: number) => (
-                        <div 
-                          key={idx} 
-                          onClick={() => { setLightboxIndex(idx); playUISound('pop'); }} 
-                          className="flex-none w-[130px] sm:w-[150px] aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group cursor-pointer snap-start shadow-sm shrink-0"
+                        <Tilt3D
+                          key={idx}
+                          max={12}
+                          scale={1.04}
+                          glareColor={hexToRgba(primaryColor, 0.3)}
+                          className="flex-none w-[130px] sm:w-[150px] rounded-xl snap-start shrink-0"
+                          onClick={() => { setLightboxIndex(idx); playUISound('pop'); }}
                         >
-                          <img src={url} alt={`Gallery item ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                        </div>
+                          <div className="aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group cursor-pointer shadow-sm">
+                            <img src={url} alt={`Gallery item ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                          </div>
+                        </Tilt3D>
                       ))}
                     </div>
                     {galleryContent.length > 2 && (
@@ -1059,7 +1086,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- BROCHURES ---- */}
             {hasBrochuresBlock && (
-              <Section title="Brochures & Documents" isDark={isDark} textMuted={textMuted}>
+              <Section title="Brochures & Documents" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 <div className="space-y-3">
                   {brochurePdfs.map((url: string, idx: number) => (
                     <a key={idx} href={url} target="_blank" rel="noreferrer" className={`flex items-center justify-between p-4 rounded-xl transition hover:-translate-y-0.5 ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200'}`}>
@@ -1085,7 +1112,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               const todayHours: any = Object.entries(openingHours).find(([d]) => d.toLowerCase() === todayName)?.[1];
               const isOpenNow = todayHours && !todayHours.closed;
               return (
-                <Section title="Opening Hours" isDark={isDark} textMuted={textMuted}>
+                <Section title="Opening Hours" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                   {/* Today's status badge */}
                   <div className="mb-3 flex items-center gap-2">
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${
@@ -1130,7 +1157,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- PAYMENT (PAY ME) ---- */}
             {showPayment && hasPayment && (
-              <Section title="Pay Me" isDark={isDark} textMuted={textMuted}>
+              <Section title="Pay Me" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 <div className={`grid gap-3 ${
                   ((paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.ifsc_code) &&
                    (paymentInfo.qr_path || paymentInfo.upi_id || paymentInfo.upi || paymentInfo.phonepe))
@@ -1237,10 +1264,16 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                       {filteredProducts.map((product: any) => {
                         const inCart = cart.some(item => item.id === product.id);
                         return (
-                          <div 
-                            key={product.id} 
+                          <Tilt3D
+                            key={product.id}
+                            max={6}
+                            scale={1.01}
+                            glareColor={hexToRgba(primaryColor, 0.25)}
+                            className="w-full max-w-xl rounded-3xl"
                             onClick={() => { setProductToView(product); setProductViewImgIdx(0); playUISound('pop'); }}
-                            className={`group flex flex-col sm:flex-row items-center overflow-hidden rounded-3xl cursor-pointer ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg w-full max-w-xl`}
+                          >
+                          <div
+                            className={`group flex flex-col sm:flex-row items-center overflow-hidden rounded-3xl cursor-pointer ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg w-full`}
                           >
                             <div className="relative aspect-[4/3] w-full sm:w-1/2 overflow-hidden bg-slate-100 dark:bg-white/5 shrink-0">
                               {product.images?.[0] ? (
@@ -1285,6 +1318,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                               </div>
                             </div>
                           </div>
+                          </Tilt3D>
                         );
                       })}
                     </div>
@@ -1292,11 +1326,17 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
                       {filteredProducts.map((product: any) => {
                         const inCart = cart.some(item => item.id === product.id);
-                        
+
                         return (
-                          <div 
-                            key={product.id} 
+                          <Tilt3D
+                            key={product.id}
+                            max={9}
+                            scale={1.03}
+                            glareColor={hexToRgba(primaryColor, 0.3)}
+                            className="rounded-2xl sm:rounded-3xl"
                             onClick={() => { setProductToView(product); setProductViewImgIdx(0); playUISound('pop'); }}
+                          >
+                          <div
                             className={`group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl cursor-pointer ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg`}
                           >
                             <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-white/5">
@@ -1343,6 +1383,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                               </div>
                             </div>
                           </div>
+                          </Tilt3D>
                         );
                       })}
                     </div>
@@ -1359,7 +1400,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
 
             {/* ---- INQUIRY FORM ---- */}
             {customBranding.show_lead_form !== false && (
-              <Section title="Send an Inquiry" isDark={isDark} textMuted={textMuted}>
+              <Section title="Send an Inquiry" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 <div className={`rounded-2xl p-5 ${cardStyle}`}>
                   <p className="text-base font-semibold">Get in touch</p>
                   <p className={`mt-0.5 text-xs ${textMuted}`}>We'll reply within 24 hours.</p>
@@ -1390,7 +1431,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               <a
                 href={`tel:${cleanedPhone}`}
                 className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white shadow-md transition hover:opacity-90"
-                style={{ backgroundColor: primaryColor, boxShadow: `0 8px 24px ${primary30}` }}
+                style={{ backgroundColor: '#10B981', boxShadow: '0 8px 24px rgba(16,185,129,0.3)' }}
               >
                 <Icon.Phone className="h-4 w-4" />
                 Call
@@ -1401,7 +1442,8 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                 href={`https://wa.me/${cleanedWhatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#25D366] text-sm font-semibold text-white shadow-md transition hover:brightness-110"
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white shadow-md transition hover:brightness-110"
+                style={{ backgroundColor: '#25D366', boxShadow: '0 8px 24px rgba(37,211,102,0.3)' }}
               >
                 <Icon.Whatsapp className="h-4 w-4" />
                 WhatsApp
@@ -1567,7 +1609,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                 <button
                   onClick={handleWhatsAppCheckout}
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98]"
-                  style={{ backgroundColor: '#25D366' }}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   <Icon.Whatsapp className="h-5 w-5" />
                   Order via WhatsApp
@@ -1984,11 +2026,13 @@ function Section({
   children,
   isDark,
   textMuted,
+  dividerColor,
 }: {
   title: string;
   children: React.ReactNode;
   isDark: boolean;
   textMuted: string;
+  dividerColor?: string;
 }) {
   return (
     <motion.div
@@ -1998,7 +2042,11 @@ function Section({
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className="mt-6"
     >
-      <h3 className={`mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{title}</h3>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex-1 h-px" style={{ background: dividerColor ? `linear-gradient(to right, transparent, ${hexToRgba(dividerColor, 0.25)})` : undefined }} />
+        <h3 className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{title}</h3>
+        <div className="flex-1 h-px" style={{ background: dividerColor ? `linear-gradient(to left, transparent, ${hexToRgba(dividerColor, 0.25)})` : undefined }} />
+      </div>
       {children}
     </motion.div>
   );
