@@ -881,6 +881,27 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               />
             </motion.div>
 
+            {/* ---- PROMINENT SHARE BUTTON ---- */}
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={sectionVariants}
+              className="mt-4"
+            >
+              <button
+                onClick={() => { handleShare(); playUISound('click'); }}
+                className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl p-4 shadow-lg transition active:scale-[0.98]"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <div className="absolute inset-0 bg-white/20 opacity-0 transition-opacity group-hover:opacity-100" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md">
+                  {shareOk ? <Icon.Check className="h-4 w-4" /> : <Icon.Share className="h-4 w-4" />}
+                </div>
+                <span className="text-sm sm:text-base font-bold text-white tracking-wide">
+                  {shareOk ? 'Copied!' : 'Share (AirDrop, Social, NFC)'}
+                </span>
+              </button>
+            </motion.div>
             {/* ---- ABOUT ---- */}
             {personalInfo.bio && (
               <Section title="About" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>

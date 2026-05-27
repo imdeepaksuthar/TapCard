@@ -9,15 +9,15 @@ import {
 } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { MotionValue } from 'framer-motion';
 
 interface Scene3DProps {
-  scrollProgress: number;
+  scrollProgress: MotionValue<number>;
 }
 
-function NFCCard({ scrollProgress }: { scrollProgress: number }) {
+function NFCCard({ scrollProgress }: { scrollProgress: MotionValue<number> }) {
   const groupRef = useRef<THREE.Group>(null!);
   const mouseRef = useRef({ x: 0, y: 0 });
-  const progressRef = useRef(0);
   const [screenSize, setScreenSize] = useState({ isMobile: false, isTablet: false, isDesktop: false });
 
   useEffect(() => {
@@ -45,13 +45,9 @@ function NFCCard({ scrollProgress }: { scrollProgress: number }) {
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
 
-  useEffect(() => {
-    progressRef.current = scrollProgress;
-  }, [scrollProgress]);
-
   useFrame(() => {
     if (!groupRef.current) return;
-    const p = progressRef.current;
+    const p = scrollProgress.get();
 
     // Shift to the right (X = 1.3) on desktop when p = 0, and transition to center as scrolled
     const targetPosX = screenSize.isDesktop ? 1.3 - p * 1.3 : 0;

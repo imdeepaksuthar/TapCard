@@ -2,6 +2,7 @@
 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Header from './components/Header';
 import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, Palette, CheckCircle2, QrCode, Contact, Share2, ChevronDown } from 'lucide-react';
@@ -10,11 +11,54 @@ import { apiFetch } from '../lib/api';
 
 const Scene3D = dynamic(() => import('./components/Scene3D'), { ssr: false });
 
+const bentoFeatures = [
+  {
+    title: "Tap to Share",
+    desc: "Instantly transfer your contact details using NFC technology. No app required.",
+    icon: <Smartphone className="text-white w-8 h-8" />,
+    colSpan: "col-span-1 md:col-span-2",
+    bg: "bg-gradient-to-br from-zinc-800/50 to-zinc-900/50",
+    delay: 0.1
+  },
+  {
+    title: "QR Ready",
+    desc: "For older phones, simply scan the dynamic QR code.",
+    icon: <QrCode className="text-white w-8 h-8" />,
+    colSpan: "col-span-1",
+    bg: "bg-gradient-to-br from-blue-900/40 to-zinc-900/50",
+    delay: 0.2
+  },
+  {
+    title: "Bank-Level Security",
+    desc: "Your data is encrypted and securely stored. Total control over what you share.",
+    icon: <Shield className="text-white w-8 h-8" />,
+    colSpan: "col-span-1",
+    bg: "bg-gradient-to-br from-indigo-900/40 to-zinc-900/50",
+    delay: 0.3
+  },
+  {
+    title: "Lead Generation",
+    desc: "Capture incoming leads automatically. Export directly to your CRM.",
+    icon: <Users className="text-white w-8 h-8" />,
+    colSpan: "col-span-1 md:col-span-2",
+    bg: "bg-gradient-to-br from-zinc-800/50 to-zinc-900/50",
+    delay: 0.4
+  }
+];
+
+const steps = [
+  { num: "01", title: "Create Your Profile", desc: "Sign up and build your digital identity in minutes. Add links, socials, and payment methods." },
+  { num: "02", title: "Customize Design", desc: "Choose from premium templates. Add your logo, colors, and completely own the look." },
+  { num: "03", title: "Share Instantly", desc: "Tap your NFC card or share your unique link. Connections are saved immediately." }
+];
+
 export default function Home() {
   const [stats, setStats] = useState({ users: 0, cards: 0 });
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [heroProgress, setHeroProgress] = useState(0);
-  const { scrollYProgress } = useScroll();
+  const { scrollY, scrollYProgress } = useScroll();
+  const heroH = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const heroProgress = useTransform(scrollY, [0, heroH], [0, 1]);
+  const sceneOpacity = useTransform(heroProgress, [0.99, 1], [1, 0]);
   const yHero = useTransform(scrollYProgress, [0, 1], [0, 300]);
   const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
 
@@ -30,69 +74,17 @@ export default function Home() {
     fetchStats();
   }, []);
 
-  useEffect(() => {
-    const onScroll = () => {
-      const heroH = window.innerHeight || 1;
-      const p = Math.min(1, Math.max(0, window.scrollY / heroH));
-      setHeroProgress(p);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const bentoFeatures = [
-    {
-      title: "Tap to Share",
-      desc: "Instantly transfer your contact details using NFC technology. No app required.",
-      icon: <Smartphone className="text-white w-8 h-8" />,
-      colSpan: "col-span-1 md:col-span-2",
-      bg: "bg-gradient-to-br from-zinc-800/50 to-zinc-900/50",
-      delay: 0.1
-    },
-    {
-      title: "QR Ready",
-      desc: "For older phones, simply scan the dynamic QR code.",
-      icon: <QrCode className="text-white w-8 h-8" />,
-      colSpan: "col-span-1",
-      bg: "bg-gradient-to-br from-blue-900/40 to-zinc-900/50",
-      delay: 0.2
-    },
-    {
-      title: "Bank-Level Security",
-      desc: "Your data is encrypted and securely stored. Total control over what you share.",
-      icon: <Shield className="text-white w-8 h-8" />,
-      colSpan: "col-span-1",
-      bg: "bg-gradient-to-br from-indigo-900/40 to-zinc-900/50",
-      delay: 0.3
-    },
-    {
-      title: "Lead Generation",
-      desc: "Capture incoming leads automatically. Export directly to your CRM.",
-      icon: <Users className="text-white w-8 h-8" />,
-      colSpan: "col-span-1 md:col-span-2",
-      bg: "bg-gradient-to-br from-zinc-800/50 to-zinc-900/50",
-      delay: 0.4
-    }
-  ];
-
-  const steps = [
-    { num: "01", title: "Create Your Profile", desc: "Sign up and build your digital identity in minutes. Add links, socials, and payment methods." },
-    { num: "02", title: "Customize Design", desc: "Choose from premium templates. Add your logo, colors, and completely own the look." },
-    { num: "03", title: "Share Instantly", desc: "Tap your NFC card or share your unique link. Connections are saved immediately." }
-  ];
-
   return (
     <main className="relative min-h-screen bg-black text-white selection:bg-blue-500/30 font-sans overflow-x-hidden">
       <Header />
 
       {/* Fixed scroll-driven 3D scene — sits behind hero, naturally hidden when later sections scroll over it */}
-      <div 
-        className="fixed inset-0 z-0 pointer-events-none transition-opacity duration-300"
-        style={{ opacity: heroProgress >= 1 ? 0 : 1 }}
+      <motion.div 
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{ opacity: sceneOpacity }}
       >
         <Scene3D scrollProgress={heroProgress} />
-      </div>
+      </motion.div>
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-32 md:pt-32 md:pb-40 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between min-h-screen overflow-hidden">
@@ -150,9 +142,6 @@ export default function Home() {
               <Link href="/register" className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.25)]">
                 Get Started Free
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link href="/login" className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 px-8 py-4 rounded-full font-semibold text-white transition-colors flex items-center justify-center">
-                Sign In
               </Link>
             </motion.div>
           </div>
@@ -459,6 +448,19 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Floating WhatsApp Widget */}
+      <a 
+        href="https://wa.me/+919983878055"
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-[99] flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-[0_4px_14px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform hover:shadow-[0_6px_20px_rgba(37,211,102,0.6)] group"
+        aria-label="Chat on WhatsApp"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+          <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
+        </svg>
+      </a>
     </main>
   );
 }
