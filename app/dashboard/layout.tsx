@@ -16,12 +16,53 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [hideShopModules, setHideShopModules] = useState(true);
+  const [isProfessional, setIsProfessional] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/login');
     }
   }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    const checkCardType = async () => {
+      try {
+        const token = localStorage.getItem('card-setu-token');
+        if (!token) return;
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const cards = json.cards || [];
+          if (cards.length === 0) {
+            setHideShopModules(true);
+            setIsProfessional(false);
+          } else {
+            const activeCard = cards[0];
+            const type = activeCard ? (activeCard.card_type || activeCard.template_id || '') : '';
+            if (type === 'personal') {
+              setHideShopModules(true);
+              setIsProfessional(false);
+            } else if (type === 'professional') {
+              setHideShopModules(false);
+              setIsProfessional(true);
+            } else {
+              setHideShopModules(false);
+              setIsProfessional(false);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch cards in layout', err);
+      }
+    };
+    checkCardType();
+  }, [user]);
 
   if (isLoading || !user) {
     return (
@@ -66,8 +107,23 @@ export default function DashboardLayout({
         <nav className="flex-1 px-4 space-y-1">
           <SidebarLink href="/dashboard" icon="dashboard" active={pathname === '/dashboard'}>Dashboard</SidebarLink>
           <SidebarLink href="/dashboard/cards" icon="cards" active={pathname === '/dashboard/cards'}>My Cards</SidebarLink>
-          <SidebarLink href="/dashboard/products" icon="products" active={pathname === '/dashboard/products'}>Products</SidebarLink>
-          <SidebarLink href="/dashboard/orders" icon="orders" active={pathname === '/dashboard/orders'}>Orders</SidebarLink>
+          {!hideShopModules && (
+            <>
+              {!isProfessional && (
+                <>
+                  <SidebarLink href="/dashboard/products" icon="products" active={pathname === '/dashboard/products'}>
+                    Products
+                  </SidebarLink>
+                  <SidebarLink href="/dashboard/orders" icon="orders" active={pathname === '/dashboard/orders'}>Orders</SidebarLink>
+                </>
+              )}
+              {isProfessional && (
+                <SidebarLink href="/dashboard/services" icon="products" active={pathname === '/dashboard/services'}>
+                  Services
+                </SidebarLink>
+              )}
+            </>
+          )}
           <SidebarLink href="/dashboard/leads" icon="leads" active={pathname === '/dashboard/leads'}>Leads</SidebarLink>
           <SidebarLink href="/dashboard/analytics" icon="analytics" active={pathname === '/dashboard/analytics'}>Analytics</SidebarLink>
           <SidebarLink href="/dashboard/settings" icon="settings" active={pathname === '/dashboard/settings'}>Settings</SidebarLink>
@@ -111,6 +167,7 @@ export default function DashboardLayout({
               {pathname === '/dashboard' ? 'Dashboard' :
                pathname === '/dashboard/cards' ? 'My Cards' :
                pathname === '/dashboard/products' ? 'Products' :
+               pathname === '/dashboard/services' ? 'Services' :
                pathname === '/dashboard/leads' ? 'Leads' :
                pathname === '/dashboard/analytics' ? 'Analytics' :
                pathname === '/dashboard/settings' ? 'Settings' : 'Dashboard'}

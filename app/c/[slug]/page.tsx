@@ -7,7 +7,7 @@ async function getCardData(slug: string) {
   try {
     // Replace with absolute backend URL dynamically in production
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards/public/${slug}`, {
-      next: { revalidate: 60 } // ISR for fast loading
+      cache: 'no-store'
     });
     if (!res.ok) return null;
     return res.json();
@@ -30,13 +30,28 @@ async function getProducts() {
   }
 }
 
+// Fetch global active services server-side
+async function getServices() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/services`, {
+      next: { revalidate: 60 }
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.services || [];
+  } catch (e) {
+    return [];
+  }
+}
+
 export default async function PublicCardPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
-  // Fetch card data and products concurrently
-  const [data, products] = await Promise.all([
+  // Fetch card data, products and services concurrently
+  const [data, products, services] = await Promise.all([
     getCardData(slug),
-    getProducts()
+    getProducts(),
+    getServices()
   ]);
 
   if (!data || !data.card) {
@@ -70,5 +85,5 @@ export default async function PublicCardPage({ params }: { params: Promise<{ slu
 
   const primaryColor = data.theme?.primary_color || getHexColor(themeColor);
 
-  return <PublicCardView data={data} products={products} />;
+  return <PublicCardView data={data} products={products} services={services} />;
 }

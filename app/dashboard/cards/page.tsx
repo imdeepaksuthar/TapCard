@@ -272,7 +272,7 @@ export default function MyCards() {
           </div>
           {cards.length === 0 && (
             <button
-              onClick={() => { router.push('/dashboard/cards/create'); playUISound('click'); }}
+              onClick={() => router.push('/dashboard/cards/create')}
               className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-2.5 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +301,7 @@ export default function MyCards() {
               Create your first digital business card and start sharing your professional profile.
             </p>
             <button
-              onClick={() => { router.push('/dashboard/cards/create'); playUISound('click'); }}
+              onClick={() => router.push('/dashboard/cards/create')}
               className="bg-white/5 hover:bg-white/10 border border-white/10 py-3 px-6 rounded-xl font-semibold text-white transition-all duration-300"
             >
               Create Your First Card

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\BusinessCardController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\OTPAuthController;
@@ -44,6 +45,7 @@ Route::post('/auth/otp/login', [OTPAuthController::class, 'loginWithOTP']);
 
 // Public Profile Fetch by Slug
 Route::get('/cards/public/{slug}', [BusinessCardController::class, 'showPublic']);
+Route::post('/cards/public/{slug}/appointments', [BusinessCardController::class, 'bookAppointment']);
 Route::get('/cards/public/{slug}/vcard', [BusinessCardController::class, 'downloadVCard']);
 
 // Lead Injection Endpoint
@@ -51,6 +53,9 @@ Route::post('/leads', [LeadController::class, 'store']);
 
 // Public Products Listing
 Route::get('/products', [ProductController::class, 'index']);
+
+// Public Services Listing
+Route::get('/services', [ServiceController::class, 'index']);
 
 // Public Categories Listing
 Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
@@ -75,6 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Card CRUD Actions
     Route::apiResource('cards', BusinessCardController::class);
+    Route::get('/appointments', [\App\Http\Controllers\Api\AppointmentController::class, 'index']);
+    Route::put('/appointments/{id}/status', [\App\Http\Controllers\Api\AppointmentController::class, 'updateStatus']);
     
     // Lead Actions
     Route::get('/leads', [LeadController::class, 'index']);
@@ -98,5 +105,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+    // Service Actions (All authenticated users can manage services)
+    Route::post('/services', [ServiceController::class, 'store']);
+    Route::put('/services/{service}', [ServiceController::class, 'update']);
+    Route::delete('/services/{service}', [ServiceController::class, 'destroy']);
 });
 

@@ -232,6 +232,14 @@ const Icon = {
       <rect x="3" y="14" width="7" height="7" rx="1" />
     </svg>
   ),
+  Calendar: (p: any) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  ),
   Download: (p: AnyObj) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -255,8 +263,10 @@ const SOCIAL_META: Record<string, { label: string; color: string; href: (v: stri
   youtube:   { label: 'YouTube',   color: '#FF0000', href: (v) => v, Icon: Icon.YouTube },
 };
 
-export default function PublicCardView({ data, products = [] }: { data: any, products?: any[] }) {
+export default function PublicCardView({ data, products = [], services = [] }: { data: any, products?: any[], services?: any[] }) {
   const { card } = data;
+  const isPersonal = card.card_type === 'personal' || card.template_id === 'personal';
+  const isProfessional = card.card_type === 'professional' || card.template_id === 'professional';
   const personalInfo   = asObject(card.personal_info);
   const contactButtons = asObject(card.contact_buttons);
   const socialLinks    = asObject(card.social_links);
@@ -428,30 +438,53 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
   const [gstData, setGstData] = useState<any>(null);
   const [showGstModal, setShowGstModal] = useState(false);
 
-  // Products state
+  // Products/Services state
+  const items = isProfessional ? services : products;
+  const itemLabel = isProfessional ? 'Our Services' : 'Our Products';
+  const itemSearchPlaceholder = isProfessional ? 'Search services...' : 'Search products...';
   const [productSearch, setProductSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [productToView, setProductToView] = useState<any>(null);
   const [productViewImgIdx, setProductViewImgIdx] = useState(0);
 
+  // Native Appointment Booking State
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [bookingDate, setBookingDate] = useState<string>('');
+  const [bookingTime, setBookingTime] = useState<string>('');
+  const [bookingName, setBookingName] = useState('');
+  const [bookingEmail, setBookingEmail] = useState('');
+  const [bookingPhone, setBookingPhone] = useState('');
+  const [bookingNotes, setBookingNotes] = useState('');
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [localBookedSlots, setLocalBookedSlots] = useState<any[]>(data.booked_slots || []);
+  
+  const [currentUrl, setCurrentUrl] = useState(`https://tapcard.com/c/${card?.slug}`);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCurrentUrl(window.location.href);
+    }
+  }, []);
+
   const productCategories = useMemo(() => {
-    if (!products) return ['All'];
+    if (!items) return ['All'];
     const cats = new Set<string>();
-    products.forEach((p: any) => {
+    items.forEach((p: any) => {
       if (p.is_active && p.category) cats.add(p.category);
     });
     return ['All', ...Array.from(cats)];
-  }, [products]);
+  }, [items]);
 
   const filteredProducts = useMemo(() => {
-    if (!products) return [];
-    return products.filter((p: any) => {
+    if (!items) return [];
+    return items.filter((p: any) => {
       if (!p.is_active) return false;
       const matchesSearch = p.name?.toLowerCase().includes(productSearch.toLowerCase()) || p.description?.toLowerCase().includes(productSearch.toLowerCase());
       const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [products, productSearch, selectedCategory]);
+  }, [items, productSearch, selectedCategory]);
 
   const handleVerifyGst = async (gstNo: string) => {
     setVerifyingGst(true);
@@ -627,14 +660,14 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
       .filter(Boolean)
       .join(', ');
 
-  const hasPayment = !!(paymentInfo.upi_id || paymentInfo.upi || paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.qr_path);
-  const hasLocationBlock = showLocation && (locationInfo.city || locationInfo.state || locationInfo.map_url);
-  const hasBusinessBlock = showCompany && (companyDetails.company_name || companyDetails.gst || companyDetails.website || (showAddress && fullAddress));
+  const hasPayment = !isPersonal && !!(paymentInfo.upi_id || paymentInfo.upi || paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.qr_path);
+  const hasLocationBlock = !isPersonal && showLocation && (locationInfo.city || locationInfo.state || locationInfo.map_url);
+  const hasBusinessBlock = !isPersonal && showCompany && (companyDetails.company_name || companyDetails.gst || companyDetails.website || (showAddress && fullAddress));
   
-  const hasProprietorBlock = showProprietor && proprietorDetails.length > 0 && proprietorDetails.some((p: any) => p.name);
+  const hasProprietorBlock = !isPersonal && showProprietor && proprietorDetails.length > 0 && proprietorDetails.some((p: any) => p.name);
   const hasGalleryBlock = showGallery && galleryContent.length > 0;
-  const hasHoursBlock = showHours && Object.keys(openingHours).length > 0;
-  const hasBrochuresBlock = showBrochures && brochurePdfs.length > 0;
+  const hasHoursBlock = !isPersonal && showHours && Object.keys(openingHours).length > 0;
+  const hasBrochuresBlock = !isPersonal && showBrochures && brochurePdfs.length > 0;
 
   const copyToClipboard = async (label: string, value: string) => {
     try {
@@ -643,6 +676,98 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
       playUISound('success');
       setTimeout(() => setCopied(null), 1600);
     } catch {}
+  };
+
+  const generateTimeSlots = (dateString: string) => {
+    if (!card.appointment_details || !dateString) return [];
+    
+    const { working_days, start_time, end_time, slot_duration } = card.appointment_details;
+    const dateObj = new Date(dateString);
+    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+
+    if (working_days && !working_days.includes(dayName)) {
+      return []; // Not a working day
+    }
+
+    const slots = [];
+    const [startHour, startMin] = (start_time || '09:00').split(':').map(Number);
+    const [endHour, endMin] = (end_time || '17:00').split(':').map(Number);
+    const duration = Number(slot_duration || 30);
+
+    let current = new Date(dateObj);
+    current.setHours(startHour, startMin, 0, 0);
+
+    const end = new Date(dateObj);
+    end.setHours(endHour, endMin, 0, 0);
+
+    const bookedSlots = localBookedSlots;
+
+    while (current < end) {
+      const timeString = current.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      
+      // Convert current time to backend format HH:mm:ss safely
+      const h = current.getHours().toString().padStart(2, '0');
+      const m = current.getMinutes().toString().padStart(2, '0');
+      const backendTimeFormat = `${h}:${m}:00`;
+      
+      const isBooked = bookedSlots.some((bs: any) => bs.date === dateString && bs.time === backendTimeFormat);
+
+      slots.push({ time: timeString, isBooked });
+      
+      current.setMinutes(current.getMinutes() + duration);
+    }
+    return slots;
+  };
+
+  const handleBookAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookingDate || !bookingTime || !bookingName || !bookingEmail) return;
+
+    setIsSubmittingBooking(true);
+    setFormError('');
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards/public/${card.slug}/appointments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          name: bookingName,
+          email: bookingEmail,
+          phone: bookingPhone,
+          date: bookingDate,
+          time: bookingTime,
+          notes: bookingNotes
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to book appointment');
+      
+      // Add to local booked slots to hide it immediately in current session
+      const dateObjLocal = new Date(`2000-01-01 ${bookingTime}`);
+      const hLocal = dateObjLocal.getHours().toString().padStart(2, '0');
+      const mLocal = dateObjLocal.getMinutes().toString().padStart(2, '0');
+      const backendTimeStr = `${hLocal}:${mLocal}:00`;
+      setLocalBookedSlots((prev) => [...prev, { date: bookingDate, time: backendTimeStr }]);
+
+      setBookingSuccess(true);
+      setTimeout(() => {
+        setShowAppointmentModal(false);
+        setBookingSuccess(false);
+        setBookingName('');
+        setBookingEmail('');
+        setBookingPhone('');
+        setBookingNotes('');
+        setBookingDate('');
+        setBookingTime('');
+      }, 3000);
+    } catch (err) {
+      setFormError('Failed to book appointment. Please try again.');
+    } finally {
+      setIsSubmittingBooking(false);
+    }
   };
 
   const handleShare = async () => {
@@ -773,11 +898,13 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                   }
                   back={
                     <div
-                      className={`flex h-full w-full flex-col items-center justify-center rounded-full ring-4 text-white shadow-xl ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}
-                      style={{ background: `radial-gradient(circle at 30% 30%, ${palette.accent}, ${palette.dark})` }}
+                      className={`flex h-full w-full flex-col items-center justify-center rounded-full ring-4 bg-white shadow-xl ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}
                     >
-                      <Icon.QrCode className="h-7 w-7 opacity-90" />
-                      <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] opacity-80">Tap to flip</span>
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=${encodeURIComponent(currentUrl)}`} 
+                        alt="QR Code" 
+                        className="h-3/4 w-3/4 object-contain"
+                      />
                     </div>
                   }
                 />
@@ -881,27 +1008,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               />
             </motion.div>
 
-            {/* ---- PROMINENT SHARE BUTTON ---- */}
-            <motion.div
-              initial="hidden"
-              animate="show"
-              variants={sectionVariants}
-              className="mt-4"
-            >
-              <button
-                onClick={() => { handleShare(); playUISound('click'); }}
-                className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl p-4 shadow-lg transition active:scale-[0.98]"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <div className="absolute inset-0 bg-white/20 opacity-0 transition-opacity group-hover:opacity-100" />
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md">
-                  {shareOk ? <Icon.Check className="h-4 w-4" /> : <Icon.Share className="h-4 w-4" />}
-                </div>
-                <span className="text-sm sm:text-base font-bold text-white tracking-wide">
-                  {shareOk ? 'Copied!' : 'Share (AirDrop, Social, NFC)'}
-                </span>
-              </button>
-            </motion.div>
+
             {/* ---- ABOUT ---- */}
             {personalInfo.bio && (
               <Section title="About" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
@@ -1230,12 +1337,12 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               </Section>
             )}
 
-            {/* ---- PRODUCTS (SHOP) ---- */}
-            {products && products.length > 0 && (
+            {/* ---- PRODUCTS / SERVICES (SHOP) ---- */}
+            {!isPersonal && items && items.length > 0 && (
               <div className="mt-6">
                 <div className="mb-2.5 flex items-center justify-between">
-                  <h3 className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Our Products</h3>
-                  <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{products.length} items</span>
+                  <h3 className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{itemLabel}</h3>
+                  <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{items.length} items</span>
                 </div>
 
                 {/* Search Bar */}
@@ -1245,7 +1352,7 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                   </div>
                   <input
                     type="text"
-                    placeholder="Search products..."
+                    placeholder={itemSearchPlaceholder}
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                     className={`w-full rounded-2xl py-3 pl-11 pr-4 text-sm font-medium outline-none transition ${
@@ -1412,9 +1519,38 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
                 ) : (
                   <div className={`flex flex-col items-center justify-center rounded-3xl py-12 text-center ${cardStyle}`}>
                     <Icon.Search className={`mb-3 h-8 w-8 opacity-20 ${isDark ? 'text-white' : 'text-slate-900'}`} />
-                    <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>No products found</p>
+                    <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>No items found</p>
                     <p className={`mt-1 text-xs ${textMuted}`}>Try adjusting your search or category filter.</p>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* ---- APPOINTMENT / SCHEDULE ---- */}
+            {isProfessional && card.appointment_details?.is_enabled && (
+              <div className="mt-6 w-full">
+                {(!card.appointment_details.booking_type || card.appointment_details.booking_type === 'url') ? (
+                  card.appointment_details.booking_url && (
+                    <a
+                      href={card.appointment_details.booking_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full rounded-2xl py-3.5 text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      <Icon.Calendar className="h-4 w-4" />
+                      <span>{card.appointment_details.title || 'Book an Appointment'}</span>
+                    </a>
+                  )
+                ) : (
+                  <button
+                    onClick={() => { setShowAppointmentModal(true); playUISound('pop'); }}
+                    className="w-full rounded-2xl py-3.5 text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <Icon.Calendar className="h-4 w-4" />
+                    <span>{card.appointment_details.title || 'Book an Appointment'}</span>
+                  </button>
                 )}
               </div>
             )}
@@ -2030,6 +2166,166 @@ export default function PublicCardView({ data, products = [] }: { data: any, pro
               className="w-full max-w-4xl max-h-[85vh] object-contain rounded-xl shadow-2xl" 
               onClick={(e) => e.stopPropagation()}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Appointment Modal */}
+      <AnimatePresence>
+        {showAppointmentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center p-4"
+            onClick={() => setShowAppointmentModal(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className={`w-full max-w-md overflow-hidden rounded-t-[32px] sm:rounded-3xl ${isDark ? 'bg-[#1c1c1e] text-white shadow-2xl shadow-black/50 border border-white/10' : 'bg-white text-slate-900 shadow-2xl'} p-6 max-h-[85vh] overflow-y-auto`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <h3 className="text-xl font-bold">Book Appointment</h3>
+                <button
+                  onClick={() => setShowAppointmentModal(false)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-100 hover:bg-slate-200'}`}
+                >
+                  <Icon.X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {bookingSuccess ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <div className="h-16 w-16 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mb-4">
+                    <Icon.Check className="h-8 w-8" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-2">Booking Confirmed!</h4>
+                  <p className={`text-sm ${textMuted}`}>Your appointment has been successfully requested.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleBookAppointment} className="space-y-4">
+                  {formError && (
+                    <div className="p-3 text-sm text-red-500 bg-red-500/10 rounded-xl border border-red-500/20">
+                      {formError}
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Select Date</label>
+                    <input 
+                      type="date" 
+                      required
+                      min={new Date().toISOString().split('T')[0]}
+                      value={bookingDate}
+                      onChange={(e) => {
+                        setBookingDate(e.target.value);
+                        setBookingTime('');
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors ${isDark ? 'bg-black/50 border-white/10 text-white [color-scheme:dark]' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                    />
+                  </div>
+
+                  {bookingDate && (
+                    <div>
+                      <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Select Time</label>
+                      <div className="grid grid-cols-3 gap-2 max-h-[160px] overflow-y-auto p-1">
+                        {generateTimeSlots(bookingDate).map(slot => (
+                          <button
+                            key={slot.time}
+                            type="button"
+                            disabled={slot.isBooked}
+                            onClick={() => {
+                              if (!slot.isBooked) setBookingTime(slot.time);
+                            }}
+                            className={`py-2 px-2 text-xs font-medium rounded-lg border transition-all ${
+                              slot.isBooked
+                                ? isDark ? 'border-white/5 bg-white/5 text-white/30 cursor-not-allowed line-through' : 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed line-through'
+                                : bookingTime === slot.time 
+                                  ? 'bg-blue-500 text-white border-blue-500' 
+                                  : isDark ? 'border-white/10 text-white hover:bg-white/5' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {slot.time}
+                          </button>
+                        ))}
+                        {generateTimeSlots(bookingDate).length === 0 && (
+                          <div className={`col-span-3 text-center py-4 text-sm ${textMuted}`}>
+                            No available slots for this date.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {bookingTime && (
+                    <div className="space-y-4 pt-4 border-t border-dashed border-gray-500/30">
+                      <div>
+                        <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Your Name</label>
+                        <input 
+                          type="text" 
+                          required
+                          value={bookingName}
+                          onChange={(e) => setBookingName(e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors ${isDark ? 'bg-black/50 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                          placeholder="John Doe"
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Your Email</label>
+                        <input 
+                          type="email" 
+                          required
+                          value={bookingEmail}
+                          onChange={(e) => setBookingEmail(e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors ${isDark ? 'bg-black/50 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                          placeholder="john@example.com"
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Phone Number (Optional)</label>
+                        <input 
+                          type="tel" 
+                          value={bookingPhone}
+                          onChange={(e) => setBookingPhone(e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors ${isDark ? 'bg-black/50 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                          placeholder="+1 234 567 890"
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Notes (Optional)</label>
+                        <textarea 
+                          rows={2}
+                          value={bookingNotes}
+                          onChange={(e) => setBookingNotes(e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors resize-none ${isDark ? 'bg-black/50 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                          placeholder="Anything I should know?"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmittingBooking}
+                        className="w-full mt-4 flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        {isSubmittingBooking ? (
+                          <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Icon.Calendar className="h-4 w-4" />
+                            Confirm Booking
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </form>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

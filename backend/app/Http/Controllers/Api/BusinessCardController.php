@@ -54,6 +54,7 @@ class BusinessCardController extends Controller
             'gallery_content' => 'nullable|array',
             'opening_hours' => 'nullable|array',
             'brochure_pdfs' => 'nullable|array',
+            'appointment_details' => 'nullable|array',
             'custom_branding' => 'nullable|array',
             'seo_metadata' => 'nullable|array',
         ]);
@@ -80,6 +81,7 @@ class BusinessCardController extends Controller
             'gallery_content' => $validated['gallery_content'] ?? [],
             'opening_hours' => $validated['opening_hours'] ?? [],
             'brochure_pdfs' => $validated['brochure_pdfs'] ?? [],
+            'appointment_details' => $validated['appointment_details'] ?? [],
             'custom_branding' => $validated['custom_branding'] ?? [],
             'seo_metadata' => $validated['seo_metadata'] ?? [],
             'views_count' => 0,
@@ -140,6 +142,7 @@ class BusinessCardController extends Controller
             'gallery_content' => 'nullable|array',
             'opening_hours' => 'nullable|array',
             'brochure_pdfs' => 'nullable|array',
+            'appointment_details' => 'nullable|array',
             'custom_branding' => 'nullable|array',
             'seo_metadata' => 'nullable|array',
         ]);
@@ -194,9 +197,16 @@ class BusinessCardController extends Controller
                 ->first();
         }
 
+        // Fetch upcoming booked slots to prevent double booking
+        $bookedSlots = \App\Models\Appointment::where('business_card_id', $card->id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->where('date', '>=', now()->toDateString())
+            ->get(['date', 'time']);
+
         return response()->json([
             'card' => $card,
-            'theme' => $theme
+            'theme' => $theme,
+            'booked_slots' => $bookedSlots
         ]);
     }
 
@@ -306,5 +316,50 @@ class BusinessCardController extends Controller
             \Illuminate\Support\Facades\Log::error('Pincode lookup exception', ['message' => $e->getMessage()]);
             return response()->json(['error' => 'Pincode API is currently unavailable.'], 503);
         }
+    }
+
+    /**
+     * Book an appointment for a specific business card.
+     */
+    public function bookAppointment(Request $request, string $slug): JsonResponse
+    {
+        $card = BusinessCard::where('slug', $slug)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'phone' => 'nullable|string',
+            'date' => 'required|date',
+            'time' => 'required|string',
+            'notes' => 'nullable|string'
+        ]);
+
+        $appointment = \App\Models\Appointment::create([
+            'business_card_id' => $card->id,
+            'user_id' => auth()->id() ?? null, // Optional if logged in
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'date' => $validated['date'],
+            'time' => \Carbon\Carbon::parse($validated['time'])->format('H:i:s'),
+            'notes' => $validated['notes'] ?? null,
+            'status' => 'pending'
+        ]);
+
+        try {
+            if ($card->user && $card->user->email) {
+                \Illuminate\Support\Facades\Mail::to($card->user->email)
+                    ->send(new \App\Mail\AppointmentBooked($appointment));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send appointment email', ['error' => $e->getMessage()]);
+        }
+
+        return response()->json([
+            'message' => 'Appointment booked successfully',
+            'appointment' => $appointment
+        ], 201);
     }
 }

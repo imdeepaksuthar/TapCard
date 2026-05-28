@@ -140,8 +140,9 @@ export default function CardForm({ id }: CardFormProps) {
 
       dark_mode_enabled: true
 
-    }
+    },
 
+    appointment_details: { is_enabled: false, booking_url: '', title: 'Book an Appointment', booking_type: 'url', working_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], start_time: '09:00', end_time: '17:00', slot_duration: '30' }
   });
 
 
@@ -474,6 +475,8 @@ export default function CardForm({ id }: CardFormProps) {
 
           custom_branding: { ...prev.custom_branding, ...(data.custom_branding || {}) },
 
+          appointment_details: { ...prev.appointment_details, ...(data.appointment_details || {}) },
+
           proprietor_details: Array.isArray(data.proprietor_details) && data.proprietor_details.length > 0
 
             ? data.proprietor_details
@@ -644,7 +647,7 @@ export default function CardForm({ id }: CardFormProps) {
 
     }
 
-    if (currentStep === 4) {
+    if (currentStep === 4 && formData.card_type !== 'personal') {
 
       if (formData.custom_branding.show_company) {
 
@@ -1042,77 +1045,81 @@ export default function CardForm({ id }: CardFormProps) {
 
     // Step 4 validations
 
-    if (formData.custom_branding.show_company) {
+    if (formData.card_type !== 'personal') {
 
-      if (!formData.company_details?.company_name?.trim()) {
+      if (formData.custom_branding.show_company) {
 
-        newErrors.company_name = 'Company Name is required.';
+        if (!formData.company_details?.company_name?.trim()) {
 
-      }
-
-      const website = formData.company_details?.website?.trim();
-
-      if (website && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(website)) {
-
-        newErrors.website = 'Please enter a valid Website URL starting with http:// or https://';
-
-      }
-
-      const gst = formData.company_details?.gst?.trim();
-
-      if (gst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gst)) {
-
-        newErrors.gst = 'Please enter a valid 15-character GST number.';
-
-      }
-
-    }
-
-    if (formData.custom_branding.show_proprietor) {
-
-      formData.proprietor_details.forEach((proprietor, index) => {
-
-        if (proprietor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proprietor.email)) {
-
-          newErrors[`proprietor_${index}_email`] = 'Please enter a valid email address.';
+          newErrors.company_name = 'Company Name is required.';
 
         }
 
-      });
+        const website = formData.company_details?.website?.trim();
 
-    }
+        if (website && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(website)) {
 
-    if (formData.custom_branding.show_payment) {
+          newErrors.website = 'Please enter a valid Website URL starting with http:// or https://';
 
-      const upi_id = formData.payment_info?.upi_id?.trim();
+        }
 
-      if (upi_id && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi_id)) {
+        const gst = formData.company_details?.gst?.trim();
 
-        newErrors.upi_id = 'Please enter a valid UPI ID.';
+        if (gst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gst)) {
 
-      }
+          newErrors.gst = 'Please enter a valid 15-character GST number.';
 
-      const ifsc_code = formData.payment_info?.ifsc_code?.trim();
-
-      if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifsc_code)) {
-
-        newErrors.ifsc_code = 'Please enter a valid 11-digit IFSC code.';
+        }
 
       }
 
-      const account_number = formData.payment_info?.account_number?.trim();
+      if (formData.custom_branding.show_proprietor) {
 
-      if (account_number && !/^[0-9]{9,18}$/.test(account_number)) {
+        formData.proprietor_details.forEach((proprietor, index) => {
 
-        newErrors.account_number = 'Please enter a valid Bank Account Number (9-18 digits).';
+          if (proprietor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proprietor.email)) {
+
+            newErrors[`proprietor_${index}_email`] = 'Please enter a valid email address.';
+
+          }
+
+        });
 
       }
 
-      const phonepe = formData.payment_info?.phonepe?.trim();
+      if (formData.custom_branding.show_payment) {
 
-      if (phonepe && !/^\+?[0-9\s\-()]{10,15}$/.test(phonepe)) {
+        const upi_id = formData.payment_info?.upi_id?.trim();
 
-        newErrors.phonepe = 'Please enter a valid PhonePe Number (10-15 digits).';
+        if (upi_id && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi_id)) {
+
+          newErrors.upi_id = 'Please enter a valid UPI ID.';
+
+        }
+
+        const ifsc_code = formData.payment_info?.ifsc_code?.trim();
+
+        if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifsc_code)) {
+
+          newErrors.ifsc_code = 'Please enter a valid 11-digit IFSC code.';
+
+        }
+
+        const account_number = formData.payment_info?.account_number?.trim();
+
+        if (account_number && !/^[0-9]{9,18}$/.test(account_number)) {
+
+          newErrors.account_number = 'Please enter a valid Bank Account Number (9-18 digits).';
+
+        }
+
+        const phonepe = formData.payment_info?.phonepe?.trim();
+
+        if (phonepe && !/^\+?[0-9\s\-()]{10,15}$/.test(phonepe)) {
+
+          newErrors.phonepe = 'Please enter a valid PhonePe Number (10-15 digits).';
+
+        }
 
       }
 
@@ -1828,103 +1835,257 @@ export default function CardForm({ id }: CardFormProps) {
 
             <div className="space-y-6">
 
-              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+              {formData.card_type !== 'personal' && (
 
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
 
-                  <div>
+                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
 
-                    <h3 className="font-semibold text-white">Company Information</h3>
+                    <div>
 
-                    <p className="text-sm text-gray-400">Display your brand's details</p>
+                      <h3 className="font-semibold text-white">Company Information</h3>
 
-                  </div>
+                      <p className="text-sm text-gray-400">Display your brand's details</p>
 
-                  <label className="relative inline-flex items-center cursor-pointer">
+                    </div>
 
-                    <input
+                    <label className="relative inline-flex items-center cursor-pointer">
 
-                      type="checkbox"
+                      <input
 
-                      className="sr-only peer"
+                        type="checkbox"
 
-                      checked={formData.custom_branding.show_company}
+                        className="sr-only peer"
 
-                      onChange={(e) => {
+                        checked={formData.custom_branding.show_company}
 
-                        const checked = e.target.checked;
+                        onChange={(e) => {
 
-                        setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_company: checked } });
+                          const checked = e.target.checked;
 
-                        if (!checked) {
+                          setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_company: checked } });
 
-                          setValidationErrors(prev => {
-
-                            const copy = { ...prev };
-
-                            delete copy.company_name;
-
-                            delete copy.gst;
-
-                            delete copy.website;
-
-                            return copy;
-
-                          });
-
-                        }
-
-                      }}
-
-                    />
-
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-
-                  </label>
-
-                </div>
-
-                {formData.custom_branding.show_company && (
-
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                      <div>
-
-                        <label className="text-sm text-gray-400 block mb-1">Company Name <span className="text-red-500">*</span></label>
-
-                        <input
-
-                          type="text"
-
-                          value={formData.company_details?.company_name || ''}
-
-                          onChange={(e) => {
-
-                            const val = e.target.value;
-
-                            setFormData({ ...formData, company_details: { ...(formData.company_details || {}), company_name: val } });
-
-
-
-                            let errorMsg = '';
-
-                            if (!val.trim()) {
-
-                              errorMsg = 'Company Name is required.';
-
-                            }
-
-
+                          if (!checked) {
 
                             setValidationErrors(prev => {
 
                               const copy = { ...prev };
 
-                              if (errorMsg) copy.company_name = errorMsg;
+                              delete copy.company_name;
 
-                              else delete copy.company_name;
+                              delete copy.gst;
+
+                              delete copy.website;
+
+                              return copy;
+
+                            });
+
+                          }
+
+                        }}
+
+                      />
+
+                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+
+                    </label>
+
+                  </div>
+
+                  {formData.custom_branding.show_company && (
+
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <div>
+
+                          <label className="text-sm text-gray-400 block mb-1">Company Name <span className="text-red-500">*</span></label>
+
+                          <input
+
+                            type="text"
+
+                            value={formData.company_details?.company_name || ''}
+
+                            onChange={(e) => {
+
+                              const val = e.target.value;
+
+                              setFormData({ ...formData, company_details: { ...(formData.company_details || {}), company_name: val } });
+
+                              setValidationErrors(prev => {
+
+                                const copy = { ...prev };
+
+                                if (!val.trim()) copy.company_name = 'Company Name is required.';
+
+                                else delete copy.company_name;
+
+                                return copy;
+
+                              });
+
+                            }}
+
+                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+
+                              validationErrors.company_name ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+
+                            }`}
+
+                          />
+
+                          {validationErrors.company_name && (
+
+                            <p className="text-xs text-red-500 mt-1">{validationErrors.company_name}</p>
+
+                          )}
+
+                        </div>
+
+                        <div>
+
+                          <label className="text-sm text-gray-400 block mb-1">GST Number</label>
+
+                          <div className="relative">
+
+                            <input
+
+                              type="text"
+
+                              value={formData.company_details?.gst || ''}
+
+                              onChange={(e) => {
+
+                                const val = e.target.value.toUpperCase();
+
+                                setFormData({ ...formData, company_details: { ...(formData.company_details || {}), gst: val } });
+
+                                let errorMsg = '';
+
+                                if (val.trim() && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(val.trim())) {
+
+                                  errorMsg = 'Please enter a valid 15-character GST number.';
+
+                                }
+
+                                setValidationErrors(prev => {
+
+                                  const copy = { ...prev };
+
+                                  if (errorMsg) copy.gst = errorMsg;
+
+                                  else delete copy.gst;
+
+                                  return copy;
+
+                                });
+
+                                if (val.length === 15 && !errorMsg) {
+
+                                  verifyGstin(val);
+
+                                } else {
+
+                                  setIsGstVerified(false);
+
+                                }
+
+                              }}
+
+                              className={`w-full bg-white/5 border rounded-xl pl-4 pr-24 py-3 text-white focus:outline-none transition-all ${
+
+                                validationErrors.gst
+
+                                  ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
+
+                                  : isGstVerified
+
+                                  ? 'border-green-500/80 focus:border-green-500 bg-green-500/5'
+
+                                  : 'border-white/10 focus:border-blue-500'
+
+                              }`}
+
+                              placeholder="e.g. 08GROPS2567D1Z8"
+
+                              maxLength={15}
+
+                            />
+
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+
+                              {isVerifyingGst && (
+
+                                <svg className="animate-spin h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24">
+
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+
+                                </svg>
+
+                              )}
+
+                              {!isVerifyingGst && isGstVerified && (
+
+                                <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-2 py-0.5 text-[10px] font-bold">
+
+                                  <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+
+                                  Verified
+
+                                </div>
+
+                              )}
+
+                            </div>
+
+                          </div>
+
+                          {validationErrors.gst && (
+
+                            <p className="text-xs text-red-500 mt-1">{validationErrors.gst}</p>
+
+                          )}
+
+                        </div>
+
+                      </div>
+
+                      <div>
+
+                        <label className="text-sm text-gray-400 block mb-1">Website URL</label>
+
+                        <input
+
+                          type="url"
+
+                          value={formData.company_details?.website || ''}
+
+                          onChange={(e) => {
+
+                            const val = e.target.value;
+
+                            setFormData({ ...formData, company_details: { ...(formData.company_details || {}), website: val } });
+
+                            let errorMsg = '';
+
+                            if (val.trim() && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(val.trim())) {
+
+                              errorMsg = 'Please enter a valid Website URL starting with http:// or https://';
+
+                            }
+
+                            setValidationErrors(prev => {
+
+                              const copy = { ...prev };
+
+                              if (errorMsg) copy.website = errorMsg;
+
+                              else delete copy.website;
 
                               return copy;
 
@@ -1934,691 +2095,600 @@ export default function CardForm({ id }: CardFormProps) {
 
                           className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
 
-                            validationErrors.company_name ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                            validationErrors.website ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
 
                           }`}
 
                         />
 
-                        {validationErrors.company_name && (
+                        {validationErrors.website && (
 
-                          <p className="text-xs text-red-500 mt-1">{validationErrors.company_name}</p>
-
-                        )}
-
-                      </div>
-
-                      <div>
-
-                        <label className="text-sm text-gray-400 block mb-1">GST Number</label>
-
-                        <div className="relative">
-
-                          <input
-
-                            type="text"
-
-                            value={formData.company_details?.gst || ''}
-
-                            onChange={(e) => {
-
-                              const val = e.target.value.toUpperCase(); // GSTIN is uppercase
-
-                              setFormData({ ...formData, company_details: { ...(formData.company_details || {}), gst: val } });
-
-
-
-                              let errorMsg = '';
-
-                              if (val.trim() && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(val.trim())) {
-
-                                errorMsg = 'Please enter a valid 15-character GST number.';
-
-                              }
-
-
-
-                              setValidationErrors(prev => {
-
-                                const copy = { ...prev };
-
-                                if (errorMsg) copy.gst = errorMsg;
-
-                                else delete copy.gst;
-
-                                return copy;
-
-                              });
-
-
-
-                              // Trigger verification when length reaches exactly 15 and format is correct
-
-                              if (val.trim().length === 15 && !errorMsg) {
-
-                                verifyGstin(val.trim());
-
-                              } else {
-
-                                setIsGstVerified(false);
-
-                              }
-
-                            }}
-
-                            className={`w-full bg-white/5 border rounded-xl pl-4 pr-24 py-3 text-white focus:outline-none transition-all ${
-
-                              validationErrors.gst
-
-                                ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
-
-                                : isGstVerified
-
-                                ? 'border-green-500/80 focus:border-green-500 bg-green-500/5'
-
-                                : 'border-white/10 focus:border-blue-500'
-
-                            }`}
-
-                            placeholder="e.g. 08GROPS2567D1Z8"
-
-                            maxLength={15}
-
-                          />
-
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-
-                            {isVerifyingGst && (
-
-                              <svg className="animate-spin h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24">
-
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-
-                              </svg>
-
-                            )}
-
-                            {!isVerifyingGst && isGstVerified && (
-
-                              <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-2 py-0.5 text-[10px] font-bold">
-
-                                <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
-
-                                Verified
-
-                              </div>
-
-                            )}
-
-                          </div>
-
-                        </div>
-
-                        {validationErrors.gst && (
-
-                          <p className="text-xs text-red-500 mt-1">{validationErrors.gst}</p>
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.website}</p>
 
                         )}
 
                       </div>
 
-                    </div>
+                    </motion.div>
 
-                    <div>
-
-                      <label className="text-sm text-gray-400 block mb-1">Website URL</label>
-
-                      <input
-
-                        type="url"
-
-                        value={formData.company_details?.website || ''}
-
-                        onChange={(e) => {
-
-                          const val = e.target.value;
-
-                          setFormData({ ...formData, company_details: { ...(formData.company_details || {}), website: val } });
-
-
-
-                          let errorMsg = '';
-
-                          if (val.trim() && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(val.trim())) {
-
-                            errorMsg = 'Please enter a valid Website URL starting with http:// or https://';
-
-                          }
-
-
-
-                          setValidationErrors(prev => {
-
-                            const copy = { ...prev };
-
-                            if (errorMsg) copy.website = errorMsg;
-
-                            else delete copy.website;
-
-                            return copy;
-
-                          });
-
-                        }}
-
-                        className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
-
-                          validationErrors.website ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
-
-                        }`}
-
-                      />
-
-                      {validationErrors.website && (
-
-                        <p className="text-xs text-red-500 mt-1">{validationErrors.website}</p>
-
-                      )}
-
-                    </div>
-
-                  </motion.div>
-
-                )}
-
-              </div>
-
-
-
-              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
-
-                  <div>
-
-                    <h3 className="font-semibold text-white">Payment Details</h3>
-
-                    <p className="text-sm text-gray-400">Allow clients to pay you directly</p>
-
-                  </div>
-
-                  <label className="relative inline-flex items-center cursor-pointer">
-
-                    <input
-
-                      type="checkbox"
-
-                      className="sr-only peer"
-
-                      checked={formData.custom_branding.show_payment}
-
-                      onChange={(e) => {
-
-                        const checked = e.target.checked;
-
-                        setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_payment: checked } });
-
-                        if (!checked) {
-
-                          setValidationErrors(prev => {
-
-                            const copy = { ...prev };
-
-                            delete copy.upi_id;
-
-                            delete copy.ifsc_code;
-
-                            delete copy.account_number;
-
-                            delete copy.phonepe;
-
-                            return copy;
-
-                          });
-
-                        }
-
-                      }}
-
-                    />
-
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-
-                  </label>
+                  )}
 
                 </div>
 
-                {formData.custom_branding.show_payment && (
+              )}
 
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-8">
 
-                    
 
-                    {/* Bank Details Section */}
+              {formData.card_type !== 'personal' && (
+
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+
+                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
 
                     <div>
 
-                      <h4 className="text-sm font-semibold text-white mb-4 pb-2 border-b border-white/10">
+                      <h3 className="font-semibold text-white">Payment Details</h3>
 
-                        Bank Details
-
-                      </h4>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        <div className="md:col-span-2">
-
-                          <label className="text-sm text-gray-400 block mb-1">Bank Name</label>
-
-                          <input type="text" value={formData.payment_info?.bank_name || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), bank_name: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
-
-                        </div>
-
-                        <div>
-
-                          <label className="text-sm text-gray-400 block mb-1">Account Number</label>
-
-                          <input
-
-                            type="text"
-
-                            value={formData.payment_info?.account_number || ''}
-
-                            onChange={(e) => {
-
-                              const val = e.target.value;
-
-                              setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), account_number: val } });
-
-
-
-                              let errorMsg = '';
-
-                              if (val.trim() && !/^[0-9]{9,18}$/.test(val.trim())) {
-
-                                errorMsg = 'Please enter a valid Bank Account Number (9-18 digits).';
-
-                              }
-
-
-
-                              setValidationErrors(prev => {
-
-                                const copy = { ...prev };
-
-                                if (errorMsg) copy.account_number = errorMsg;
-
-                                else delete copy.account_number;
-
-                                return copy;
-
-                              });
-
-                            }}
-
-                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
-
-                              validationErrors.account_number ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
-
-                            }`}
-
-                          />
-
-                          {validationErrors.account_number && (
-
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.account_number}</p>
-
-                          )}
-
-                        </div>
-
-                        <div>
-
-                          <label className="text-sm text-gray-400 block mb-1">IFSC Code</label>
-
-                          <input
-
-                            type="text"
-
-                            value={formData.payment_info?.ifsc_code || ''}
-
-                            onChange={(e) => {
-
-                              const val = e.target.value;
-
-                              setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), ifsc_code: val } });
-
-
-
-                              let errorMsg = '';
-
-                              if (val.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(val.trim())) {
-
-                                errorMsg = 'Please enter a valid 11-digit IFSC code.';
-
-                              }
-
-
-
-                              setValidationErrors(prev => {
-
-                                const copy = { ...prev };
-
-                                if (errorMsg) copy.ifsc_code = errorMsg;
-
-                                else delete copy.ifsc_code;
-
-                                return copy;
-
-                              });
-
-                            }}
-
-                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
-
-                              validationErrors.ifsc_code ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
-
-                            }`}
-
-                          />
-
-                          {validationErrors.ifsc_code && (
-
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.ifsc_code}</p>
-
-                          )}
-
-                        </div>
-
-                      </div>
+                      <p className="text-sm text-gray-400">Allow clients to pay you directly</p>
 
                     </div>
 
+                    <label className="relative inline-flex items-center cursor-pointer">
+
+                      <input
+
+                        type="checkbox"
+
+                        className="sr-only peer"
+
+                        checked={formData.custom_branding.show_payment}
+
+                        onChange={(e) => {
+
+                          const checked = e.target.checked;
+
+                          setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_payment: checked } });
+
+                          if (!checked) {
+
+                            setValidationErrors(prev => {
+
+                              const copy = { ...prev };
+
+                              delete copy.upi_id;
+
+                              delete copy.ifsc_code;
+
+                              delete copy.account_number;
+
+                              delete copy.phonepe;
+
+                              return copy;
+
+                            });
+
+                          }
+
+                        }}
+
+                      />
+
+                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+
+                    </label>
+
+                  </div>
+
+                  {formData.custom_branding.show_payment && (
+
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-8">
+
+                      
+
+                      {/* Bank Details Section */}
+
+                      <div>
+
+                        <h4 className="text-sm font-semibold text-white mb-4 pb-2 border-b border-white/10">
+
+                          Bank Details
+
+                        </h4>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                          <div className="md:col-span-2">
+
+                            <label className="text-sm text-gray-400 block mb-1">Bank Name</label>
+
+                            <input type="text" value={formData.payment_info?.bank_name || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), bank_name: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+
+                          </div>
+
+                          <div>
+
+                            <label className="text-sm text-gray-400 block mb-1">Account Number</label>
+
+                            <input
+
+                              type="text"
+
+                              value={formData.payment_info?.account_number || ''}
+
+                              onChange={(e) => {
+
+                                const val = e.target.value;
+
+                                setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), account_number: val } });
 
 
-                    {/* Bar Code / UPI Section */}
 
-                    <div>
+                                let errorMsg = '';
 
-                      <h4 className="text-sm font-semibold text-white mb-4 pb-2 border-b border-white/10">
+                                if (val.trim() && !/^[0-9]{9,18}$/.test(val.trim())) {
 
-                        Bar Code / UPI
+                                  errorMsg = 'Please enter a valid Bank Account Number (9-18 digits).';
 
-                      </h4>
+                                }
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                        <div>
 
-                          <label className="text-sm text-gray-400 block mb-1">Payment QR Code</label>
+                                setValidationErrors(prev => {
 
-                          <div className="flex items-center gap-3">
+                                  const copy = { ...prev };
 
-                            {formData.payment_info?.qr_path && (
+                                  if (errorMsg) copy.account_number = errorMsg;
 
-                              <img src={formData.payment_info.qr_path} alt="QR" className="h-10 w-10 rounded-lg object-cover bg-white p-0.5" />
+                                  else delete copy.account_number;
+
+                                  return copy;
+
+                                });
+
+                              }}
+
+                              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+
+                                validationErrors.account_number ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+
+                              }`}
+
+                            />
+
+                            {validationErrors.account_number && (
+
+                              <p className="text-xs text-red-500 mt-1">{validationErrors.account_number}</p>
 
                             )}
 
-                            <input type="file" accept="image/*" onChange={handleQrUpload} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                          </div>
+
+                          <div>
+
+                            <label className="text-sm text-gray-400 block mb-1">IFSC Code</label>
+
+                            <input
+
+                              type="text"
+
+                              value={formData.payment_info?.ifsc_code || ''}
+
+                              onChange={(e) => {
+
+                                const val = e.target.value;
+
+                                setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), ifsc_code: val } });
+
+
+
+                                let errorMsg = '';
+
+                                if (val.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(val.trim())) {
+
+                                  errorMsg = 'Please enter a valid 11-digit IFSC code.';
+
+                                }
+
+
+
+                                setValidationErrors(prev => {
+
+                                  const copy = { ...prev };
+
+                                  if (errorMsg) copy.ifsc_code = errorMsg;
+
+                                  else delete copy.ifsc_code;
+
+                                  return copy;
+
+                                });
+
+                              }}
+
+                              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+
+                                validationErrors.ifsc_code ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+
+                              }`}
+
+                            />
+
+                            {validationErrors.ifsc_code && (
+
+                              <p className="text-xs text-red-500 mt-1">{validationErrors.ifsc_code}</p>
+
+                            )}
 
                           </div>
 
                         </div>
 
-                        <div>
-
-                          <label className="text-sm text-gray-400 block mb-1">UPI ID</label>
-
-                          <input
-
-                            type="text"
-
-                            value={formData.payment_info?.upi_id || ''}
-
-                            onChange={(e) => {
-
-                              const val = e.target.value;
-
-                              setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), upi_id: val } });
+                      </div>
 
 
 
-                              let errorMsg = '';
+                      {/* Bar Code / UPI Section */}
 
-                              if (val.trim() && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(val.trim())) {
+                      <div>
 
-                                errorMsg = 'Please enter a valid UPI ID.';
+                        <h4 className="text-sm font-semibold text-white mb-4 pb-2 border-b border-white/10">
 
-                              }
+                          Bar Code / UPI
 
+                        </h4>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                              setValidationErrors(prev => {
+                          <div>
 
-                                const copy = { ...prev };
+                            <label className="text-sm text-gray-400 block mb-1">Payment QR Code</label>
 
-                                if (errorMsg) copy.upi_id = errorMsg;
+                            <div className="flex items-center gap-3">
 
-                                else delete copy.upi_id;
+                              {formData.payment_info?.qr_path && (
 
-                                return copy;
+                                <img src={formData.payment_info.qr_path} alt="QR" className="h-10 w-10 rounded-lg object-cover bg-white p-0.5" />
 
-                              });
+                              )}
 
-                            }}
+                              <input type="file" accept="image/*" onChange={handleQrUpload} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
 
-                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                            </div>
 
-                              validationErrors.upi_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                          </div>
 
-                            }`}
+                          <div>
 
-                            placeholder="username@upi"
+                            <label className="text-sm text-gray-400 block mb-1">UPI ID</label>
 
-                          />
+                            <input
 
-                          {validationErrors.upi_id && (
+                              type="text"
 
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.upi_id}</p>
+                              value={formData.payment_info?.upi_id || ''}
 
-                          )}
+                              onChange={(e) => {
 
-                        </div>
+                                const val = e.target.value;
 
-                        <div>
-
-                          <label className="text-sm text-gray-400 block mb-1">PhonePe Number</label>
-
-                          <input
-
-                            type="text"
-
-                            value={formData.payment_info?.phonepe || ''}
-
-                            onChange={(e) => {
-
-                              const val = e.target.value;
-
-                              setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), phonepe: val } });
+                                setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), upi_id: val } });
 
 
 
-                              let errorMsg = '';
+                                let errorMsg = '';
 
-                              if (val.trim() && !/^\+?[0-9\s\-()]{10,15}$/.test(val.trim())) {
+                                if (val.trim() && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(val.trim())) {
 
-                                errorMsg = 'Please enter a valid PhonePe Number (10-15 digits).';
+                                  errorMsg = 'Please enter a valid UPI ID.';
 
-                              }
+                                }
 
 
 
-                              setValidationErrors(prev => {
+                                setValidationErrors(prev => {
 
-                                const copy = { ...prev };
+                                  const copy = { ...prev };
 
-                                if (errorMsg) copy.phonepe = errorMsg;
+                                  if (errorMsg) copy.upi_id = errorMsg;
 
-                                else delete copy.phonepe;
+                                  else delete copy.upi_id;
 
-                                return copy;
+                                  return copy;
 
-                              });
+                                });
 
-                            }}
+                              }}
 
-                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
 
-                              validationErrors.phonepe ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                                validationErrors.upi_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
 
-                            }`}
+                              }`}
 
-                            placeholder="e.g. 9876543210"
+                              placeholder="username@upi"
 
-                          />
+                            />
 
-                          {validationErrors.phonepe && (
+                            {validationErrors.upi_id && (
 
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.phonepe}</p>
+                              <p className="text-xs text-red-500 mt-1">{validationErrors.upi_id}</p>
 
-                          )}
+                            )}
+
+                          </div>
+
+                          <div>
+
+                            <label className="text-sm text-gray-400 block mb-1">PhonePe Number</label>
+
+                            <input
+
+                              type="text"
+
+                              value={formData.payment_info?.phonepe || ''}
+
+                              onChange={(e) => {
+
+                                const val = e.target.value;
+
+                                setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), phonepe: val } });
+
+
+
+                                let errorMsg = '';
+
+                                if (val.trim() && !/^\+?[0-9\s\-()]{10,15}$/.test(val.trim())) {
+
+                                  errorMsg = 'Please enter a valid PhonePe Number (10-15 digits).';
+
+                                }
+
+
+
+                                setValidationErrors(prev => {
+
+                                  const copy = { ...prev };
+
+                                  if (errorMsg) copy.phonepe = errorMsg;
+
+                                  else delete copy.phonepe;
+
+                                  return copy;
+
+                                });
+
+                              }}
+
+                              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+
+                                validationErrors.phonepe ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+
+                              }`}
+
+                              placeholder="e.g. 9876543210"
+
+                            />
+
+                            {validationErrors.phonepe && (
+
+                              <p className="text-xs text-red-500 mt-1">{validationErrors.phonepe}</p>
+
+                            )}
+
+                          </div>
 
                         </div>
 
                       </div>
 
-                    </div>
+                    </motion.div>
 
-                  </motion.div>
+                  )}
 
-                )}
+                </div>
 
-              </div>
+              )}
 
 
 
               {/* Proprietor / Team Details */}
 
-              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+              {formData.card_type !== 'personal' && (
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
 
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
 
-                  <div>
+                    <div>
 
-                    <h3 className="font-semibold text-white">Proprietor / Team Details</h3>
+                      <h3 className="font-semibold text-white">Proprietor / Team Details</h3>
 
-                    <p className="text-sm text-gray-400">Add founders, co-founders, or key team members</p>
+                      <p className="text-sm text-gray-400">Add founders, co-founders, or key team members</p>
+
+                    </div>
+
+                    <label className="relative inline-flex items-center cursor-pointer">
+
+                      <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_proprietor} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_proprietor: e.target.checked } })} />
+
+                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+
+                    </label>
 
                   </div>
 
-                  <label className="relative inline-flex items-center cursor-pointer">
+                  {formData.custom_branding.show_proprietor && (
 
-                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_proprietor} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_proprietor: e.target.checked } })} />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-6">
 
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                      {formData.proprietor_details.map((proprietor, index) => (
 
-                  </label>
+                        <div key={index} className="space-y-4 p-4 border border-white/10 rounded-xl bg-black/10 relative">
 
-                </div>
+                          {formData.proprietor_details.length > 1 && (
 
-                {formData.custom_branding.show_proprietor && (
+                            <button
 
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-6">
+                              type="button"
 
-                    {formData.proprietor_details.map((proprietor, index) => (
+                              onClick={() => {
 
-                      <div key={index} className="space-y-4 p-4 border border-white/10 rounded-xl bg-black/10 relative">
+                                const newDetails = [...formData.proprietor_details];
 
-                        {formData.proprietor_details.length > 1 && (
+                                newDetails.splice(index, 1);
 
-                          <button
+                                setFormData({ ...formData, proprietor_details: newDetails });
 
-                            type="button"
+                              }}
 
-                            onClick={() => {
+                              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
 
-                              const newDetails = [...formData.proprietor_details];
+                            >
 
-                              newDetails.splice(index, 1);
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
 
-                              setFormData({ ...formData, proprietor_details: newDetails });
+                            </button>
 
-                            }}
+                          )}
 
-                            className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                          <div className="flex flex-col sm:flex-row gap-4 mb-4">
 
-                          >
+                            <div className="shrink-0">
 
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                              <label className="text-sm text-gray-400 block mb-2">Photo</label>
 
-                          </button>
+                              <div className="relative w-24 h-24 rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center hover:border-blue-500 transition-colors group cursor-pointer">
 
-                        )}
+                                {proprietor.image ? (
 
-                        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                                  <img src={proprietor.image} alt={proprietor.name} className="w-full h-full object-cover" />
 
-                          <div className="shrink-0">
+                                ) : (
 
-                            <label className="text-sm text-gray-400 block mb-2">Photo</label>
+                                  <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
 
-                            <div className="relative w-24 h-24 rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center hover:border-blue-500 transition-colors group cursor-pointer">
+                                )}
 
-                              {proprietor.image ? (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
 
-                                <img src={proprietor.image} alt={proprietor.name} className="w-full h-full object-cover" />
+                                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
 
-                              ) : (
+                                </div>
 
-                                <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-
-                              )}
-
-                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleProprietorImageUpload(index, e)} />
 
                               </div>
 
-                              <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleProprietorImageUpload(index, e)} />
+                            </div>
+
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                              <div>
+
+                                <label className="text-sm text-gray-400 block mb-1">Name</label>
+
+                                <input type="text" value={proprietor.name || ''} onChange={(e) => {
+
+                                  const newDetails = [...formData.proprietor_details];
+
+                                  newDetails[index].name = e.target.value;
+
+                                  setFormData({ ...formData, proprietor_details: newDetails });
+
+                                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="John Doe" />
+
+                              </div>
+
+                              <div>
+
+                                <label className="text-sm text-gray-400 block mb-1">Designation</label>
+
+                                <input type="text" value={proprietor.designation || ''} onChange={(e) => {
+
+                                  const newDetails = [...formData.proprietor_details];
+
+                                  newDetails[index].designation = e.target.value;
+
+                                  setFormData({ ...formData, proprietor_details: newDetails });
+
+                                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
+
+                              </div>
 
                             </div>
 
                           </div>
 
-                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                             <div>
 
-                              <label className="text-sm text-gray-400 block mb-1">Name</label>
+                              <label className="text-sm text-gray-400 block mb-1">Email</label>
 
-                              <input type="text" value={proprietor.name || ''} onChange={(e) => {
+                              <input type="email" value={proprietor.email || ''} onChange={(e) => {
 
                                 const newDetails = [...formData.proprietor_details];
 
-                                newDetails[index].name = e.target.value;
+                                newDetails[index].email = e.target.value;
 
                                 setFormData({ ...formData, proprietor_details: newDetails });
 
-                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="John Doe" />
+                              }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_email`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="john@example.com" />
+
+                              {validationErrors[`proprietor_${index}_email`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_email`]}</p>}
 
                             </div>
 
                             <div>
 
-                              <label className="text-sm text-gray-400 block mb-1">Designation</label>
+                              <label className="text-sm text-gray-400 block mb-1">Phone Number</label>
 
-                              <input type="text" value={proprietor.designation || ''} onChange={(e) => {
+                              <input type="tel" value={proprietor.phone || ''} onChange={(e) => {
 
                                 const newDetails = [...formData.proprietor_details];
 
-                                newDetails[index].designation = e.target.value;
+                                newDetails[index].phone = e.target.value;
 
                                 setFormData({ ...formData, proprietor_details: newDetails });
 
-                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
+                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
+
+                            </div>
+
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                            <div>
+
+                              <label className="text-sm text-gray-400 block mb-1">WhatsApp Number</label>
+
+                              <input type="tel" value={proprietor.whatsapp || ''} onChange={(e) => {
+
+                                const newDetails = [...formData.proprietor_details];
+
+                                newDetails[index].whatsapp = e.target.value;
+
+                                setFormData({ ...formData, proprietor_details: newDetails });
+
+                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
+
+                            </div>
+
+                            <div>
+
+                              <label className="text-sm text-gray-400 block mb-1">Date of Birth</label>
+
+                              <input type="date" value={proprietor.dob || ''} onChange={(e) => {
+
+                                const newDetails = [...formData.proprietor_details];
+
+                                newDetails[index].dob = e.target.value;
+
+                                setFormData({ ...formData, proprietor_details: newDetails });
+
+                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
 
                             </div>
 
@@ -2626,117 +2696,41 @@ export default function CardForm({ id }: CardFormProps) {
 
                         </div>
 
+                      ))}
 
+                      <button
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        type="button"
 
-                          <div>
+                        onClick={() => {
 
-                            <label className="text-sm text-gray-400 block mb-1">Email</label>
+                          setFormData({
 
-                            <input type="email" value={proprietor.email || ''} onChange={(e) => {
+                            ...formData,
 
-                              const newDetails = [...formData.proprietor_details];
+                            proprietor_details: [...formData.proprietor_details, { name: '', designation: '', email: '', phone: '', whatsapp: '', dob: '', image: '' }]
 
-                              newDetails[index].email = e.target.value;
+                          });
 
-                              setFormData({ ...formData, proprietor_details: newDetails });
+                        }}
 
-                            }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_email`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="john@example.com" />
+                        className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl text-blue-400 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
 
-                            {validationErrors[`proprietor_${index}_email`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_email`]}</p>}
+                      >
 
-                          </div>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
 
-                          <div>
+                        Add Another Member
 
-                            <label className="text-sm text-gray-400 block mb-1">Phone Number</label>
+                      </button>
 
-                            <input type="tel" value={proprietor.phone || ''} onChange={(e) => {
+                    </motion.div>
 
-                              const newDetails = [...formData.proprietor_details];
+                  )}
 
-                              newDetails[index].phone = e.target.value;
+                </div>
 
-                              setFormData({ ...formData, proprietor_details: newDetails });
-
-                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
-
-                          </div>
-
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                          <div>
-
-                            <label className="text-sm text-gray-400 block mb-1">WhatsApp Number</label>
-
-                            <input type="tel" value={proprietor.whatsapp || ''} onChange={(e) => {
-
-                              const newDetails = [...formData.proprietor_details];
-
-                              newDetails[index].whatsapp = e.target.value;
-
-                              setFormData({ ...formData, proprietor_details: newDetails });
-
-                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
-
-                          </div>
-
-                          <div>
-
-                            <label className="text-sm text-gray-400 block mb-1">Date of Birth</label>
-
-                            <input type="date" value={proprietor.dob || ''} onChange={(e) => {
-
-                              const newDetails = [...formData.proprietor_details];
-
-                              newDetails[index].dob = e.target.value;
-
-                              setFormData({ ...formData, proprietor_details: newDetails });
-
-                            }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
-
-                          </div>
-
-                        </div>
-
-                      </div>
-
-                    ))}
-
-                    <button
-
-                      type="button"
-
-                      onClick={() => {
-
-                        setFormData({
-
-                          ...formData,
-
-                          proprietor_details: [...formData.proprietor_details, { name: '', designation: '', email: '', phone: '', whatsapp: '', dob: '', image: '' }]
-
-                        });
-
-                      }}
-
-                      className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl text-blue-400 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-
-                    >
-
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-
-                      Add Another Member
-
-                    </button>
-
-                  </motion.div>
-
-                )}
-
-              </div>
+              )}
 
 
 
@@ -2860,95 +2854,98 @@ export default function CardForm({ id }: CardFormProps) {
 
               {/* Operational Details */}
 
-              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+              {formData.card_type !== 'personal' && (
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
 
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
 
-                  <div>
+                    <div>
 
-                    <h3 className="font-semibold text-white">Operational Details</h3>
+                      <h3 className="font-semibold text-white">Operational Details</h3>
 
-                    <p className="text-sm text-gray-400">Shop / business opening hours</p>
+                      <p className="text-sm text-gray-400">Shop / business opening hours</p>
+
+                    </div>
+
+                    <label className="relative inline-flex items-center cursor-pointer">
+
+                      <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_hours} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_hours: e.target.checked } })} />
+
+                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+
+                    </label>
 
                   </div>
 
-                  <label className="relative inline-flex items-center cursor-pointer">
+                  {formData.custom_branding.show_hours && (
 
-                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_hours} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_hours: e.target.checked } })} />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-3">
 
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                      {Object.entries(formData.opening_hours).map(([day, hours]: [string, any]) => (
 
-                  </label>
+                        <div key={day} className="flex items-center justify-between gap-4 py-2 border-b border-white/5 last:border-0">
 
-                </div>
+                          <div className="w-24 capitalize text-gray-300 text-sm font-medium">{day}</div>
 
-                {formData.custom_branding.show_hours && (
+                          <div className="flex items-center gap-2 flex-1">
 
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-3">
+                            <input type="time" value={hours.open || ''} disabled={hours.closed} onChange={(e) => {
 
-                    {Object.entries(formData.opening_hours).map(([day, hours]: [string, any]) => (
+                              setFormData({
 
-                      <div key={day} className="flex items-center justify-between gap-4 py-2 border-b border-white/5 last:border-0">
+                                ...formData,
 
-                        <div className="w-24 capitalize text-gray-300 text-sm font-medium">{day}</div>
+                                opening_hours: { ...formData.opening_hours, [day]: { ...hours, open: e.target.value } }
 
-                        <div className="flex items-center gap-2 flex-1">
+                              });
 
-                          <input type="time" value={hours.open || ''} disabled={hours.closed} onChange={(e) => {
+                            }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
 
-                            setFormData({
+                            <span className="text-gray-500 text-sm">to</span>
 
-                              ...formData,
+                            <input type="time" value={hours.close || ''} disabled={hours.closed} onChange={(e) => {
 
-                              opening_hours: { ...formData.opening_hours, [day]: { ...hours, open: e.target.value } }
+                              setFormData({
 
-                            });
+                                ...formData,
 
-                          }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
+                                opening_hours: { ...formData.opening_hours, [day]: { ...hours, close: e.target.value } }
 
-                          <span className="text-gray-500 text-sm">to</span>
+                              });
 
-                          <input type="time" value={hours.close || ''} disabled={hours.closed} onChange={(e) => {
+                            }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
 
-                            setFormData({
+                          </div>
 
-                              ...formData,
+                          <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
 
-                              opening_hours: { ...formData.opening_hours, [day]: { ...hours, close: e.target.value } }
+                            <input type="checkbox" checked={hours.closed} onChange={(e) => {
 
-                            });
+                              setFormData({
 
-                          }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
+                                ...formData,
+
+                                opening_hours: { ...formData.opening_hours, [day]: { ...hours, closed: e.target.checked } }
+
+                              });
+
+                            }} className="rounded bg-black/20 border-white/20 text-blue-500 focus:ring-0" />
+
+                            Closed
+
+                          </label>
 
                         </div>
 
-                        <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                      ))}
 
-                          <input type="checkbox" checked={hours.closed} onChange={(e) => {
+                    </motion.div>
 
-                            setFormData({
+                  )}
 
-                              ...formData,
+                </div>
 
-                              opening_hours: { ...formData.opening_hours, [day]: { ...hours, closed: e.target.checked } }
-
-                            });
-
-                          }} className="rounded bg-black/20 border-white/20 text-blue-500 focus:ring-0" />
-
-                          Closed
-
-                        </label>
-
-                      </div>
-
-                    ))}
-
-                  </motion.div>
-
-                )}
-
-              </div>
+              )}
 
 
 
@@ -3150,122 +3147,135 @@ export default function CardForm({ id }: CardFormProps) {
 
               </div>
 
-
-
-              {/* Brochures PDF */}
-
-              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
-
-                  <div>
-
-                    <h3 className="font-semibold text-white">Brochures PDF</h3>
-
-                    <p className="text-sm text-gray-400">Upload business brochures</p>
-
+              {/* Appointment & Schedule Block (Professional Only) */}
+              {formData.card_type === 'professional' && (
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden mt-6">
+                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                    <div>
+                      <h3 className="font-semibold text-white">Appointments & Schedule</h3>
+                      <p className="text-sm text-gray-400">Allow clients to book appointments with you</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={formData.appointment_details?.is_enabled || false}
+                        onChange={(e) => {
+                          setFormData({ 
+                            ...formData, 
+                            appointment_details: { 
+                              ...(formData.appointment_details || {}), 
+                              is_enabled: e.target.checked 
+                            } 
+                          });
+                        }}
+                      />
+                      <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                    </label>
                   </div>
 
-                  <label className="relative inline-flex items-center cursor-pointer">
+                  <AnimatePresence>
+                    {formData.appointment_details?.is_enabled && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1.5">Booking Method</label>
+                          <select
+                            value={formData.appointment_details?.booking_type || 'url'}
+                            onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), booking_type: e.target.value } })}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="url" className="bg-slate-900">External Booking URL (Calendly, etc.)</option>
+                            <option value="native" className="bg-slate-900">TapCard Native Slot Booking</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1.5">Button Title</label>
+                          <input 
+                            type="text" 
+                            value={formData.appointment_details?.title || 'Book an Appointment'} 
+                            onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), title: e.target.value } })} 
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" 
+                            placeholder="e.g. Book a Consultation" 
+                          />
+                        </div>
 
-                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_brochures} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_brochures: e.target.checked } })} />
-
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-
-                  </label>
-
-                </div>
-
-                {formData.custom_branding.show_brochures && (
-
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
-
-                    <input type="file" accept=".pdf" onChange={async (e) => {
-
-                      if (!e.target.files) return;
-
-                      const file = e.target.files[0];
-
-                      const formPayload = new FormData();
-
-                      formPayload.append('file', file);
-
-                      formPayload.append('type', 'document');
-
-                      try {
-
-                        const token = localStorage.getItem('card-setu-token');
-
-                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/upload`, {
-
-                          method: 'POST',
-
-                          headers: { 'Authorization': `Bearer ${token}` },
-
-                          body: formPayload
-
-                        });
-
-                        const data = await res.json();
-
-                        if (res.ok && data.url) {
-
-                          setFormData({ ...formData, brochure_pdfs: [...formData.brochure_pdfs, data.url] });
-
-                        }
-
-                      } catch (err) {
-
-                        console.error('Brochure upload failed', err);
-
-                      }
-
-                    }} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
-
-                    {formData.brochure_pdfs.length > 0 && (
-
-                      <div className="space-y-2 mt-4">
-
-                        {formData.brochure_pdfs.map((url: string, idx: number) => (
-
-                          <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
-
-                            <div className="flex items-center gap-3">
-
-                              <svg className="w-6 h-6 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"></path></svg>
-
-                              <a href={url} target="_blank" rel="noreferrer" className="text-sm text-blue-400 hover:underline">Brochure_{idx + 1}.pdf</a>
-
-                            </div>
-
-                            <button type="button" onClick={() => {
-
-                              const newPdfs = [...formData.brochure_pdfs];
-
-                              newPdfs.splice(idx, 1);
-
-                              setFormData({ ...formData, brochure_pdfs: newPdfs });
-
-                            }} className="text-gray-400 hover:text-red-500 transition-colors">
-
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-
-                            </button>
-
+                        {(!formData.appointment_details?.booking_type || formData.appointment_details?.booking_type === 'url') ? (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Booking URL</label>
+                            <input 
+                              type="url" 
+                              value={formData.appointment_details?.booking_url || ''} 
+                              onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), booking_url: e.target.value } })} 
+                              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" 
+                              placeholder="https://calendly.com/your-link" 
+                            />
+                            <p className="mt-1.5 text-xs text-gray-500">Enter your Calendly, Google Calendar, or other booking link.</p>
                           </div>
-
-                        ))}
-
-                      </div>
-
+                        ) : (
+                          <div className="space-y-4 pt-2 border-t border-white/10">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1.5">Working Days</label>
+                              <div className="flex flex-wrap gap-2">
+                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                                  <label key={day} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-white/10 transition-colors">
+                                    <input 
+                                      type="checkbox" 
+                                      className="rounded bg-black/20 border-white/10 text-blue-500 focus:ring-blue-500/20"
+                                      checked={(formData.appointment_details?.working_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']).includes(day)}
+                                      onChange={(e) => {
+                                        const currentDays = formData.appointment_details?.working_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+                                        const newDays = e.target.checked ? [...currentDays, day] : currentDays.filter((d: string) => d !== day);
+                                        setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), working_days: newDays } });
+                                      }}
+                                    />
+                                    <span className="text-sm text-gray-300">{day}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1.5">Start Time</label>
+                                <input 
+                                  type="time" 
+                                  value={formData.appointment_details?.start_time || '09:00'}
+                                  onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), start_time: e.target.value } })}
+                                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 [color-scheme:dark]" 
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1.5">End Time</label>
+                                <input 
+                                  type="time" 
+                                  value={formData.appointment_details?.end_time || '17:00'}
+                                  onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), end_time: e.target.value } })}
+                                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 [color-scheme:dark]" 
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1.5">Slot Duration</label>
+                              <select
+                                value={formData.appointment_details?.slot_duration || '30'}
+                                onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), slot_duration: e.target.value } })}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                              >
+                                <option value="15" className="bg-slate-900">15 Minutes</option>
+                                <option value="30" className="bg-slate-900">30 Minutes</option>
+                                <option value="45" className="bg-slate-900">45 Minutes</option>
+                                <option value="60" className="bg-slate-900">1 Hour</option>
+                                <option value="90" className="bg-slate-900">1.5 Hours</option>
+                                <option value="120" className="bg-slate-900">2 Hours</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
                     )}
-
-                  </motion.div>
-
-                )}
-
-              </div>
-
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
 
           </motion.div>
@@ -3770,6 +3780,14 @@ export default function CardForm({ id }: CardFormProps) {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
                   <rect x="2" y="4" width="20" height="16" rx="2" />
                   <path d="m22 7-10 6L2 7" />
+                </svg>
+              ),
+              Calendar: (p: any) => (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
               ),
               Whatsapp: (p: any) => (
@@ -4282,7 +4300,7 @@ export default function CardForm({ id }: CardFormProps) {
                     )}
 
                     {/* ---- Simulated OPENING HOURS ---- */}
-                    {showHours && hasHoursBlock && (
+                    {formData.card_type !== 'personal' && showHours && hasHoursBlock && (
                       <RenderSection title="Opening Hours">
                         <div className="mb-2 flex items-center gap-1.5">
                           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[8px] font-bold ${
@@ -4351,47 +4369,64 @@ export default function CardForm({ id }: CardFormProps) {
                       </RenderSection>
                     )}
 
-                    {/* ---- Simulated PRODUCTS (SHOP CATALOG) ---- */}
-                    <div className="mt-4 text-left border-t border-dashed border-gray-500/20 pt-4">
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <h4 className={`text-[9px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Our Products</h4>
-                        <span className={`text-[9px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>2 items</span>
+                    {/* ---- Simulated APPOINTMENT ---- */}
+                    {formData.card_type === 'professional' && formData.appointment_details?.is_enabled && (
+                      <div className="mt-4 flex w-full">
+                        <button
+                          className="w-full rounded-xl py-2.5 text-[10px] font-bold text-white shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-1.5"
+                          style={{ backgroundColor: primaryColor }}
+                        >
+                          <PreviewIcon.Calendar className="h-3 w-3" />
+                          <span>{formData.appointment_details?.title || 'Book an Appointment'}</span>
+                        </button>
                       </div>
-                      <div className="mb-2.5 relative">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                          <PreviewIcon.Search className="h-3 w-3 text-slate-400" />
+                    )}
+
+                    {/* ---- Simulated PRODUCTS / SERVICES (SHOP CATALOG) ---- */}
+                    {formData.card_type !== 'personal' && (
+                      <div className="mt-4 text-left border-t border-dashed border-gray-500/20 pt-4">
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <h4 className={`text-[9px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>
+                            {formData.card_type === 'professional' ? 'Our Services' : 'Our Products'}
+                          </h4>
+                          <span className={`text-[9px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>2 items</span>
                         </div>
-                        <div className={`w-full rounded-xl py-1.5 pl-8 pr-3 text-[10px] ${
-                          isDark ? 'bg-white/5 text-slate-400' : 'bg-slate-50 text-slate-500 border border-slate-200'
-                        }`}>
-                          Search products...
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { id: 1, name: 'Premium Product A', price: 999, desc: 'Highest quality standard item.' },
-                          { id: 2, name: 'Exclusive Bundle B', price: 2499, desc: 'All-in-one corporate solutions.' }
-                        ].map(prod => (
-                          <div key={prod.id} className={`flex flex-col overflow-hidden rounded-xl border ${
-                            isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white border-slate-200'
+                        <div className="mb-2.5 relative">
+                          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <PreviewIcon.Search className="h-3 w-3 text-slate-400" />
+                          </div>
+                          <div className={`w-full rounded-xl py-1.5 pl-8 pr-3 text-[10px] ${
+                            isDark ? 'bg-white/5 text-slate-400' : 'bg-slate-50 text-slate-500 border border-slate-200'
                           }`}>
-                            <div className="aspect-[4/3] w-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-300 shrink-0">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 opacity-40"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                            </div>
-                            <div className="flex flex-1 flex-col p-2">
-                              <h5 className={`text-[10px] font-bold ${textMain} truncate`}>{prod.name}</h5>
-                              <p className={`text-[8px] mt-0.5 line-clamp-1 ${textMuted}`}>{prod.desc}</p>
-                              <div className="mt-1.5 flex items-center justify-between">
-                                <p className={`text-[10px] font-extrabold ${textMain}`}>₹{prod.price}</p>
-                                <span className="flex h-5 w-5 items-center justify-center rounded bg-emerald-500 text-white shadow shadow-emerald-500/20">
-                                  <PreviewIcon.ShoppingCart className="w-2.5 h-2.5" />
-                                </span>
+                            Search {formData.card_type === 'professional' ? 'services' : 'products'}...
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 1, name: 'Premium Product A', price: 999, desc: 'Highest quality standard item.' },
+                            { id: 2, name: 'Exclusive Bundle B', price: 2499, desc: 'All-in-one corporate solutions.' }
+                          ].map(prod => (
+                            <div key={prod.id} className={`flex flex-col overflow-hidden rounded-xl border ${
+                              isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white border-slate-200'
+                            }`}>
+                              <div className="aspect-[4/3] w-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-300 shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 opacity-40"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                              </div>
+                              <div className="flex flex-1 flex-col p-2">
+                                <h5 className={`text-[10px] font-bold ${textMain} truncate`}>{prod.name}</h5>
+                                <p className={`text-[8px] mt-0.5 line-clamp-1 ${textMuted}`}>{prod.desc}</p>
+                                <div className="mt-1.5 flex items-center justify-between">
+                                  <p className={`text-[10px] font-extrabold ${textMain}`}>₹{prod.price}</p>
+                                  <span className="flex h-5 w-5 items-center justify-center rounded bg-emerald-500 text-white shadow shadow-emerald-500/20">
+                                    <PreviewIcon.ShoppingCart className="w-2.5 h-2.5" />
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* ---- Simulated INQUIRY ---- */}
                     {customBranding.show_lead_form !== false && (
