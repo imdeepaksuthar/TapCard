@@ -76,8 +76,13 @@ export default function Settings() {
 
     setIsSaving(true);
     try {
-      // Mocking password update as backend endpoint isn't fully implemented for password yet
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await apiFetch('/api/user/password', {
+        method: 'PUT',
+        body: JSON.stringify({
+          current_password: passwordData.current_password,
+          new_password: passwordData.new_password,
+        }),
+      });
       setMessage('Password updated successfully!');
       setPasswordData({
         current_password: '',

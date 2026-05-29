@@ -81,6 +81,8 @@ class OTPAuthController extends Controller
         // Generate token
         $token = $user->createToken('card-setu-token')->plainTextToken;
 
+        $isSecure = app()->environment('production');
+
         return response()->json([
             'token' => $token,
             'user' => [
@@ -92,6 +94,6 @@ class OTPAuthController extends Controller
                 'status' => $user->status,
                 'email_verified_at' => $user->email_verified_at,
             ],
-        ]);
+        ])->cookie('auth_token', $token, 60 * 24 * 30, '/', null, $isSecure, true, false, 'Lax');
     }
 }

@@ -24,55 +24,61 @@ use App\Http\Controllers\Api\OTPAuthController;
 |
 */
 
-// Public routes
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
-    ->name('verification.verify');
-Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail']);
+// Public routes (Rate limited to 60 req/min)
+Route::middleware('throttle:60,1')->group(function () {
+    // Public Profile Fetch by Slug
+    Route::get('/cards/public/{slug}', [BusinessCardController::class, 'showPublic']);
+    Route::post('/cards/public/{slug}/appointments', [BusinessCardController::class, 'bookAppointment']);
+    Route::get('/cards/public/{slug}/vcard', [BusinessCardController::class, 'downloadVCard']);
 
-// Forgot Password routes
-Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
-Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+    // Lead Injection Endpoint
+    Route::post('/leads', [LeadController::class, 'store']);
 
-// Google OAuth routes
-Route::get('/auth/google/redirect', [SocialAuthController::class, 'redirectToGoogle']);
-Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
+    // Public Products Listing
+    Route::get('/products', [ProductController::class, 'index']);
 
-// Email OTP routes
-Route::post('/auth/otp/send', [OTPAuthController::class, 'sendOTP']);
-Route::post('/auth/otp/login', [OTPAuthController::class, 'loginWithOTP']);
+    // Public Services Listing
+    Route::get('/services', [ServiceController::class, 'index']);
 
-// Public Profile Fetch by Slug
-Route::get('/cards/public/{slug}', [BusinessCardController::class, 'showPublic']);
-Route::post('/cards/public/{slug}/appointments', [BusinessCardController::class, 'bookAppointment']);
-Route::get('/cards/public/{slug}/vcard', [BusinessCardController::class, 'downloadVCard']);
+    // Public Categories Listing
+    Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
 
-// Lead Injection Endpoint
-Route::post('/leads', [LeadController::class, 'store']);
+    // Homepage Stats
+    Route::get('/homepage-stats', [\App\Http\Controllers\Api\PublicController::class, 'homepageStats']);
 
-// Public Products Listing
-Route::get('/products', [ProductController::class, 'index']);
+    // Order Checkout Endpoint
+    Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store']);
 
-// Public Services Listing
-Route::get('/services', [ServiceController::class, 'index']);
+    // Pincode Verification Endpoint
+    Route::get('/verify-pincode/{pincode}', [BusinessCardController::class, 'verifyPincode']);
+});
 
-// Public Categories Listing
-Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+// Auth routes (Rate limited to 5 req/min)
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
+        ->name('verification.verify');
+    Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail']);
 
-// Homepage Stats
-Route::get('/homepage-stats', [\App\Http\Controllers\Api\PublicController::class, 'homepageStats']);
+    // Forgot Password routes
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
-// Order Checkout Endpoint
-Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store']);
+    // Google OAuth routes
+    Route::get('/auth/google/redirect', [SocialAuthController::class, 'redirectToGoogle']);
+    Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 
-// Pincode Verification Endpoint
-Route::get('/verify-pincode/{pincode}', [BusinessCardController::class, 'verifyPincode']);
+    // Email OTP routes
+    Route::post('/auth/otp/send', [OTPAuthController::class, 'sendOTP']);
+    Route::post('/auth/otp/login', [OTPAuthController::class, 'loginWithOTP']);
+});
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user', [AuthController::class, 'updateProfile']);
+    Route::put('/user/password', [AuthController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Media Upload

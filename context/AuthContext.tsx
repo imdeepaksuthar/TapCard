@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   login: (credentials: any) => Promise<void>;
   register: (data: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
@@ -18,13 +17,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // On public auth pages, skip token check entirely.
-    // The server-side middleware already redirects logged-in users away from these pages.
     const isAuthPage = typeof window !== 'undefined' &&
       (window.location.pathname === '/login' || window.location.pathname === '/register');
 
@@ -33,24 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    let storedToken = localStorage.getItem('card-setu-token');
-
-    // Fallback to reading the token from cookies if localStorage is empty
-    if (!storedToken && typeof document !== 'undefined') {
-      const match = document.cookie.match(/(?:^|; )card-setu-token=([^;]*)/);
-      if (match && match[1]) {
-        storedToken = match[1];
-        // Resync localStorage
-        localStorage.setItem('card-setu-token', storedToken);
-      }
-    }
-
-    if (storedToken) {
-      setToken(storedToken);
-      rehydrateUser();
-    } else {
-      setIsLoading(false);
-    }
+    rehydrateUser();
   }, []);
 
   const rehydrateUser = async () => {
@@ -63,9 +42,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         console.error('Failed to rehydrate user:', error?.message || 'Unknown error');
       }
-      localStorage.removeItem('card-setu-token');
-      document.cookie = 'card-setu-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
-      setToken(null);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -78,9 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(credentials),
     });
     
-    localStorage.setItem('card-setu-token', data.token);
-    document.cookie = `card-setu-token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
-    setToken(data.token);
+    if (data.token) {
+      localStorage.setItem('card-setu-token', data.token);
+      document.cookie = `card-setu-token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
+    }
+    
     setUser(data.user);
     router.push('/dashboard');
   };
@@ -91,7 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(payload),
     });
     
-    // Registration successful: redirect to login page with verification options
     router.push('/login?email=' + encodeURIComponent(payload.email) + '&registered=true');
   };
 
@@ -102,14 +79,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore error if already logged out on server
     }
     localStorage.removeItem('card-setu-token');
-    document.cookie = 'card-setu-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
-    setToken(null);
+    document.cookie = 'card-setu-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     setUser(null);
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -45,19 +45,19 @@ export async function POST(request: Request) {
     let taxpayerType = 'Regular';
 
     if (panType === 'C') {
-      legalName = `M/S ${businessIdentifier} TECHNOLOGIES PRIVATE LIMITED`;
+      legalName = `M/S ${businessIdentifier} TECHNOLOGIES PRIVATE LIMITED (Mocked Integration)`;
       tradeName = `${businessIdentifier} TECH`;
       taxpayerType = 'Regular';
     } else if (panType === 'P') {
-      legalName = `${businessIdentifier} ENTERPRISES`;
+      legalName = `${businessIdentifier} ENTERPRISES (Mocked Integration)`;
       tradeName = `${businessIdentifier} STORES`;
       taxpayerType = 'Composition';
     } else if (panType === 'F') {
-      legalName = `M/S ${businessIdentifier} & SONS PARTNERSHIP`;
+      legalName = `M/S ${businessIdentifier} & SONS PARTNERSHIP (Mocked Integration)`;
       tradeName = `${businessIdentifier} CO`;
       taxpayerType = 'Regular';
     } else {
-      legalName = `M/S ${businessIdentifier} BUSINESS SOLUTIONS`;
+      legalName = `M/S ${businessIdentifier} BUSINESS SOLUTIONS (Mocked Integration)`;
       tradeName = `${businessIdentifier} SOLUTIONS`;
       taxpayerType = 'Regular';
     }

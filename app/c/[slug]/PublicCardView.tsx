@@ -2,7 +2,12 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Hero3DBackground from '@/app/components/Hero3DBackground';
+import dynamic from 'next/dynamic';
+
+const Hero3DBackground = dynamic(() => import('@/app/components/Hero3DBackground'), { 
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-black/50 backdrop-blur-xl" />
+});
 import MeshGradient from '@/app/components/MeshGradient';
 import Tilt3D from '@/app/components/Tilt3D';
 import FlipCard3D from '@/app/components/FlipCard3D';
@@ -297,6 +302,8 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
   const playUISound = (type: 'click' | 'pop' | 'success' | 'save') => {
     if (typeof window === 'undefined') return;
+    if (window.location.pathname.startsWith('/dashboard')) return; // Disable sounds in admin panel
+
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
@@ -727,6 +734,9 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     setFormError('');
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards/public/${card.slug}/appointments`, {
         method: 'POST',
         headers: {
@@ -740,8 +750,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           date: bookingDate,
           time: bookingTime,
           notes: bookingNotes
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) throw new Error('Failed to book appointment');
       
@@ -1422,8 +1435,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               {product.description && (
                                 <p className={`mt-2 text-xs font-medium line-clamp-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{product.description}</p>
                               )}
-                              <div className="mt-4 flex items-center justify-between">
-                                <p className={`text-lg sm:text-xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
+                                <div className="mt-4 flex items-center justify-between">
+                                  {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
+                                    <p className={`text-lg sm:text-xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
+                                  ) : null}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1487,7 +1502,9 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                 <p className={`mt-0.5 sm:mt-1 text-[10px] sm:text-xs font-medium line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{product.description}</p>
                               )}
                               <div className="mt-2 sm:mt-4 flex items-center justify-between">
-                                <p className={`text-sm sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
+                                {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
+                                  <p className={`text-sm sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
+                                ) : null}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1668,7 +1685,9 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="truncate text-sm font-semibold">{item.name}</h4>
-                        <p className={`text-xs`} style={{ color: primaryColor }}>₹{Number(item.price).toFixed(2)}</p>
+                        {item.price !== null && item.price !== undefined && Number(item.price) > 0 ? (
+                          <p className={`text-xs`} style={{ color: primaryColor }}>₹{Number(item.price).toFixed(2)}</p>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="flex items-center rounded-lg bg-black/5 dark:bg-white/10 p-1">
@@ -1889,7 +1908,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 <p className={`mt-4 text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{productToView.description}</p>
                 <div className="mt-8 flex items-center justify-between border-t border-slate-200 dark:border-white/10 pt-4">
                   <p className={`text-2xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    ₹{Number(productToView.price).toLocaleString('en-IN')}
+                    {productToView.price !== null && productToView.price !== undefined && Number(productToView.price) > 0 ? `₹${Number(productToView.price).toLocaleString('en-IN')}` : ''}
                   </p>
                   <button
                     onClick={() => {
@@ -2249,7 +2268,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                   : isDark ? 'border-white/10 text-white hover:bg-white/5' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                             }`}
                           >
-                            {slot.time}
+                            {slot.isBooked ? `${slot.time} - Booked` : slot.time}
                           </button>
                         ))}
                         {generateTimeSlots(bookingDate).length === 0 && (

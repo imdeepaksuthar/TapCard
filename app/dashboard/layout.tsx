@@ -21,9 +21,9 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      window.location.href = '/login';
     }
-  }, [isLoading, user, router]);
+  }, [isLoading, user]);
 
   useEffect(() => {
     if (!user) return;

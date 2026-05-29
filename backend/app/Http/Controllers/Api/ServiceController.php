@@ -18,6 +18,9 @@ class ServiceController extends Controller
         // If not admin or super_admin, only show active services
         if (!$user || !in_array($user->role, ['admin', 'super_admin'])) {
             $query->where('is_active', true);
+            if ($user) {
+                $query->where('user_id', $user->id);
+            }
         }
 
         $services = $query->orderBy('created_at', 'desc')
@@ -42,7 +45,7 @@ class ServiceController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'images' => 'nullable|array',
             'images.*' => 'string',
@@ -52,10 +55,11 @@ class ServiceController extends Controller
         $slug = Str::slug($request->name) . '-' . Str::lower(Str::random(5));
 
         $service = Service::create([
+            'user_id' => auth()->id(),
             'name' => $request->name,
             'slug' => $slug,
             'description' => $request->description,
-            'price' => $request->price,
+            'price' => $request->price ?? null,
             'images' => $request->images ?? [],
             'is_active' => $request->input('is_active', true),
         ]);
@@ -77,9 +81,13 @@ class ServiceController extends Controller
 
     public function update(Request $request, Service $service): JsonResponse
     {
+        if ($service->user_id !== auth()->id() && !in_array(auth()->user()->role, ['admin', 'super_admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'images' => 'nullable|array',
             'images.*' => 'string',
@@ -89,7 +97,7 @@ class ServiceController extends Controller
         $data = [
             'name' => $request->name,
             'description' => $request->description,
-            'price' => $request->price,
+            'price' => $request->has('price') ? $request->price : $service->price,
             'is_active' => $request->input('is_active', $service->is_active),
         ];
 
@@ -116,6 +124,10 @@ class ServiceController extends Controller
 
     public function destroy(Service $service): JsonResponse
     {
+        if ($service->user_id !== auth()->id() && !in_array(auth()->user()->role, ['admin', 'super_admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $service->delete();
 
         return response()->json([

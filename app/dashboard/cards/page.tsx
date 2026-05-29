@@ -138,74 +138,7 @@ export default function MyCards() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const playUISound = (type: 'click' | 'pop' | 'success' | 'save') => {
-    if (typeof window === 'undefined') return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      
-      if (type === 'click') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1000, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.04, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.08);
-      } else if (type === 'pop') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(350, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.12);
-      } else if (type === 'success') {
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(750, ctx.currentTime);
-        gain1.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-        osc1.connect(gain1);
-        gain1.connect(ctx.destination);
-        osc1.start();
-        osc1.stop(ctx.currentTime + 0.12);
-        
-        setTimeout(() => {
-          const osc2 = ctx.createOscillator();
-          const gain2 = ctx.createGain();
-          osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(1150, ctx.currentTime);
-          gain2.gain.setValueAtTime(0.05, ctx.currentTime);
-          gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
-          osc2.connect(gain2);
-          gain2.connect(ctx.destination);
-          osc2.start();
-          osc2.stop(ctx.currentTime + 0.22);
-        }, 65);
-      } else if (type === 'save') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(250, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.22);
-        gain.gain.setValueAtTime(0.03, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.22);
-      }
-    } catch {}
+    // Sound disabled in admin dashboard
   };
 
   useEffect(() => {

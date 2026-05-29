@@ -239,8 +239,8 @@ export default function ProductsPage() {
       return true;
     })
     .sort((a, b) => {
-      if (sortBy === 'price-asc') return a.price - b.price;
-      if (sortBy === 'price-desc') return b.price - a.price;
+      if (sortBy === 'price-asc') return (Number(a.price) || 0) - (Number(b.price) || 0);
+      if (sortBy === 'price-desc') return (Number(b.price) || 0) - (Number(a.price) || 0);
       if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
       // 'newest' (default)
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();

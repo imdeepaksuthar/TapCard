@@ -11,7 +11,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { apiFetch } from '../../../lib/api';
-import Hero3DBackground from '../../components/Hero3DBackground';
+import dynamic from 'next/dynamic';
+
+const Hero3DBackground = dynamic(() => import('../../components/Hero3DBackground'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-black/50 backdrop-blur-xl" />
+});
 
 const THEME_HEX: Record<string, string> = {
   blue: '#3b82f6',
@@ -2031,11 +2036,11 @@ export default function CardForm({ id }: CardFormProps) {
 
                               {!isVerifyingGst && isGstVerified && (
 
-                                <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-2 py-0.5 text-[10px] font-bold">
+                                <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-2 py-0.5 text-[10px] font-bold" title="Verification is currently mocked">
 
                                   <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
 
-                                  Verified
+                                  Verified (Mock)
 
                                 </div>
 

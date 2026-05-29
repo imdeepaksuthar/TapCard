@@ -10,7 +10,7 @@ interface Service {
   name: string;
   slug: string;
   description: string | null;
-  price: number;
+  price: number | null;
   images: string[];
   is_active: boolean;
   created_at: string;
@@ -93,7 +93,7 @@ export default function ServicesPage() {
   const openEditModal = (service: Service) => {
     setEditingService(service);
     setFormName(service.name);
-    setFormPrice(service.price.toString());
+    setFormPrice(service.price !== null ? service.price.toString() : '');
     setFormDescription(service.description || '');
     setFormIsActive(service.is_active);
     setFormError(null);
@@ -161,8 +161,8 @@ export default function ServicesPage() {
     e.preventDefault();
 
     if (!formName.trim()) { setFormError('Service name is required'); return; }
-    const priceNum = parseFloat(formPrice);
-    if (isNaN(priceNum) || priceNum < 0) { setFormError('Please enter a valid price (minimum 0)'); return; }
+    const priceNum = formPrice === '' ? null : parseFloat(formPrice);
+    if (priceNum !== null && (isNaN(priceNum) || priceNum < 0)) { setFormError('Please enter a valid price (minimum 0)'); return; }
 
     setIsSaving(true);
     setFormError(null);
@@ -239,8 +239,8 @@ export default function ServicesPage() {
       return true;
     })
     .sort((a, b) => {
-      if (sortBy === 'price-asc') return a.price - b.price;
-      if (sortBy === 'price-desc') return b.price - a.price;
+      if (sortBy === 'price-asc') return (Number(a.price) || 0) - (Number(b.price) || 0);
+      if (sortBy === 'price-desc') return (Number(b.price) || 0) - (Number(a.price) || 0);
       if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
       // 'newest' (default)
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -439,9 +439,7 @@ export default function ServicesPage() {
                     <div className="mb-4 flex-1" />
                   )}
                   <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-                    <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                      ₹{service.price.toFixed(2)}
-                    </span>
+                      {service.price !== null ? `₹${service.price.toFixed(2)}` : 'Custom Price'}
                     <div className="flex items-center gap-2">
                       {isAdmin && (
                         <>
@@ -606,7 +604,7 @@ export default function ServicesPage() {
                 {/* Price */}
                 <div className="space-y-2">
                   <label htmlFor="prod-price" className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    Price (₹) <span className="text-red-500">*</span>
+                    Price (₹) <span className="text-gray-600 normal-case font-normal">(optional)</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-3 text-gray-400 text-sm">₹</span>
@@ -618,7 +616,6 @@ export default function ServicesPage() {
                       value={formPrice}
                       onChange={e => setFormPrice(e.target.value)}
                       placeholder="0.00"
-                      required
                       className="w-full bg-[#070D1A] border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-xl pl-8 pr-4 py-3 text-white text-sm outline-none transition-all duration-300"
                     />
                   </div>
@@ -733,7 +730,7 @@ export default function ServicesPage() {
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-1">{serviceToView.name}</h2>
                   <p className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                    ₹{serviceToView.price.toFixed(2)}
+                    {serviceToView.price !== null ? `₹${serviceToView.price.toFixed(2)}` : 'Custom Price'}
                   </p>
                 </div>
                 <button onClick={() => setServiceToView(null)} className="text-gray-400 hover:text-white transition-colors p-1 bg-white/5 hover:bg-white/10 rounded-lg">

@@ -71,6 +71,7 @@ class AuthController extends Controller
 
         $token = $user->createToken('card-setu-token')->plainTextToken;
 
+        $isSecure = app()->environment('production') || request()->secure();
         return response()->json([
             'token' => $token,
             'user' => [
@@ -82,7 +83,7 @@ class AuthController extends Controller
                 'status' => $user->status,
                 'email_verified_at' => $user->email_verified_at,
             ],
-        ]);
+        ])->cookie('auth_token', $token, 60 * 24 * 30, '/', null, $isSecure, true, false, 'Lax');
     }
 
     /**
@@ -94,7 +95,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Successfully logged out'
-        ]);
+        ])->withoutCookie('auth_token');
     }
 
     /**
@@ -142,6 +143,37 @@ class AuthController extends Controller
                 'status' => $user->status,
                 'email_verified_at' => $user->email_verified_at,
             ]
+        ]);
+    }
+
+    /**
+     * Change the authenticated user's password.
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8',
+        ]);
+
+        $user = $request->user();
+
+        // If the user registered via Google, they might not know their password.
+        // We handle that by verifying they at least provided a password, but if they never set one, this could be tricky.
+        // Assuming we always set a random password on Google auth, we should ideally check if it matches, 
+        // but for now standard check applies.
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'message' => 'Current password does not match.'
+            ], 400);
+        }
+
+        $user->update([
+            'password' => Hash::make($validated['new_password'])
+        ]);
+
+        return response()->json([
+            'message' => 'Password changed successfully.'
         ]);
     }
 

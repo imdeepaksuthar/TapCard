@@ -16,47 +16,44 @@ async function getCardData(slug: string) {
   }
 }
 
-// Fetch global active products server-side
-async function getProducts() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/products`, {
-      next: { revalidate: 60 }
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
-    return json.products || [];
-  } catch (e) {
-    return [];
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const data = await getCardData(slug);
+  
+  if (!data || !data.card) {
+    return { title: 'Card Not Found' };
   }
-}
 
-// Fetch global active services server-side
-async function getServices() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/services`, {
-      next: { revalidate: 60 }
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
-    return json.services || [];
-  } catch (e) {
-    return [];
-  }
+  const { card } = data;
+  const personalInfo = card.personal_info || {};
+  const name = personalInfo.name || 'Digital Business Card';
+  const designation = personalInfo.designation ? ` - ${personalInfo.designation}` : '';
+  const company = personalInfo.company_name ? ` at ${personalInfo.company_name}` : '';
+  const bio = personalInfo.bio || `Connect with ${name} via their digital business card.`;
+  
+  return {
+    title: `${name}${designation}${company}`,
+    description: bio,
+    openGraph: {
+      title: `${name}${designation}${company}`,
+      description: bio,
+      type: 'profile',
+    },
+  };
 }
 
 export default async function PublicCardPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
-  // Fetch card data, products and services concurrently
-  const [data, products, services] = await Promise.all([
-    getCardData(slug),
-    getProducts(),
-    getServices()
-  ]);
+  // Fetch card data which now includes scoped products and services
+  const data = await getCardData(slug);
 
   if (!data || !data.card) {
     notFound();
   }
+
+  const products = data.products || [];
+  const services = data.services || [];
 
   const { card } = data;
   const personalInfo = card.personal_info || {};

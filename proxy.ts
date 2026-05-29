@@ -13,11 +13,7 @@ export function proxy(request: NextRequest) {
   }
 
   // Redirect already-authenticated users away from auth pages
-  if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
-    if (token) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-  }
+  // REMOVED to prevent infinite loops when token is expired but still present in browser cookies
 
   return NextResponse.next();
 }

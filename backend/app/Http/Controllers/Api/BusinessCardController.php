@@ -203,10 +203,30 @@ class BusinessCardController extends Controller
             ->where('date', '>=', now()->toDateString())
             ->get(['date', 'time']);
 
+        $products = \App\Models\Product::where('user_id', $card->user_id)
+            ->where('is_active', true)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'product';
+                return $item;
+            });
+
+        $services = \App\Models\Service::where('user_id', $card->user_id)
+            ->where('is_active', true)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'service';
+                return $item;
+            });
+
         return response()->json([
             'card' => $card,
             'theme' => $theme,
-            'booked_slots' => $bookedSlots
+            'booked_slots' => $bookedSlots,
+            'products' => $products,
+            'services' => $services
         ]);
     }
 
@@ -351,10 +371,10 @@ class BusinessCardController extends Controller
         try {
             if ($card->user && $card->user->email) {
                 \Illuminate\Support\Facades\Mail::to($card->user->email)
-                    ->send(new \App\Mail\AppointmentBooked($appointment));
+                    ->queue(new \App\Mail\AppointmentBooked($appointment));
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to send appointment email', ['error' => $e->getMessage()]);
+            \Illuminate\Support\Facades\Log::error('Failed to queue appointment email', ['error' => $e->getMessage()]);
         }
 
         return response()->json([

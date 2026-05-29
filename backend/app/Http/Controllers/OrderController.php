@@ -59,10 +59,38 @@ class OrderController extends Controller
             'whatsapp' => $contactButtons['whatsapp'] ?? $socialLinks['whatsapp'] ?? null,
         ];
 
-        // Calculate total
+        // Calculate total securely using DB prices
         $totalAmount = 0;
-        foreach ($cartItems as $item) {
-            $totalAmount += ($item['price'] ?? 0) * ($item['quantity'] ?? 1);
+        foreach ($cartItems as &$item) {
+            $dbPrice = 0;
+            if (isset($item['type']) && $item['type'] === 'product') {
+                $product = \App\Models\Product::find($item['id']);
+                if ($product) {
+                    $dbPrice = (float) $product->price;
+                }
+            } elseif (isset($item['type']) && $item['type'] === 'service') {
+                $service = \App\Models\Service::find($item['id']);
+                if ($service) {
+                    $dbPrice = (float) $service->price;
+                }
+            } else {
+                // Fallback if type is missing, try product then service
+                $product = \App\Models\Product::find($item['id']);
+                if ($product) {
+                    $dbPrice = (float) $product->price;
+                    $item['type'] = 'product';
+                } else {
+                    $service = \App\Models\Service::find($item['id']);
+                    if ($service) {
+                        $dbPrice = (float) $service->price;
+                        $item['type'] = 'service';
+                    }
+                }
+            }
+            
+            // Overwrite price with DB price to save correct price in order history
+            $item['price'] = $dbPrice;
+            $totalAmount += $dbPrice * ($item['quantity'] ?? 1);
         }
 
         // Save Order to Database
