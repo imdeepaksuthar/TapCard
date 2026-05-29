@@ -37,3 +37,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/.next.zip
+backend/public/error_log
+stderr.log
+tmp/

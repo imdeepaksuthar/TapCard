@@ -1,3 +1,9 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# Route _next requests to the .next folder so CSS and JS load properly
+RewriteRule ^_next/(.*)$ .next/$1 [L]
+</IfModule>
+
 # DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
 PassengerAppRoot "/home/sqciaqth/tapcard.mamtastationery.com"
 PassengerBaseURI "/"

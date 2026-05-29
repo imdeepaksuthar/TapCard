@@ -332,7 +332,7 @@ export default function MyCards() {
                   {/* Footer Actions */}
                   <div className="px-6 pl-8 pb-4 pt-3 bg-black/20 border-t border-white/5 flex justify-between items-center">
                     <a
-                      href={`/c/${card.slug}`}
+                      href={`/${card.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => playUISound('click')}

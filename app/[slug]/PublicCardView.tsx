@@ -1,19 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import dynamic from 'next/dynamic';
-
-const Hero3DBackground = dynamic(() => import('@/app/components/Hero3DBackground'), { 
-  ssr: false,
-  loading: () => <div className="absolute inset-0 bg-black/50 backdrop-blur-xl" />
-});
 import MeshGradient from '@/app/components/MeshGradient';
-import Tilt3D from '@/app/components/Tilt3D';
-import FlipCard3D from '@/app/components/FlipCard3D';
-import SectionDivider3D from '@/app/components/SectionDivider3D';
 import { derivePalette } from '@/lib/colorUtils';
-import LeadForm from '../../../components/LeadForm';
+import LeadForm from '../../components/LeadForm';
 
 type AnyObj = Record<string, any>;
 
@@ -300,90 +291,15 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   const [saving, setSaving]   = useState(false);
   const [shareOk, setShareOk] = useState(false);
 
-  const playUISound = (type: 'click' | 'pop' | 'success' | 'save') => {
-    if (typeof window === 'undefined') return;
-    if (window.location.pathname.startsWith('/dashboard')) return; // Disable sounds in admin panel
-
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      
-      if (type === 'click') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1000, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.04, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.08);
-      } else if (type === 'pop') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(350, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.12);
-      } else if (type === 'success') {
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(750, ctx.currentTime);
-        gain1.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-        osc1.connect(gain1);
-        gain1.connect(ctx.destination);
-        osc1.start();
-        osc1.stop(ctx.currentTime + 0.12);
-        
-        setTimeout(() => {
-          const osc2 = ctx.createOscillator();
-          const gain2 = ctx.createGain();
-          osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(1150, ctx.currentTime);
-          gain2.gain.setValueAtTime(0.05, ctx.currentTime);
-          gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
-          osc2.connect(gain2);
-          gain2.connect(ctx.destination);
-          osc2.start();
-          osc2.stop(ctx.currentTime + 0.22);
-        }, 65);
-      } else if (type === 'save') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(250, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.22);
-        gain.gain.setValueAtTime(0.03, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.22);
-      }
-    } catch {}
-  };
-
   // Sync theme with system preference on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       setIsDark(mediaQuery.matches);
-      
+
       const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
       mediaQuery.addEventListener('change', handler);
-      
-      (window as any).playUISound = playUISound;
-      
+
       return () => mediaQuery.removeEventListener('change', handler);
     }
   }, []);
@@ -466,7 +382,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [localBookedSlots, setLocalBookedSlots] = useState<any[]>(data.booked_slots || []);
   
-  const [currentUrl, setCurrentUrl] = useState(`https://tapcard.com/c/${card?.slug}`);
+  const [currentUrl, setCurrentUrl] = useState(`https://tapcard.com/${card?.slug}`);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -680,7 +596,6 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(label);
-      playUISound('success');
       setTimeout(() => setCopied(null), 1600);
     } catch {}
   };
@@ -798,22 +713,47 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   };
 
   const handleSaveContact = async () => {
+    const vcardUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards/public/${card.slug}/vcard`;
+
     try {
       setSaving(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards/public/${card.slug}/vcard`);
+
+      const ua = navigator.userAgent || '';
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+      const isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|FxiOS/i.test(ua);
+
+      // iOS Safari: direct navigation triggers native contacts import
+      if (isIOS || isSafari) {
+        window.location.href = vcardUrl;
+        return;
+      }
+
+      // Android & Desktop: fetch blob and trigger download
+      const res = await fetch(vcardUrl);
       if (!res.ok) throw new Error('vcard fetch failed');
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
+      const vcfBlob = new Blob([await blob.arrayBuffer()], { type: 'text/vcard' });
+      const blobUrl = window.URL.createObjectURL(vcfBlob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = blobUrl;
       a.download = `${(personalInfo.name || 'contact').replace(/\s+/g, '_')}.vcf`;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+
+      // Cleanup after a short delay to ensure download starts
+      setTimeout(() => {
+        a.remove();
+        window.URL.revokeObjectURL(blobUrl);
+      }, 300);
     } catch {
-      // graceful fallback: trigger a tel: link as a minimum
-      if (cleanedPhone) window.location.href = `tel:${cleanedPhone}`;
+      // Fallback: navigate directly to vCard URL (works on most platforms)
+      try {
+        window.location.href = vcardUrl;
+      } catch {
+        // Last resort: open tel: link
+        if (cleanedPhone) window.location.href = `tel:${cleanedPhone}`;
+      }
     } finally {
       setSaving(false);
     }
@@ -850,15 +790,21 @@ export default function PublicCardView({ data, products = [], services = [] }: {
         <div className={`relative overflow-hidden rounded-3xl border ${borderSoft} ${surface} shadow-2xl shadow-black/10 backdrop-blur`}>
           {/* ---- HERO ---- */}
           <div className="relative h-44 w-full overflow-hidden sm:h-52 md:h-60">
-            <Hero3DBackground primaryColor={primaryColor} secondaryColor={secondaryColor} isDark={isDark} />
+            {/* Lightweight CSS gradient hero — no WebGL */}
             <div
-              className="absolute inset-0 opacity-25 mix-blend-overlay"
+              className="absolute inset-0"
               style={{
-                backgroundImage:
-                  'radial-gradient(circle at 20% 30%, #ffffff33 0, transparent 35%), radial-gradient(circle at 80% 70%, #ffffff22 0, transparent 35%)',
+                background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, ${palette.complement} 100%)`,
               }}
             />
-            <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+            <div
+              className="absolute inset-0 opacity-30"
+              style={{
+                backgroundImage:
+                  'radial-gradient(circle at 20% 30%, rgba(255,255,255,0.25) 0, transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.15) 0, transparent 40%)',
+              }}
+            />
+            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
             {/* Top action bar */}
             <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-3 sm:p-4">
@@ -868,14 +814,14 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => { handleShare(); playUISound('click'); }}
+                  onClick={handleShare}
                   aria-label="Share card"
                   className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/25"
                 >
                   {shareOk ? <Icon.Check className="h-4 w-4" /> : <Icon.Share className="h-4 w-4" />}
                 </button>
                 <button
-                  onClick={() => { setIsDark((v) => !v); playUISound('click'); }}
+                  onClick={() => setIsDark((v) => !v)}
                   aria-label="Toggle theme"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/25"
                 >
@@ -890,37 +836,19 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             <div className="-mt-16 flex flex-col items-center text-center sm:-mt-20">
               <div className="relative h-28 w-28 sm:h-32 sm:w-32">
                 <div
-                  className="absolute -inset-1 rounded-full opacity-70 blur-md animate-pulse"
+                  className="absolute -inset-1 rounded-full opacity-60 blur-lg"
                   style={{ background: `conic-gradient(from 0deg, ${primaryColor}, ${palette.accent}, ${palette.complement}, ${primaryColor})` }}
                 />
-                <FlipCard3D
-                  className="relative z-10 h-full w-full rounded-full"
-                  height="100%"
-                  flipHint={false}
-                  front={
-                    <div className={`relative h-full w-full overflow-hidden rounded-full ring-4 ${isDark ? 'ring-[#12121A] bg-[#12121A]' : 'ring-white bg-white'} shadow-xl`}>
-                      {profileImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={profileImage} alt={personalInfo.name || 'Profile'} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${palette.accent})` }}>
-                          {(personalInfo.name || 'U').trim().charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                <div className={`relative z-10 h-full w-full overflow-hidden rounded-full ring-4 ${isDark ? 'ring-[#12121A] bg-[#12121A]' : 'ring-white bg-white'} shadow-xl`}>
+                  {profileImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={profileImage} alt={personalInfo.name || 'Profile'} className="h-full w-full object-cover" loading="eager" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${palette.accent})` }}>
+                      {(personalInfo.name || 'U').trim().charAt(0).toUpperCase()}
                     </div>
-                  }
-                  back={
-                    <div
-                      className={`flex h-full w-full flex-col items-center justify-center rounded-full ring-4 bg-white shadow-xl ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}
-                    >
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=${encodeURIComponent(currentUrl)}`} 
-                        alt="QR Code" 
-                        className="h-3/4 w-3/4 object-contain"
-                      />
-                    </div>
-                  }
-                />
+                  )}
+                </div>
                 <div className={`absolute bottom-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
                   <Icon.Check className="h-3.5 w-3.5 text-white" />
                 </div>
@@ -1119,19 +1047,19 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       
                       <div className="flex flex-wrap gap-2">
                         {proprietor.phone && (
-                          <a href={`tel:${proprietor.phone}`} onClick={() => playUISound('click')} className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
+                          <a href={`tel:${proprietor.phone}`} className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
                             <Icon.Phone className="w-3.5 h-3.5" />
                             Call
                           </a>
                         )}
                         {proprietor.whatsapp && (
-                          <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" rel="noreferrer" onClick={() => playUISound('click')} className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: primaryColor }}>
+                          <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: primaryColor }}>
                             <Icon.Whatsapp className="w-3.5 h-3.5" />
                             WhatsApp
                           </a>
                         )}
                         {proprietor.email && (
-                          <a href={`mailto:${proprietor.email}`} onClick={() => playUISound('click')} className={`flex items-center justify-center p-2 rounded-xl transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
+                          <a href={`mailto:${proprietor.email}`} className={`flex items-center justify-center p-2 rounded-xl transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
                             <Icon.Mail className="w-4 h-4" />
                           </a>
                         )}
@@ -1182,39 +1110,34 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             {hasGalleryBlock && (
               <Section title="Gallery" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
                 {galleryContent.length === 1 ? (
-                  <Tilt3D
-                    max={8}
-                    scale={1.02}
-                    glareColor={hexToRgba(primaryColor, 0.25)}
-                    className={`w-full rounded-2xl`}
-                    onClick={() => { setLightboxIndex(0); playUISound('pop'); }}
+                  <div
+                    className="w-full cursor-pointer rounded-2xl"
+                    onClick={() => setLightboxIndex(0)}
                   >
-                  <div className={`w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-2xl border ${borderSoft} group cursor-pointer shadow-md`}>
-                    <img
-                      src={galleryContent[0]}
-                      alt="Gallery image"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    <div className={`w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-2xl border ${borderSoft} group shadow-md`}>
+                      <img
+                        src={galleryContent[0]}
+                        alt="Gallery image"
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
                   </div>
-                  </Tilt3D>
                 ) : (
                   <div className="relative">
                     {/* Right-edge fade to signal overflow */}
                     <div className={`pointer-events-none absolute right-0 top-0 z-10 h-full w-10 ${isDark ? 'bg-gradient-to-l from-[#0f0f13]' : 'bg-gradient-to-l from-slate-100'}`} />
                     <div className="flex overflow-x-auto gap-3 pb-3 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       {galleryContent.map((url: string, idx: number) => (
-                        <Tilt3D
+                        <div
                           key={idx}
-                          max={12}
-                          scale={1.04}
-                          glareColor={hexToRgba(primaryColor, 0.3)}
-                          className="flex-none w-[130px] sm:w-[150px] rounded-xl snap-start shrink-0"
-                          onClick={() => { setLightboxIndex(idx); playUISound('pop'); }}
+                          className="flex-none w-[130px] sm:w-[150px] rounded-xl snap-start shrink-0 cursor-pointer"
+                          onClick={() => setLightboxIndex(idx)}
                         >
-                          <div className="aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group cursor-pointer shadow-sm">
-                            <img src={url} alt={`Gallery item ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                          <div className="aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group shadow-sm">
+                            <img src={url} alt={`Gallery item ${idx + 1}`} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           </div>
-                        </Tilt3D>
+                        </div>
                       ))}
                     </div>
                     {galleryContent.length > 2 && (
@@ -1307,7 +1230,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 }`}>
                   {(paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.ifsc_code) && (
                     <button
-                      onClick={() => { setActivePaymentModal('bank'); playUISound('pop'); }}
+                      onClick={() => setActivePaymentModal('bank')}
                       className={`flex flex-col items-start justify-center gap-1 rounded-2xl p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200 shadow-sm'}`}
                     >
                       <div className="flex items-center gap-2">
@@ -1321,7 +1244,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   )}
                   {(paymentInfo.qr_path || paymentInfo.upi_id || paymentInfo.upi || paymentInfo.phonepe) && (
                     <button
-                      onClick={() => { setActivePaymentModal('barcode'); playUISound('pop'); }}
+                      onClick={() => setActivePaymentModal('barcode')}
                       className={`flex flex-col items-start justify-center gap-1 rounded-2xl p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200 shadow-sm'}`}
                     >
                       <div className="flex items-center gap-2">
@@ -1405,20 +1328,14 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       {filteredProducts.map((product: any) => {
                         const inCart = cart.some(item => item.id === product.id);
                         return (
-                          <Tilt3D
-                            key={product.id}
-                            max={6}
-                            scale={1.01}
-                            glareColor={hexToRgba(primaryColor, 0.25)}
-                            className="w-full max-w-xl rounded-3xl"
-                            onClick={() => { setProductToView(product); setProductViewImgIdx(0); playUISound('pop'); }}
-                          >
                           <div
-                            className={`group flex flex-col sm:flex-row items-center overflow-hidden rounded-3xl cursor-pointer ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg w-full`}
+                            key={product.id}
+                            className={`group flex flex-col sm:flex-row items-center overflow-hidden rounded-3xl cursor-pointer ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg w-full max-w-xl`}
+                            onClick={() => { setProductToView(product); setProductViewImgIdx(0); }}
                           >
                             <div className="relative aspect-[4/3] w-full sm:w-1/2 overflow-hidden bg-slate-100 dark:bg-white/5 shrink-0">
                               {product.images?.[0] ? (
-                                <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <img src={product.images[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                               ) : (
                                 <div className="flex h-full items-center justify-center text-slate-300">
                                   <Icon.Image className="h-8 w-8 opacity-50" />
@@ -1435,22 +1352,20 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               {product.description && (
                                 <p className={`mt-2 text-xs font-medium line-clamp-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{product.description}</p>
                               )}
-                                <div className="mt-4 flex items-center justify-between">
-                                  {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
-                                    <p className={`text-lg sm:text-xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
-                                  ) : null}
+                              <div className="mt-4 flex items-center justify-between">
+                                {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
+                                  <p className={`text-lg sm:text-xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
+                                ) : null}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     if (inCart) {
                                       setIsCartOpen(true);
-                                      playUISound('pop');
                                     } else {
                                       addToCart(product);
-                                      playUISound('success');
                                     }
                                   }}
-                                  className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all hover:scale-105 active:scale-95 ${
+                                  className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all active:scale-95 ${
                                     inCart ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-white shadow-md'
                                   }`}
                                   style={inCart ? {} : { backgroundColor: primaryColor }}
@@ -1461,7 +1376,6 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               </div>
                             </div>
                           </div>
-                          </Tilt3D>
                         );
                       })}
                     </div>
@@ -1471,20 +1385,14 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                         const inCart = cart.some(item => item.id === product.id);
 
                         return (
-                          <Tilt3D
-                            key={product.id}
-                            max={9}
-                            scale={1.03}
-                            glareColor={hexToRgba(primaryColor, 0.3)}
-                            className="rounded-2xl sm:rounded-3xl"
-                            onClick={() => { setProductToView(product); setProductViewImgIdx(0); playUISound('pop'); }}
-                          >
                           <div
+                            key={product.id}
                             className={`group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl cursor-pointer ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg`}
+                            onClick={() => { setProductToView(product); setProductViewImgIdx(0); }}
                           >
                             <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-white/5">
                               {product.images?.[0] ? (
-                                <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <img src={product.images[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                               ) : (
                                 <div className="flex h-full items-center justify-center text-slate-300">
                                   <Icon.Image className="h-6 w-6 sm:h-8 sm:w-8 opacity-50" />
@@ -1510,13 +1418,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                     e.stopPropagation();
                                     if (inCart) {
                                       setIsCartOpen(true);
-                                      playUISound('pop');
                                     } else {
                                       addToCart(product);
-                                      playUISound('success');
                                     }
                                   }}
-                                  className={`flex items-center gap-1.5 rounded-lg sm:rounded-xl px-2.5 py-1 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-bold transition-all hover:scale-105 active:scale-95 ${
+                                  className={`flex items-center gap-1.5 rounded-lg sm:rounded-xl px-2.5 py-1 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-bold transition-all active:scale-95 ${
                                     inCart ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-white shadow-md'
                                   }`}
                                   style={inCart ? {} : { backgroundColor: primaryColor }}
@@ -1528,7 +1434,6 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               </div>
                             </div>
                           </div>
-                          </Tilt3D>
                         );
                       })}
                     </div>
@@ -1561,7 +1466,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   )
                 ) : (
                   <button
-                    onClick={() => { setShowAppointmentModal(true); playUISound('pop'); }}
+                    onClick={() => setShowAppointmentModal(true)}
                     className="w-full rounded-2xl py-3.5 text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
                     style={{ backgroundColor: primaryColor }}
                   >
@@ -1850,87 +1755,25 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       {/* ---- PRODUCT VIEW MODAL ---- */}
       <AnimatePresence>
         {productToView && (
-          <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-20 sm:pt-24">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setProductToView(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative flex w-full max-w-lg flex-col overflow-hidden rounded-3xl shadow-2xl ${isDark ? 'bg-slate-900 border border-white/10' : 'bg-white'} max-h-[85vh]`}
-            >
-              <div className="relative aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800">
-                {productToView.images && productToView.images.length > 0 ? (
-                  <>
-                    <img src={productToView.images[productViewImgIdx]} alt={productToView.name} className="h-full w-full object-cover" />
-                    {productToView.images.length > 1 && (
-                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-                        {productToView.images.map((_: any, i: number) => (
-                          <button key={i} onClick={(e) => { e.stopPropagation(); setProductViewImgIdx(i); }} className={`h-2 w-2 rounded-full transition-all ${i === productViewImgIdx ? 'w-4 bg-white' : 'bg-white/50'}`} />
-                        ))}
-                      </div>
-                    )}
-                    {productToView.images.length > 1 && (
-                      <>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setProductViewImgIdx((productViewImgIdx - 1 + productToView.images.length) % productToView.images.length); }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/60"
-                        >
-                          <Icon.ChevronLeft className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setProductViewImgIdx((productViewImgIdx + 1) % productToView.images.length); }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/60"
-                        >
-                          <Icon.ChevronRight className="h-5 w-5" />
-                        </button>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-slate-400">
-                    <Icon.Image className="h-12 w-12 opacity-50" />
-                  </div>
-                )}
-                 <button
-                  onClick={() => { setProductToView(null); playUISound('click'); }}
-                  className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white backdrop-blur transition hover:bg-black/70 z-10"
-                >
-                  <Icon.X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="flex flex-col p-6 overflow-y-auto">
-                {productToView.category && (
-                  <span className="mb-2 w-max rounded-full bg-slate-100 dark:bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                    {productToView.category}
-                  </span>
-                )}
-                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{productToView.name}</h2>
-                <p className={`mt-4 text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{productToView.description}</p>
-                <div className="mt-8 flex items-center justify-between border-t border-slate-200 dark:border-white/10 pt-4">
-                  <p className={`text-2xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {productToView.price !== null && productToView.price !== undefined && Number(productToView.price) > 0 ? `₹${Number(productToView.price).toLocaleString('en-IN')}` : ''}
-                  </p>
-                  <button
-                    onClick={() => {
-                      if (cart.some(item => item.id === productToView.id)) {
-                        setIsCartOpen(true);
-                        playUISound('pop');
-                      } else {
-                        addToCart(productToView);
-                        playUISound('success');
-                      }
-                      setProductToView(null);
-                    }}
-                    className={`rounded-xl px-6 py-3 font-bold text-white shadow-md transition active:scale-95 flex items-center gap-2`}
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    <Icon.ShoppingCart className="h-5 w-5" />
-                    {cart.some(item => item.id === productToView.id) ? 'Added to Cart' : 'Add to Cart'}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+          <ProductViewModal
+            product={productToView}
+            imgIdx={productViewImgIdx}
+            setImgIdx={setProductViewImgIdx}
+            allProducts={filteredProducts}
+            onNavigate={(product: any) => { setProductToView(product); setProductViewImgIdx(0); }}
+            onClose={() => setProductToView(null)}
+            onCartAction={() => {
+              if (cart.some(item => item.id === productToView.id)) {
+                setIsCartOpen(true);
+              } else {
+                addToCart(productToView);
+              }
+              setProductToView(null);
+            }}
+            inCart={cart.some(item => item.id === productToView.id)}
+            isDark={isDark}
+            primaryColor={primaryColor}
+          />
         )}
       </AnimatePresence>
 
@@ -2433,11 +2276,6 @@ function QuickAction({
         href={href} 
         target={external ? '_blank' : undefined} 
         rel={external ? 'noreferrer' : undefined}
-        onClick={() => {
-          if (typeof (window as any).playUISound === 'function') {
-            (window as any).playUISound(label === 'Save' ? 'save' : 'click');
-          }
-        }}
       >
         {inner}
       </a>
@@ -2445,11 +2283,8 @@ function QuickAction({
   }
   return (
     <button 
-      type="button" 
+      type="button"
       onClick={(e) => {
-        if (typeof (window as any).playUISound === 'function') {
-          (window as any).playUISound(label === 'Save' ? 'save' : 'click');
-        }
         if (onClick) onClick();
       }} 
       className={base}
@@ -2519,6 +2354,237 @@ function InfoRow({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function ProductViewModal({
+  product,
+  imgIdx,
+  setImgIdx,
+  allProducts,
+  onNavigate,
+  onClose,
+  onCartAction,
+  inCart,
+  isDark,
+  primaryColor,
+}: {
+  product: any;
+  imgIdx: number;
+  setImgIdx: (i: number) => void;
+  allProducts: any[];
+  onNavigate: (product: any) => void;
+  onClose: () => void;
+  onCartAction: () => void;
+  inCart: boolean;
+  isDark: boolean;
+  primaryColor: string;
+}) {
+  const touchRef = useRef<{ startX: number; startY: number; startTime: number } | null>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+
+  const images = product.images && product.images.length > 0 ? product.images : [];
+  const hasMultipleImages = images.length > 1;
+
+  // Find current product index in the list
+  const currentIdx = allProducts.findIndex((p: any) => p.id === product.id);
+  const hasPrevProduct = currentIdx > 0;
+  const hasNextProduct = currentIdx < allProducts.length - 1;
+
+  const goToPrevImage = useCallback(() => {
+    if (hasMultipleImages) setImgIdx((imgIdx - 1 + images.length) % images.length);
+  }, [imgIdx, images.length, hasMultipleImages, setImgIdx]);
+
+  const goToNextImage = useCallback(() => {
+    if (hasMultipleImages) setImgIdx((imgIdx + 1) % images.length);
+  }, [imgIdx, images.length, hasMultipleImages, setImgIdx]);
+
+  const goToPrevProduct = useCallback(() => {
+    if (hasPrevProduct) onNavigate(allProducts[currentIdx - 1]);
+  }, [hasPrevProduct, currentIdx, allProducts, onNavigate]);
+
+  const goToNextProduct = useCallback(() => {
+    if (hasNextProduct) onNavigate(allProducts[currentIdx + 1]);
+  }, [hasNextProduct, currentIdx, allProducts, onNavigate]);
+
+  // Touch swipe handler
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchRef.current = { startX: touch.clientX, startY: touch.clientY, startTime: Date.now() };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchRef.current) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchRef.current.startX;
+    const deltaY = touch.clientY - touchRef.current.startY;
+    const elapsed = Date.now() - touchRef.current.startTime;
+    touchRef.current = null;
+
+    // Only register horizontal swipes (not vertical scrolls), min 40px, max 500ms
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaY) > Math.abs(deltaX) || elapsed > 500) return;
+
+    if (deltaX < 0) {
+      // Swiped left → next
+      if (hasMultipleImages) goToNextImage();
+      else if (hasNextProduct) goToNextProduct();
+    } else {
+      // Swiped right → prev
+      if (hasMultipleImages) goToPrevImage();
+      else if (hasPrevProduct) goToPrevProduct();
+    }
+  }, [hasMultipleImages, goToNextImage, goToPrevImage, hasNextProduct, goToNextProduct, hasPrevProduct, goToPrevProduct]);
+
+  const surfaceSoft = isDark ? 'bg-white/[0.04]' : 'bg-slate-50';
+  const textMuted = isDark ? 'text-slate-400' : 'text-slate-500';
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <motion.div
+        initial={{ opacity: 0, y: 100 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 100 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        className={`relative flex w-full sm:max-w-lg flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ${isDark ? 'bg-[#12121A] border border-white/10' : 'bg-white'} max-h-[92vh] sm:max-h-[85vh]`}
+      >
+        {/* Image carousel */}
+        <div
+          ref={imageContainerRef}
+          className="relative aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800 shrink-0 select-none touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {images.length > 0 ? (
+            <>
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.img
+                  key={imgIdx}
+                  src={images[imgIdx]}
+                  alt={product.name}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  draggable={false}
+                />
+              </AnimatePresence>
+
+              {/* Image dots */}
+              {hasMultipleImages && (
+                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+                  {images.map((_: any, i: number) => (
+                    <button
+                      key={i}
+                      onClick={(e) => { e.stopPropagation(); setImgIdx(i); }}
+                      className={`h-1.5 rounded-full transition-all ${i === imgIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Image prev/next arrows */}
+              {hasMultipleImages && (
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); goToPrevImage(); }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition hover:bg-black/60 active:scale-90"
+                  >
+                    <Icon.ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); goToNextImage(); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition hover:bg-black/60 active:scale-90"
+                  >
+                    <Icon.ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+
+              {/* Image counter badge */}
+              {hasMultipleImages && (
+                <div className="absolute top-3 left-3 z-10 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-md">
+                  {imgIdx + 1} / {images.length}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex h-full items-center justify-center text-slate-400">
+              <Icon.Image className="h-12 w-12 opacity-50" />
+            </div>
+          )}
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute right-3 top-3 rounded-full bg-black/50 p-2 text-white backdrop-blur-md transition hover:bg-black/70 active:scale-90 z-10"
+          >
+            <Icon.X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Product details */}
+        <div className="flex flex-col p-5 sm:p-6 overflow-y-auto flex-1">
+          {product.category && (
+            <span className={`mb-2 w-max rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+              {product.category}
+            </span>
+          )}
+          <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{product.name}</h2>
+          {product.description && (
+            <p className={`mt-3 text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{product.description}</p>
+          )}
+
+          <div className={`mt-5 flex items-center justify-between border-t pt-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+            <p className={`text-2xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? `₹${Number(product.price).toLocaleString('en-IN')}` : ''}
+            </p>
+            <button
+              onClick={onCartAction}
+              className="rounded-xl px-5 py-3 font-bold text-white shadow-md transition active:scale-95 flex items-center gap-2"
+              style={{ backgroundColor: inCart ? '#10b981' : primaryColor }}
+            >
+              {inCart ? <Icon.Check className="h-5 w-5" /> : <Icon.ShoppingCart className="h-5 w-5" />}
+              {inCart ? 'In Cart' : 'Add to Cart'}
+            </button>
+          </div>
+        </div>
+
+        {/* Product-level prev/next navigation */}
+        {allProducts.length > 1 && (
+          <div className={`flex items-center justify-between border-t px-5 py-3 ${isDark ? 'border-white/10 bg-white/[0.02]' : 'border-slate-100 bg-slate-50'}`}>
+            <button
+              onClick={goToPrevProduct}
+              disabled={!hasPrevProduct}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition active:scale-95 ${
+                hasPrevProduct
+                  ? isDark ? 'text-white bg-white/10 hover:bg-white/15' : 'text-slate-700 bg-slate-200 hover:bg-slate-300'
+                  : 'opacity-30 cursor-not-allowed ' + (isDark ? 'text-white/50' : 'text-slate-400')
+              }`}
+            >
+              <Icon.ChevronLeft className="h-4 w-4" />
+              Prev
+            </button>
+            <span className={`text-[11px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              {currentIdx + 1} of {allProducts.length}
+            </span>
+            <button
+              onClick={goToNextProduct}
+              disabled={!hasNextProduct}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition active:scale-95 ${
+                hasNextProduct
+                  ? isDark ? 'text-white bg-white/10 hover:bg-white/15' : 'text-slate-700 bg-slate-200 hover:bg-slate-300'
+                  : 'opacity-30 cursor-not-allowed ' + (isDark ? 'text-white/50' : 'text-slate-400')
+              }`}
+            >
+              Next
+              <Icon.ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }

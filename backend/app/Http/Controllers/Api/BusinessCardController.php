@@ -239,25 +239,78 @@ class BusinessCardController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
-        $personalInfo = $card->personal_info;
-        $name = $personalInfo['name'] ?? 'Contact';
-        $phone = $personalInfo['phone'] ?? '';
-        $email = $personalInfo['email'] ?? '';
-        $title = $personalInfo['designation'] ?? '';
-        $company = $personalInfo['company_name'] ?? '';
+        $personalInfo = is_array($card->personal_info) ? $card->personal_info : [];
+        $contactButtons = is_array($card->contact_buttons) ? $card->contact_buttons : [];
+        $socialLinks = is_array($card->social_links) ? $card->social_links : [];
+        $companyDetails = is_array($card->company_details) ? $card->company_details : [];
 
-        $vcard = "BEGIN:VCARD\n";
-        $vcard .= "VERSION:3.0\n";
-        $vcard .= "FN:{$name}\n";
-        if ($title) $vcard .= "TITLE:{$title}\n";
-        if ($company) $vcard .= "ORG:{$company}\n";
-        if ($phone) $vcard .= "TEL;TYPE=CELL:{$phone}\n";
-        if ($email) $vcard .= "EMAIL:{$email}\n";
-        $vcard .= "END:VCARD";
+        $name = $personalInfo['name'] ?? 'Contact';
+        $title = $personalInfo['designation'] ?? '';
+        $company = $companyDetails['company_name'] ?? $personalInfo['company_name'] ?? $personalInfo['company'] ?? '';
+        $website = $companyDetails['website'] ?? '';
+        $address = $companyDetails['address'] ?? '';
+
+        // Resolve phone, email, whatsapp from contact_buttons first, then social_links, then personal_info
+        $phone = $contactButtons['call'] ?? $socialLinks['phone'] ?? $socialLinks['call'] ?? $personalInfo['phone'] ?? '';
+        $whatsapp = $contactButtons['whatsapp'] ?? $socialLinks['whatsapp'] ?? '';
+        $email = $contactButtons['email'] ?? $socialLinks['email'] ?? $personalInfo['email'] ?? '';
+
+        // Profile image URL
+        $photoUrl = $card->profile_image ?? $personalInfo['profile_image'] ?? '';
+
+        // Build vCard with proper CRLF line endings (RFC 6350)
+        $lines = [];
+        $lines[] = 'BEGIN:VCARD';
+        $lines[] = 'VERSION:3.0';
+        $lines[] = 'FN:' . $name;
+
+        // N: field (required in vCard 3.0) — split on first space
+        $nameParts = explode(' ', $name, 2);
+        $lastName = $nameParts[1] ?? '';
+        $firstName = $nameParts[0] ?? $name;
+        $lines[] = 'N:' . $lastName . ';' . $firstName . ';;;';
+
+        if ($title) $lines[] = 'TITLE:' . $title;
+        if ($company) $lines[] = 'ORG:' . $company;
+        if ($phone) $lines[] = 'TEL;TYPE=CELL:' . $phone;
+        if ($whatsapp && $whatsapp !== $phone) $lines[] = 'TEL;TYPE=WORK:' . $whatsapp;
+        if ($email) $lines[] = 'EMAIL;TYPE=INTERNET:' . $email;
+        if ($website) $lines[] = 'URL:' . $website;
+        if ($address) $lines[] = 'ADR;TYPE=WORK:;;' . str_replace(["\r\n", "\n", "\r"], ', ', $address) . ';;;;';
+
+        // Profile photo as a URL reference (works on iOS/Android without bloating file)
+        if ($photoUrl && filter_var($photoUrl, FILTER_VALIDATE_URL)) {
+            $lines[] = 'PHOTO;VALUE=URI:' . $photoUrl;
+        }
+
+        // Social profiles
+        $socialMap = [
+            'facebook' => 'Facebook',
+            'instagram' => 'Instagram',
+            'twitter' => 'Twitter',
+            'linkedin' => 'LinkedIn',
+            'youtube' => 'YouTube',
+        ];
+        foreach ($socialMap as $key => $label) {
+            $url = $socialLinks[$key] ?? '';
+            if ($url) {
+                $lines[] = 'X-SOCIALPROFILE;TYPE=' . strtolower($label) . ':' . $url;
+            }
+        }
+
+        // Card URL as a note
+        $cardUrl = url('/' . $card->slug);
+        $lines[] = 'NOTE:Digital Card: ' . $cardUrl;
+
+        $lines[] = 'END:VCARD';
+
+        $vcard = implode("\r\n", $lines);
+        $filename = Str::slug($name) . '.vcf';
 
         return response($vcard)
-            ->header('Content-Type', 'text/vcard')
-            ->header('Content-Disposition', 'attachment; filename="' . Str::slug($name) . '.vcf"');
+            ->header('Content-Type', 'text/vcard; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
 
     /**

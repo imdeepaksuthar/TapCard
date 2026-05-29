@@ -322,17 +322,17 @@ export default function Dashboard() {
             
             <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-inner">
               <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/c/${cards[0].slug}`)}`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`)}`} 
                 alt="Card QR Code" 
                 className="w-48 h-48"
               />
             </div>
 
             <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between gap-3 mb-6">
-              <span className="text-xs text-gray-300 truncate select-all">{`${typeof window !== 'undefined' ? window.location.origin : ''}/c/${cards[0].slug}`}</span>
+              <span className="text-xs text-gray-300 truncate select-all">{`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`}</span>
               <button 
                 onClick={() => {
-                  navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/c/${cards[0].slug}`);
+                  navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`);
                   setQrCopied(true);
                   setTimeout(() => setQrCopied(false), 2000);
                 }}
@@ -343,7 +343,7 @@ export default function Dashboard() {
             </div>
 
             <a 
-              href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/c/${cards[0].slug}`)}`}
+              href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`)}`}
               target="_blank"
               rel="noreferrer"
               download="card_qr.png"
