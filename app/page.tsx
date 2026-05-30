@@ -67,6 +67,7 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [recentCards, setRecentCards] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -105,6 +106,16 @@ export default function Home() {
       } catch { /* ignore */ }
     };
     fetchRecent();
+
+    // Fetch pricing plans
+    const fetchPlans = async () => {
+      try {
+        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${API}/api/plans`);
+        if (res.ok) setPlans(await res.json());
+      } catch { /* ignore */ }
+    };
+    fetchPlans();
 
     // Drive scroll progress for the 3D scene (hero height only)
     const onScroll = () => {
@@ -487,53 +498,49 @@ export default function Home() {
           </div>
 
           <div className="pricing-grid grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-            {/* Starter */}
-            <div className="pricing-card rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-7 sm:p-8 flex flex-col hover:border-zinc-700 transition-colors">
-              <h3 className="text-lg font-bold mb-1">Starter</h3>
-              <p className="text-zinc-500 text-sm mb-6">Perfect for individuals.</p>
-              <div className="text-4xl font-extrabold mb-8">Free</div>
-              <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> 1 Digital Business Card</li>
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Basic Analytics</li>
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Standard Templates</li>
-              </ul>
-              <Link href="/register" className="block text-center w-full py-3.5 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-semibold text-sm">
-                Get Started
-              </Link>
-            </div>
+            {(Array.isArray(plans) ? plans : []).map((plan, index) => {
+              const isPopular = index === 1;
+              const formatPrice = (price: string | number) => {
+                const num = Number(price);
+                return num > 0 ? `₹${num.toFixed(2).replace(/\.00$/, '')}` : 'Free';
+              };
+              const periodLabel = plan.billing_period === 'monthly' ? '/mo' : (plan.billing_period === 'yearly' ? '/yr' : '');
 
-            {/* Pro */}
-            <div className="pricing-card rounded-2xl sm:rounded-3xl border border-blue-500/30 bg-gradient-to-b from-blue-950/40 to-zinc-900/60 p-7 sm:p-8 flex flex-col relative overflow-hidden ring-1 ring-blue-500/10">
-              <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-wider">POPULAR</div>
-              <h3 className="text-lg font-bold mb-1">Pro</h3>
-              <p className="text-zinc-500 text-sm mb-6">For active professionals.</p>
-              <div className="text-4xl font-extrabold mb-8">$5<span className="text-lg text-zinc-500 font-normal">/mo</span></div>
-              <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Unlimited Cards</li>
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Advanced Analytics</li>
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Custom NFC Programming</li>
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Lead Capture</li>
-              </ul>
-              <Link href="/register" className="block text-center w-full py-3.5 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors font-semibold text-sm shadow-lg shadow-blue-600/20">
-                Upgrade to Pro
-              </Link>
-            </div>
+              if (isPopular) {
+                return (
+                  <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl border border-blue-500/30 bg-gradient-to-b from-blue-950/40 to-zinc-900/60 p-7 sm:p-8 flex flex-col relative overflow-hidden ring-1 ring-blue-500/10">
+                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-wider">POPULAR</div>
+                    <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
+                    <p className="text-zinc-500 text-sm mb-6">For active professionals.</p>
+                    <div className="text-4xl font-extrabold mb-8">{formatPrice(plan.price)}<span className="text-lg text-zinc-500 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
+                    <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
+                      {plan.features?.map((f: string, i: number) => (
+                        <li key={i} className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> {f}</li>
+                      ))}
+                    </ul>
+                    <Link href="/register" className="block text-center w-full py-3.5 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors font-semibold text-sm shadow-lg shadow-blue-600/20">
+                      Upgrade to {plan.name.replace(' Plan', '')}
+                    </Link>
+                  </div>
+                );
+              }
 
-            {/* Enterprise */}
-            <div className="pricing-card rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-7 sm:p-8 flex flex-col hover:border-zinc-700 transition-colors">
-              <h3 className="text-lg font-bold mb-1">Enterprise</h3>
-              <p className="text-zinc-500 text-sm mb-6">For teams and companies.</p>
-              <div className="text-4xl font-extrabold mb-8">Custom</div>
-              <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Team Management</li>
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Centralized Billing</li>
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> CRM Integrations</li>
-                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Dedicated Manager</li>
-              </ul>
-              <Link href="/contact" className="block text-center w-full py-3.5 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-semibold text-sm">
-                Contact Sales
-              </Link>
-            </div>
+              return (
+                <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-7 sm:p-8 flex flex-col hover:border-zinc-700 transition-colors">
+                  <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
+                  <p className="text-zinc-500 text-sm mb-6">{index === 0 ? 'Perfect for individuals.' : 'For teams and companies.'}</p>
+                  <div className="text-4xl font-extrabold mb-8">{formatPrice(plan.price)}<span className="text-lg text-zinc-500 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
+                  <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
+                    {plan.features?.map((f: string, i: number) => (
+                      <li key={i} className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> {f}</li>
+                    ))}
+                  </ul>
+                  <Link href="/register" className="block text-center w-full py-3.5 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-semibold text-sm">
+                    {index === 0 ? 'Get Started' : 'Contact Sales'}
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

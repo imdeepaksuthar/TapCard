@@ -43,6 +43,9 @@ Route::middleware('throttle:60,1')->group(function () {
     // Public Categories Listing
     Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
 
+    // Public SaaS Plans Listing
+    Route::get('/plans', [\App\Http\Controllers\Api\PublicController::class, 'plans']);
+
     // Homepage Stats
     Route::get('/homepage-stats', [\App\Http\Controllers\Api\PublicController::class, 'homepageStats']);
 

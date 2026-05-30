@@ -13,6 +13,9 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
+        if (Auth::check() && in_array(Auth::user()->role, ['admin', 'super_admin'])) {
+            return redirect()->intended('admin');
+        }
         return view('auth.login');
     }
 
@@ -29,15 +32,21 @@ class LoginController extends Controller
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
-            $request->session()->regenerate();
+            $user = Auth::user();
 
-            // Redirect admin users to the admin dashboard
-            if (in_array(Auth::user()->role, ['admin', 'super_admin'])) {
+            if (in_array($user->role, ['admin', 'super_admin'])) {
+                $request->session()->regenerate();
                 return redirect()->intended('admin');
             }
 
-            // Redirect normal users to a standard dashboard (or just logout if they shouldn't access backend)
-            return redirect()->intended('/');
+            // Log out unauthorized user immediately
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Unauthorized action. Please log in with a Super Admin or Admin account.',
+            ])->withInput(['email']);
         }
 
         return back()->withErrors([

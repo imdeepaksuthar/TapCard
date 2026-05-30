@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>{{ $title ?? 'Card Setu Admin' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Alpine.js for lightweight state management -->
@@ -33,7 +34,9 @@
         <!-- Sidebar -->
         <aside :class="sidebarToggle ? 'translate-x-0' : '-translate-x-full'" class="absolute left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-y-hidden bg-gray-900 duration-300 ease-linear dark:bg-boxdark lg:static lg:translate-x-0">
             <div class="flex items-center justify-between gap-2 px-6 py-6">
-                <a href="{{ route('admin.dashboard') }}" class="text-2xl font-bold text-white">Card Setu</a>
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center">
+                    <img src="{{ asset('logo-dark.png') }}" alt="Card Setu" class="h-8 w-auto" />
+                </a>
                 <button @click="sidebarToggle = !sidebarToggle" class="block lg:hidden text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -42,33 +45,33 @@
                 <nav class="mt-5 py-4 px-4 lg:mt-9 lg:px-6">
                     <ul class="mb-6 flex flex-col gap-1.5">
                         <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-gray-300 duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark" href="{{ route('admin.dashboard') }}">
+                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.dashboard') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.dashboard') }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                                 Dashboard
                             </a>
                         </li>
                         <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-gray-300 duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark" href="{{ route('admin.plans.index') }}">
+                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.users.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.users.index') }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                Registered Users
+                            </a>
+                        </li>
+                        <li>
+                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.categories.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.categories.index') }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                Categories
+                            </a>
+                        </li>
+                        <li>
+                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.plans.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.plans.index') }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 SaaS Plans
                             </a>
                         </li>
                         <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-gray-300 duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark" href="{{ route('admin.nfc.index') }}">
+                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.nfc.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.nfc.index') }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
                                 NFC Queue
-                            </a>
-                        </li>
-                        <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-gray-300 duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark" href="{{ route('admin.themes.index') }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                Themes
-                            </a>
-                        </li>
-                        <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-gray-300 duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark" href="{{ route('admin.products.index') }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                                Products
                             </a>
                         </li>
                     </ul>
@@ -87,12 +90,41 @@
                         </button>
                     </div>
                     
-                    <div class="flex items-center justify-end w-full gap-3">
+                    <div class="flex items-center justify-end w-full gap-4">
                         <button @click="darkMode = !darkMode" class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
                             <svg x-show="!darkMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                             <svg x-show="darkMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         </button>
-                        <div class="font-medium text-black dark:text-white">{{ auth()->user()->name ?? 'Admin' }}</div>
+
+                        <!-- User Dropdown Area -->
+                        <div class="relative" x-data="{ dropdownOpen: false }" @click.outside="dropdownOpen = false">
+                            <button @click="dropdownOpen = !dropdownOpen" class="flex items-center gap-2 focus:outline-none">
+                                <span class="hidden font-medium text-black dark:text-white sm:block">{{ auth()->user()->name ?? 'Admin' }}</span>
+                                <svg class="hidden fill-current sm:block w-4 h-4 text-black dark:text-white transition" :class="dropdownOpen ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+
+                            <!-- Dropdown Menu -->
+                            <div x-show="dropdownOpen" 
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 translate-y-1"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                 x-transition:leave-end="opacity-0 translate-y-1"
+                                 class="absolute right-0 mt-4 flex w-48 flex-col rounded border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark" 
+                                 style="display: none;">
+                                
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="flex w-full items-center gap-3.5 px-6 py-4 text-sm font-medium duration-300 ease-in-out hover:text-primary text-black dark:text-white">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                        Log Out
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>

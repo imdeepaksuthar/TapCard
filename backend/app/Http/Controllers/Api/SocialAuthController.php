@@ -78,7 +78,7 @@ class SocialAuthController extends Controller
         // Redirect to the frontend dashboard with cookie
         $frontendUrl = env('FRONTEND_URL', 'http://127.0.0.1:3000');
         
-        return redirect()->away($frontendUrl . '/dashboard')
-            ->cookie('auth_token', $token, 60 * 24 * 30, '/', null, true, true, false, 'Lax');
+        return redirect()->away($frontendUrl . '/dashboard?token=' . $token)
+            ->cookie('auth_token', $token, 60 * 24 * 30, '/', null, false, false, false, 'Lax');
     }
 }

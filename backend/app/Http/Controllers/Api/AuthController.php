@@ -193,7 +193,7 @@ class AuthController extends Controller
         }
 
         if ($user->markEmailAsVerified()) {
-            // Trigger event if needed
+            \App\Jobs\SendWelcomeEmailsJob::dispatch($user);
         }
 
         return response()->json(['message' => 'Email verified successfully.']);

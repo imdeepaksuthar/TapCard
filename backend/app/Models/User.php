@@ -67,4 +67,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return in_array($this->role, $permissions[$permission]);
     }
+
+    /**
+     * Get the business cards created by the user.
+     */
+    public function businessCards()
+    {
+        return $this->hasMany(BusinessCard::class);
+    }
 }

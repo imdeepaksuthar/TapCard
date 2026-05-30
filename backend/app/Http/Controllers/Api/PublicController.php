@@ -95,4 +95,16 @@ class PublicController extends Controller
 
         return response()->json($cards);
     }
+
+    /**
+     * Get all active SaaS plans.
+     */
+    public function plans(): JsonResponse
+    {
+        $plans = Cache::remember('public_plans', 3600, function () {
+            return \App\Models\Plan::orderBy('price', 'asc')->get()->toArray();
+        });
+
+        return response()->json($plans);
+    }
 }

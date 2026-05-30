@@ -4,6 +4,9 @@ import { AuthProvider } from '../context/AuthContext';
 export const metadata = {
   title: 'Card Setu',
   description: 'Card Setu SaaS',
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 export default function RootLayout({
