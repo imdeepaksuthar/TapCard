@@ -58,7 +58,7 @@ class MediaController extends Controller
                 if (in_array($ext, ['jpg', 'jpeg', 'png', 'bmp'])) {
                     $webpPath = preg_replace('/\.[^.]+$/', '.webp', $fullPath);
                     $webpStoragePath = preg_replace('/\.[^.]+$/', '.webp', $path);
-                    $image->toWebp(82)->save($webpPath);
+                    $image->encode(new \Intervention\Image\Encoders\WebpEncoder(quality: 82))->save($webpPath);
 
                     // Delete original, update path to webp
                     if (file_exists($fullPath) && $fullPath !== $webpPath) {

@@ -50,5 +50,7 @@ class DatabaseSeeder extends Seeder
 
         // Call Category Seeder
         $this->call(CategorySeeder::class);
+        $this->call(PlanSeeder::class);
+
     }
 }
