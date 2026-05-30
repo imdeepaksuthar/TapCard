@@ -17,10 +17,10 @@ class DatabaseSeeder extends Seeder
     {
         // Create Super Admin
         User::updateOrCreate(
-            ['email' => 'superadmin@example.com'],
+            ['email' => 'devstudiodzone@gmail.com'],
             [
-                'name' => 'Super Admin',
-                'password' => bcrypt('password'),
+                'name' => 'Deepak Suthar',
+                'password' => bcrypt('Admin@2909'),
                 'role' => 'super_admin',
                 'status' => 'active',
             ]
