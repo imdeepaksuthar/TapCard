@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../../../lib/api';
 import { useAuth } from '../../../context/AuthContext';
+import { compressProductImage } from '../../../lib/compressImage';
 
 interface Product {
   id: number;
@@ -41,6 +42,15 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToView, setProductToView] = useState<Product | null>(null);
 
+  // Import CSV states
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [importErrorsList, setImportErrorsList] = useState<string[]>([]);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
+
   // Form states
   const [formName, setFormName] = useState('');
   const [formPrice, setFormPrice] = useState('');
@@ -74,6 +84,82 @@ export default function ProductsPage() {
     };
     fetchProducts();
   }, []);
+
+  const openImportModal = () => {
+    setIsImportModalOpen(true);
+    setImportFile(null);
+    setImportError(null);
+    setImportSuccess(null);
+    setImportErrorsList([]);
+    if (importFileInputRef.current) importFileInputRef.current.value = '';
+  };
+
+  const handleImportCSV = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importFile) {
+      setImportError('Please select a CSV file.');
+      return;
+    }
+
+    setIsImporting(true);
+    setImportError(null);
+    setImportSuccess(null);
+    setImportErrorsList([]);
+
+    const fd = new FormData();
+    fd.append('file', importFile);
+
+    try {
+      const response = await apiFetch<{ message: string; imported_count: number; errors: string[] }>('/api/products/import', {
+        method: 'POST',
+        body: fd,
+      });
+
+      setImportSuccess(response.message || `Successfully imported ${response.imported_count} products.`);
+      
+      if (response.errors && response.errors.length > 0) {
+        setImportErrorsList(response.errors);
+      }
+
+      // Refresh products list
+      const data = await apiFetch<{ products: Product[] }>('/api/products');
+      setProducts(data.products);
+
+      // Reset file
+      setImportFile(null);
+      if (importFileInputRef.current) importFileInputRef.current.value = '';
+    } catch (err) {
+      const errMsg = (err as Error).message || 'Failed to import products';
+      try {
+        const parsed = JSON.parse(errMsg);
+        if (parsed.errors) {
+          setImportErrorsList(parsed.errors);
+          setImportError(parsed.message || 'Validation errors occurred.');
+        } else {
+          setImportError(errMsg);
+        }
+      } catch {
+        setImportError(errMsg);
+      }
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const downloadSampleCSV = () => {
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "name,price,description,is_active,images\n"
+      + "NFC Smart Business Card,499.00,Elevate your networking with our premium NFC-enabled business card.,true,https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=400&q=80\n"
+      + "Classic Wooden Digital Card,799.00,A eco-friendly natural wood card with dynamic smart sharing capability.,true,https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80\n"
+      + "Metal RFID Protection Card,1499.00,Ultra-premium laser engraved matte black metal smart card.,false,\n";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "sample_products.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const resetForm = () => {
     setFormName('');
@@ -123,10 +209,11 @@ export default function ProductsPage() {
     setFormError(null);
     setUploadingCount(prev => prev + files.length);
 
-    // Upload all files concurrently
+    // Compress then upload all files concurrently
     const uploadPromises = files.map(async (file) => {
+      const compressed = await compressProductImage(file);
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', compressed);
       fd.append('type', 'image');
       fd.append('context', 'product');
       try {
@@ -256,15 +343,26 @@ export default function ProductsPage() {
             <p className="text-gray-400 text-sm">Manage and organize your product catalog.</p>
           </div>
           {isAdmin && (
-            <button
-              onClick={openAddModal}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 active:scale-95"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add Product
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={openImportModal}
+                className="flex items-center gap-2 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 hover:border-white/20 text-gray-300 font-medium py-2.5 px-5 rounded-xl transition-all duration-300 active:scale-95 cursor-pointer"
+              >
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import CSV
+              </button>
+              <button
+                onClick={openAddModal}
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 active:scale-95"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Product
+              </button>
+            </div>
           )}
         </div>
 
@@ -346,7 +444,12 @@ export default function ProductsPage() {
       {!isLoading && filteredAndSortedProducts.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
           {filteredAndSortedProducts.map((product, index) => {
-            const imgs = product.images || [];
+            const rawImgs = product.images || [];
+            const imgs = rawImgs.map((img: string) => 
+              img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:'))
+                ? img
+                : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
+            );
             const ci = getCarouselIdx(product.id);
             return (
               <motion.div
@@ -385,6 +488,9 @@ export default function ProductsPage() {
                         src={imgs[ci]}
                         alt={`${product.name} image ${ci + 1}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                        }}
                       />
                       {/* Carousel dots */}
                       {imgs.length > 1 && (
@@ -782,6 +888,129 @@ export default function ProductsPage() {
                   Close Preview
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Import CSV Modal */}
+      <AnimatePresence>
+        {isImportModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsImportModalOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-[#0B1528] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] z-10"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#070D1A]">
+                <h2 className="text-xl font-bold text-white bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                  Bulk Import Products
+                </h2>
+                <button onClick={() => setIsImportModalOpen(false)} className="text-gray-400 hover:text-white transition-colors p-1 bg-white/5 hover:bg-white/10 rounded-lg">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleImportCSV} className="flex-1 overflow-y-auto p-6 space-y-6">
+                {importError && (
+                  <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-sm whitespace-pre-wrap">{importError}</div>
+                )}
+                
+                {importSuccess && (
+                  <div className="p-3 rounded-xl border border-green-500/20 bg-green-500/10 text-green-400 text-sm whitespace-pre-wrap">{importSuccess}</div>
+                )}
+
+                {importErrorsList.length > 0 && (
+                  <div className="space-y-1.5 p-4 rounded-xl border border-red-500/15 bg-red-500/5 max-h-40 overflow-y-auto">
+                    <p className="text-xs font-bold text-red-400 uppercase tracking-wider">Detailed Row Failures:</p>
+                    <ul className="list-disc list-inside text-xs text-gray-400 space-y-1">
+                      {importErrorsList.map((err, i) => <li key={i} className="leading-relaxed">{err}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Instructions */}
+                <div className="p-4 bg-[#070D1A]/50 border border-white/5 rounded-xl space-y-3">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">CSV Format Instructions</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Ensure your columns match these exact headers:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5"><code className="text-blue-400 font-bold">name</code> <span className="text-gray-500">(Required)</span></div>
+                    <div className="bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5"><code className="text-blue-400 font-bold">price</code> <span className="text-gray-500">(Required, numeric)</span></div>
+                    <div className="bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5"><code className="text-blue-400 font-bold">description</code> <span className="text-gray-500">(Optional)</span></div>
+                    <div className="bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5"><code className="text-blue-400 font-bold">is_active</code> <span className="text-gray-500">(Optional, true/false)</span></div>
+                    <div className="col-span-2 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5"><code className="text-blue-400 font-bold">images</code> <span className="text-gray-500">(Optional, comma-separated URLs)</span></div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={downloadSampleCSV}
+                    className="mt-2 text-xs text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 transition animate-pulse"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Download Sample template CSV
+                  </button>
+                </div>
+
+                {/* File Upload Zone */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">Upload CSV File</label>
+                  <div
+                    onClick={() => importFileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 bg-[#070D1A]/50 hover:bg-[#070D1A]/85 group ${
+                      importFile ? 'border-blue-500/50' : 'border-white/10 hover:border-blue-500/30'
+                    }`}
+                  >
+                    <div className="text-center space-y-3">
+                      <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/20 group-hover:bg-blue-500/20 transition-colors">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        {importFile ? (
+                          <p className="text-sm font-semibold text-blue-400 truncate max-w-xs">{importFile.name}</p>
+                        ) : (
+                          <p className="text-sm font-semibold text-white">Select product catalog CSV</p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">Only .csv or .txt files accepted · Max 2MB</p>
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    ref={importFileInputRef}
+                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                    accept=".csv,text/plain"
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Footer buttons */}
+                <div className="pt-4 border-t border-white/5 flex justify-end gap-3 bg-[#0B1528]">
+                  <button
+                    type="button"
+                    onClick={() => setIsImportModalOpen(false)}
+                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium transition-all duration-300"
+                    disabled={isImporting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl text-sm font-medium transition-all duration-300 shadow-lg shadow-blue-500/10 flex items-center gap-2"
+                    disabled={isImporting || !importFile}
+                  >
+                    {isImporting && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
+                    Import Products
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

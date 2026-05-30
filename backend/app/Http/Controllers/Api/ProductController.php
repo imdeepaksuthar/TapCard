@@ -134,4 +134,102 @@ class ProductController extends Controller
             'message' => 'Product deleted successfully'
         ]);
     }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        $file = $request->file('file');
+        $filePath = $file->getRealPath();
+
+        $importedCount = 0;
+        $errors = [];
+
+        if (($handle = fopen($filePath, 'r')) !== false) {
+            $header = fgetcsv($handle, 1000, ',');
+            if (!$header) {
+                fclose($handle);
+                return response()->json(['message' => 'Invalid or empty CSV file'], 422);
+            }
+
+            // Normalize header columns
+            $header = array_map(function($h) {
+                return strtolower(trim($h));
+            }, $header);
+
+            // Required headers validation
+            if (!in_array('name', $header) || !in_array('price', $header)) {
+                fclose($handle);
+                return response()->json(['message' => 'CSV must contain name and price columns'], 422);
+            }
+
+            $rowNumber = 1;
+
+            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+                $rowNumber++;
+                
+                // Combine header with row data
+                if (count($header) !== count($data)) {
+                    $errors[] = "Row {$rowNumber}: Column count does not match header count";
+                    continue;
+                }
+                
+                $row = array_combine($header, $data);
+                
+                // Validate fields
+                $name = trim($row['name'] ?? '');
+                $price = trim($row['price'] ?? '');
+                $description = trim($row['description'] ?? '');
+                $isActiveStr = strtolower(trim($row['is_active'] ?? 'true'));
+                $imagesStr = trim($row['images'] ?? '');
+
+                if (empty($name)) {
+                    $errors[] = "Row {$rowNumber}: Product name is required";
+                    continue;
+                }
+
+                if (!is_numeric($price) || (float)$price < 0) {
+                    $errors[] = "Row {$rowNumber}: Price must be a positive number";
+                    continue;
+                }
+
+                $isActive = !in_array($isActiveStr, ['false', '0', 'no', 'inactive']);
+                
+                $images = [];
+                if (!empty($imagesStr)) {
+                    $images = array_map('trim', explode(',', $imagesStr));
+                }
+
+                $slug = Str::slug($name) . '-' . Str::lower(Str::random(5));
+
+                Product::create([
+                    'user_id' => auth()->id(),
+                    'name' => $name,
+                    'slug' => $slug,
+                    'description' => $description ?: null,
+                    'price' => (float)$price,
+                    'images' => $images,
+                    'is_active' => $isActive,
+                ]);
+
+                $importedCount++;
+            }
+            fclose($handle);
+        }
+
+        if (count($errors) > 0 && $importedCount === 0) {
+            return response()->json([
+                'message' => 'Failed to import products',
+                'errors' => $errors
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => "Successfully imported {$importedCount} products",
+            'imported_count' => $importedCount,
+            'errors' => $errors
+        ]);
+    }
 }

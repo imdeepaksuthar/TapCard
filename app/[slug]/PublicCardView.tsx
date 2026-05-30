@@ -251,12 +251,29 @@ const Icon = {
   ),
 };
 
+// Extracts a clean username from any stored value:
+// - Plain username: "imdeep" → "imdeep"
+// - Correct platform URL: "https://instagram.com/imdeep" → "imdeep"
+// - Localhost or wrong URL: "http://127.0.0.1:3000/c/imdeep-xyz" → last path segment
+const extractUsername = (v: string): string => {
+  if (!v) return '';
+  if (!v.startsWith('http')) return v.replace(/^@/, '').trim();
+  try {
+    const url = new URL(v);
+    // Get last non-empty path segment as the username
+    const parts = url.pathname.split('/').filter(Boolean);
+    return parts[parts.length - 1] || v;
+  } catch {
+    return v;
+  }
+};
+
 const SOCIAL_META: Record<string, { label: string; color: string; href: (v: string) => string; Icon: any }> = {
-  facebook:  { label: 'Facebook',  color: '#1877F2', href: (v) => v, Icon: Icon.Facebook },
-  twitter:   { label: 'X',         color: '#0F1419', href: (v) => v, Icon: Icon.Twitter },
-  instagram: { label: 'Instagram', color: '#E1306C', href: (v) => v, Icon: Icon.Instagram },
-  linkedin:  { label: 'LinkedIn',  color: '#0A66C2', href: (v) => v, Icon: Icon.LinkedIn },
-  youtube:   { label: 'YouTube',   color: '#FF0000', href: (v) => v, Icon: Icon.YouTube },
+  facebook:  { label: 'Facebook',  color: '#1877F2', href: (v) => `https://facebook.com/${extractUsername(v)}`,       Icon: Icon.Facebook },
+  twitter:   { label: 'X',         color: '#0F1419', href: (v) => `https://x.com/${extractUsername(v)}`,               Icon: Icon.Twitter },
+  instagram: { label: 'Instagram', color: '#E1306C', href: (v) => `https://instagram.com/${extractUsername(v)}`,       Icon: Icon.Instagram },
+  linkedin:  { label: 'LinkedIn',  color: '#0A66C2', href: (v) => `https://linkedin.com/in/${extractUsername(v)}`,     Icon: Icon.LinkedIn },
+  youtube:   { label: 'YouTube',   color: '#FF0000', href: (v) => `https://youtube.com/@${extractUsername(v)}`,        Icon: Icon.YouTube },
 };
 
 export default function PublicCardView({ data, products = [], services = [] }: { data: any, products?: any[], services?: any[] }) {
@@ -307,6 +324,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   // Cart State
   const [cart, setCart] = useState<any[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState<1 | 2>(1);
   const [checkoutName, setCheckoutName] = useState('');
   const [checkoutPhone, setCheckoutPhone] = useState('');
   const [checkoutEmail, setCheckoutEmail] = useState('');
@@ -555,6 +573,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       setTimeout(() => {
         setIsCartOpen(false);
         setOrderSuccess(false);
+        setCheckoutStep(1);
         setCheckoutName('');
         setCheckoutPhone('');
         setCheckoutEmail('');
@@ -842,7 +861,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 <div className={`relative z-10 h-full w-full overflow-hidden rounded-full ring-4 ${isDark ? 'ring-[#12121A] bg-[#12121A]' : 'ring-white bg-white'} shadow-xl`}>
                   {profileImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={profileImage} alt={personalInfo.name || 'Profile'} className="h-full w-full object-cover" loading="eager" />
+                    <img src={profileImage} alt={personalInfo.name || 'Profile'} className="h-full w-full object-cover" loading="eager" decoding="async" fetchPriority="high" width={128} height={128} />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${palette.accent})` }}>
                       {(personalInfo.name || 'U').trim().charAt(0).toUpperCase()}
@@ -890,10 +909,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 <div className="flex flex-wrap items-center justify-center gap-3">
                 {filteredSocials.map(([platform, url]) => {
                   const meta = SOCIAL_META[platform.toLowerCase()];
+                  const resolvedHref = meta ? meta.href(String(url)) : String(url);
                   return (
                     <a
                       key={platform}
-                      href={String(url)}
+                      href={resolvedHref}
                       target="_blank"
                       rel="noreferrer"
                       title={meta?.label || platform}
@@ -950,6 +970,8 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             </motion.div>
 
 
+
+
             {/* ---- ABOUT ---- */}
             {personalInfo.bio && (
               <Section title="About" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
@@ -1004,7 +1026,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                         icon={<Icon.Globe className="h-5 w-5" style={{ color: primaryColor }} />}
                         label="Website"
                         value={companyDetails.website}
-                        href={companyDetails.website}
+                        href={companyDetails.website.startsWith('http') ? companyDetails.website : `https://${companyDetails.website}`}
                         tint={primaryColor}
                         isDark={isDark}
                       />
@@ -1033,7 +1055,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                     <div key={idx} className={`p-4 rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'} flex flex-col gap-4`}>
                       <div className="flex items-center gap-4">
                         {proprietor.image ? (
-                          <img src={proprietor.image} alt={proprietor.name} className="w-14 h-14 rounded-full object-cover shrink-0 ring-2 ring-white/10" />
+                          <img src={proprietor.image} alt={proprietor.name} className="w-14 h-14 rounded-full object-cover shrink-0 ring-2 ring-white/10" loading="lazy" decoding="async" width={56} height={56} />
                         ) : (
                           <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${isDark ? 'bg-white/10 text-white/50' : 'bg-slate-200 text-slate-500'}`}>
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -1071,40 +1093,81 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             )}
 
             {/* ---- LOCATION ---- */}
-            {hasLocationBlock && (
-              <Section title="Location" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
-                <div className={`overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft}`}>
-                  <div className="flex items-start gap-3 p-4">
-                    <span
-                      className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                      style={{ backgroundColor: primary15, color: primaryColor }}
-                    >
-                      <Icon.MapPin className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">
-                        {[locationInfo.village, locationInfo.city].filter(Boolean).join(', ') || 'Location'}
-                      </p>
-                      <p className={`mt-0.5 text-xs ${textMuted}`}>
-                        {[locationInfo.state, locationInfo.pincode].filter(Boolean).join(' · ')}
-                      </p>
-                      {locationInfo.map_url && (
+            {hasLocationBlock && (() => {
+              const lat = locationInfo.latitude ? parseFloat(locationInfo.latitude) : null;
+              const lng = locationInfo.longitude ? parseFloat(locationInfo.longitude) : null;
+              const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
+              const locationLabel = [locationInfo.village, locationInfo.city].filter(Boolean).join(', ') || 'Location';
+              const mapsQuery = hasCoords
+                ? `${lat},${lng}`
+                : encodeURIComponent([locationInfo.address, locationInfo.village, locationInfo.city, locationInfo.state, locationInfo.pincode].filter(Boolean).join(', '));
+              const mapsLink = locationInfo.map_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+              const embedSrc = hasCoords
+                ? `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01},${lat - 0.007},${lng + 0.01},${lat + 0.007}&layer=mapnik&marker=${lat},${lng}`
+                : `https://www.openstreetmap.org/export/embed.html?bbox=${''}&layer=mapnik`;
+
+              return (
+                <Section title="Location" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
+                  <div className={`overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft}`}>
+                    {/* Map embed */}
+                    {hasCoords && (
+                      <a href={mapsLink} target="_blank" rel="noreferrer" className="block relative group">
+                        <div className="relative w-full h-44 sm:h-52 overflow-hidden bg-slate-200 dark:bg-slate-800">
+                          <iframe
+                            src={embedSrc}
+                            className="absolute inset-0 w-full h-full border-0 pointer-events-none"
+                            loading="lazy"
+                            title="Location Map"
+                            style={{ filter: isDark ? 'invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9)' : 'none' }}
+                          />
+                          {/* Pin overlay — always centered and crisp */}
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="relative -mt-5">
+                              <svg width="36" height="46" viewBox="0 0 36 46" fill="none" className="drop-shadow-lg">
+                                <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 28 18 28s18-14.5 18-28C36 8.06 27.94 0 18 0z" fill={primaryColor} />
+                                <circle cx="18" cy="18" r="7" fill="white" />
+                              </svg>
+                            </div>
+                          </div>
+                          {/* Tap to open overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-2">
+                            <span className="text-[10px] font-semibold text-white bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                              Tap to open in Maps
+                            </span>
+                          </div>
+                        </div>
+                      </a>
+                    )}
+
+                    {/* Location details */}
+                    <div className="flex items-start gap-3 p-4">
+                      <span
+                        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                        style={{ backgroundColor: primary15, color: primaryColor }}
+                      >
+                        <Icon.MapPin className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold">{locationLabel}</p>
+                        <p className={`mt-0.5 text-xs ${textMuted}`}>
+                          {[locationInfo.state, locationInfo.pincode].filter(Boolean).join(' · ')}
+                        </p>
                         <a
-                          href={locationInfo.map_url}
+                          href={mapsLink}
                           target="_blank"
                           rel="noreferrer"
                           className="mt-2 inline-flex items-center gap-1 text-xs font-medium"
                           style={{ color: primaryColor }}
                         >
-                          Open in maps
+                          {hasCoords ? 'Get Directions' : 'Open in Maps'}
                           <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7M9 7h8v8" /></svg>
                         </a>
-                      )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Section>
-            )}
+                </Section>
+              );
+            })()}
 
             {/* ---- GALLERY ---- */}
             {hasGalleryBlock && (
@@ -1135,7 +1198,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                           onClick={() => setLightboxIndex(idx)}
                         >
                           <div className="aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group shadow-sm">
-                            <img src={url} alt={`Gallery item ${idx + 1}`} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                            <img src={url} alt={`Gallery item ${idx + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           </div>
                         </div>
                       ))}
@@ -1334,13 +1397,20 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                             onClick={() => { setProductToView(product); setProductViewImgIdx(0); }}
                           >
                             <div className="relative aspect-[4/3] w-full sm:w-1/2 overflow-hidden bg-slate-100 dark:bg-white/5 shrink-0">
-                              {product.images?.[0] ? (
-                                <img src={product.images[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                              ) : (
-                                <div className="flex h-full items-center justify-center text-slate-300">
-                                  <Icon.Image className="h-8 w-8 opacity-50" />
-                                </div>
-                              )}
+                              <img
+                                src={
+                                  product.images?.[0] && (product.images[0].startsWith('http') || product.images[0].startsWith('/') || product.images[0].startsWith('data:'))
+                                    ? product.images[0]
+                                    : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
+                                }
+                                alt={product.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                                }}
+                              />
                               {product.category && (
                                 <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest text-slate-800 backdrop-blur-md shadow-sm">
                                   {product.category}
@@ -1352,7 +1422,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               {product.description && (
                                 <p className={`mt-2 text-xs font-medium line-clamp-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{product.description}</p>
                               )}
-                              <div className="mt-4 flex items-center justify-between">
+                              <div className="mt-4 flex items-center justify-between gap-2">
                                 {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
                                   <p className={`text-lg sm:text-xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
                                 ) : null}
@@ -1374,64 +1444,119 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                   <span>{inCart ? 'Added' : 'Add to Cart'}</span>
                                 </button>
                               </div>
+                              {cleanedWhatsapp && (
+                                <a
+                                  href={`https://wa.me/${cleanedWhatsapp}?text=${encodeURIComponent(`Hi! I'm interested in *${product.name}*${Number(product.price) > 0 ? ` priced at ₹${Number(product.price).toLocaleString('en-IN')}` : ''}. Please share more details.`)}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold text-white transition-all active:scale-95 hover:opacity-90"
+                                  style={{ backgroundColor: '#25D366' }}
+                                >
+                                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+                                  WhatsApp Inquiry
+                                </a>
+                              )}
                             </div>
                           </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       {filteredProducts.map((product: any) => {
                         const inCart = cart.some(item => item.id === product.id);
+                        const waHref = cleanedWhatsapp
+                          ? `https://wa.me/${cleanedWhatsapp}?text=${encodeURIComponent(`Hi! I'm interested in *${product.name}*${Number(product.price) > 0 ? ` priced at ₹${Number(product.price).toLocaleString('en-IN')}` : ''}. Please share more details.`)}`
+                          : null;
 
                         return (
                           <div
                             key={product.id}
-                            className={`group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl cursor-pointer ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200 shadow-sm'} transition-shadow hover:shadow-lg`}
+                            className={`group flex flex-col overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 ${isDark ? 'bg-white/[0.05] ring-1 ring-white/10 hover:ring-white/20' : 'bg-white ring-1 ring-slate-200/80 shadow-sm hover:shadow-slate-200'}`}
                             onClick={() => { setProductToView(product); setProductViewImgIdx(0); }}
                           >
-                            <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-white/5">
-                              {product.images?.[0] ? (
-                                <img src={product.images[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                              ) : (
-                                <div className="flex h-full items-center justify-center text-slate-300">
-                                  <Icon.Image className="h-6 w-6 sm:h-8 sm:w-8 opacity-50" />
-                                </div>
-                              )}
+                            {/* Product Image */}
+                            <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
+                              <img
+                                src={
+                                  product.images?.[0] && (product.images[0].startsWith('http') || product.images[0].startsWith('/') || product.images[0].startsWith('data:'))
+                                    ? product.images[0]
+                                    : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
+                                }
+                                alt={product.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                                }}
+                              />
+                              {/* Category badge */}
                               {product.category && (
-                                <div className="absolute left-2 top-2 sm:left-3 sm:top-3 rounded-full bg-white/90 px-2.5 py-0.5 sm:px-2.5 sm:py-1 text-[8px] sm:text-[9px] font-extrabold uppercase tracking-widest text-slate-800 backdrop-blur-md shadow-sm">
+                                <div className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
                                   {product.category}
                                 </div>
                               )}
                             </div>
-                            <div className="flex flex-1 flex-col p-2.5 sm:p-4">
-                              <h4 className={`text-sm sm:text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'} line-clamp-1`}>{product.name}</h4>
+
+                            {/* Content */}
+                            <div className="flex flex-1 flex-col p-3 sm:p-4">
+                              {/* Name */}
+                              <h4 className={`text-sm sm:text-base font-bold leading-snug line-clamp-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {product.name}
+                              </h4>
+                              {/* Description */}
                               {product.description && (
-                                <p className={`mt-0.5 sm:mt-1 text-[10px] sm:text-xs font-medium line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{product.description}</p>
+                                <p className={`mt-1 text-[11px] sm:text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  {product.description}
+                                </p>
                               )}
-                              <div className="mt-2 sm:mt-4 flex items-center justify-between">
-                                {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
-                                  <p className={`text-sm sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
-                                ) : null}
+
+                              {/* Divider */}
+                              <div className={`my-2.5 h-px w-full ${isDark ? 'bg-white/10' : 'bg-slate-100'}`} />
+
+                              {/* Price row */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div>
+                                  {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
+                                    <p className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                      ₹{Number(product.price).toLocaleString('en-IN')}
+                                    </p>
+                                  ) : (
+                                    <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Price on request</p>
+                                  )}
+                                </div>
+                                {/* Add to Cart */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (inCart) {
-                                      setIsCartOpen(true);
-                                    } else {
-                                      addToCart(product);
-                                    }
+                                    if (inCart) { setIsCartOpen(true); } else { addToCart(product); }
                                   }}
-                                  className={`flex items-center gap-1.5 rounded-lg sm:rounded-xl px-2.5 py-1 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-bold transition-all active:scale-95 ${
-                                    inCart ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-white shadow-md'
-                                  }`}
+                                  className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] sm:text-xs font-bold text-white transition-all active:scale-95 ${inCart ? 'bg-emerald-500 shadow-emerald-500/30 shadow-md' : 'shadow-md'}`}
                                   style={inCart ? {} : { backgroundColor: primaryColor }}
                                 >
-                                  {inCart ? <Icon.Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <Icon.ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />}
-                                  <span className="hidden sm:inline">{inCart ? 'Added' : 'Add'}</span>
-                                  <span className="sm:hidden">{inCart ? 'In Cart' : 'Add'}</span>
+                                  {inCart ? <Icon.Check className="h-3 w-3" /> : <Icon.ShoppingCart className="h-3 w-3" />}
+                                  <span>{inCart ? 'Added' : 'Add'}</span>
                                 </button>
                               </div>
+
+                              {/* WhatsApp Inquiry */}
+                              {waHref && (
+                                <a
+                                  href={waHref}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] sm:text-xs font-bold text-white transition-all active:scale-95 hover:brightness-110"
+                                  style={{ backgroundColor: '#25D366' }}
+                                >
+                                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 flex-shrink-0">
+                                    <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
+                                  </svg>
+                                  WhatsApp Inquiry
+                                </a>
+                              )}
                             </div>
                           </div>
                         );
@@ -1490,10 +1615,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               </Section>
             )}
 
-            {/* Footer */}
-            <div className={`mt-8 pb-6 text-center text-[11px] ${textMuted}`}>
-              Powered by <span className="font-semibold" style={{ color: primaryColor }}>Card Setu</span>
-            </div>
+
           </div>
         </div>
       </div>
@@ -1548,59 +1670,109 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           Copied to clipboard
         </div>
       )}
-      {/* ---- CART MODAL ---- */}
+      {/* ---- CART MODAL (Two-Step Checkout) ---- */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4">
           <motion.div
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className={`w-full max-w-md overflow-hidden rounded-3xl ${surface} shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[90vh]`}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            className={`w-full sm:max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl ${surface} shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[92vh] sm:max-h-[85vh]`}
           >
-            <div className={`flex items-center justify-between border-b ${borderSoft} px-5 py-4`}>
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold">Your Cart</h2>
-                {cart.length > 0 && !orderSuccess && (
-                  <button onClick={() => setCart([])} className="text-xs font-semibold text-rose-500 hover:text-rose-600 transition underline underline-offset-2">
-                    Reset Cart
+            {/* Header */}
+            <div className={`flex items-center justify-between border-b ${borderSoft} px-5 py-4 shrink-0`}>
+              <div className="flex items-center gap-3 min-w-0">
+                {checkoutStep === 2 && !orderSuccess && (
+                  <button
+                    onClick={() => { setCheckoutStep(1); setFormError(''); }}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'}`}
+                  >
+                    <Icon.ChevronLeft className="h-5 w-5" />
+                  </button>
+                )}
+                <h2 className="text-lg font-bold truncate">
+                  {orderSuccess ? 'Order Placed' : checkoutStep === 1 ? 'Your Cart' : 'Your Details'}
+                </h2>
+                {checkoutStep === 1 && cart.length > 0 && !orderSuccess && (
+                  <button onClick={() => setCart([])} className="text-xs font-semibold text-rose-500 hover:text-rose-600 transition underline underline-offset-2 shrink-0">
+                    Clear
                   </button>
                 )}
               </div>
-              <button onClick={() => setIsCartOpen(false)} className={`rounded-full p-2 hover:bg-slate-200 dark:hover:bg-white/10 transition`}>
+              <button onClick={() => { setIsCartOpen(false); setCheckoutStep(1); setFormError(''); }} className={`shrink-0 rounded-full p-2 transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'}`}>
                 <Icon.X className="h-5 w-5" />
               </button>
             </div>
-            
-            <div className="flex-1 overflow-y-auto p-5">
-              {cart.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                  <Icon.ShoppingCart className="h-12 w-12 opacity-50 mb-4" />
-                  <p>Your cart is empty</p>
+
+            {/* Step indicator */}
+            {cart.length > 0 && !orderSuccess && (
+              <div className={`flex items-center gap-2 px-5 py-3 border-b ${borderSoft} shrink-0`}>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white`} style={{ backgroundColor: primaryColor }}>1</span>
+                  <span className={`text-xs font-semibold ${checkoutStep === 1 ? (isDark ? 'text-white' : 'text-slate-900') : textMuted}`}>Review</span>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-4">
+                <div className={`h-px flex-1 ${isDark ? 'bg-white/10' : 'bg-slate-200'}`} />
+                <div className="flex items-center gap-2 flex-1 justify-end">
+                  <span className={`text-xs font-semibold ${checkoutStep === 2 ? (isDark ? 'text-white' : 'text-slate-900') : textMuted}`}>Checkout</span>
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                    checkoutStep === 2 ? 'text-white' : isDark ? 'bg-white/10 text-slate-400' : 'bg-slate-200 text-slate-500'
+                  }`} style={checkoutStep === 2 ? { backgroundColor: primaryColor } : {}}>2</span>
+                </div>
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              {orderSuccess ? (
+                /* ── Success state ── */
+                <div className="flex flex-col items-center justify-center py-16 px-5 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
+                      <Icon.Check className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">Order Placed Successfully!</p>
+                  <p className={`mt-2 text-sm ${textMuted}`}>We've received your order. You'll get a confirmation shortly.</p>
+                </div>
+              ) : cart.length === 0 ? (
+                /* ── Empty cart ── */
+                <div className="flex flex-col items-center justify-center py-16 px-5">
+                  <div className={`flex h-16 w-16 items-center justify-center rounded-full mb-4 ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
+                    <Icon.ShoppingCart className={`h-8 w-8 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />
+                  </div>
+                  <p className={`font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Your cart is empty</p>
+                  <p className={`mt-1 text-sm ${textMuted}`}>Add items to get started</p>
+                </div>
+              ) : checkoutStep === 1 ? (
+                /* ── STEP 1: Cart Review ── */
+                <div className="p-5 flex flex-col gap-3">
                   {cart.map(item => (
-                    <div key={item.id} className={`flex items-center gap-3 rounded-2xl ${surfaceSoft} p-3 ring-1 ${borderSoft}`}>
-                      <div className="h-14 w-14 overflow-hidden rounded-xl bg-black/5 dark:bg-white/5 shrink-0">
+                    <div key={item.id} className={`flex items-center gap-3 rounded-2xl p-3 ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
+                      <div className={`h-14 w-14 overflow-hidden rounded-xl shrink-0 ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
                         {item.image_url ? (
                           <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+                        ) : item.images?.[0] ? (
+                          <img src={item.images[0]} alt={item.name} className="h-full w-full object-cover" />
                         ) : (
-                          <Icon.Building className="h-full w-full p-3 opacity-20" />
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Icon.Building className={`h-6 w-6 ${isDark ? 'text-white/20' : 'text-slate-300'}`} />
+                          </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="truncate text-sm font-semibold">{item.name}</h4>
-                        {item.price !== null && item.price !== undefined && Number(item.price) > 0 ? (
-                          <p className={`text-xs`} style={{ color: primaryColor }}>₹{Number(item.price).toFixed(2)}</p>
-                        ) : null}
+                        {item.price !== null && item.price !== undefined && Number(item.price) > 0 && (
+                          <p className="text-xs font-medium mt-0.5" style={{ color: primaryColor }}>₹{Number(item.price).toLocaleString('en-IN')}</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <div className="flex items-center rounded-lg bg-black/5 dark:bg-white/10 p-1">
-                          <button onClick={() => updateCartQty(item.id, -1)} className="p-1 hover:text-slate-900 dark:hover:text-white transition">
+                        <div className={`flex items-center rounded-lg p-0.5 ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
+                          <button onClick={() => updateCartQty(item.id, -1)} className={`p-1.5 rounded-md transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-white'}`}>
                             <Icon.Minus className="h-3 w-3" />
                           </button>
-                          <span className="w-6 text-center text-xs font-semibold">{item.quantity}</span>
-                          <button onClick={() => updateCartQty(item.id, 1)} className="p-1 hover:text-slate-900 dark:hover:text-white transition">
+                          <span className="w-7 text-center text-xs font-bold">{item.quantity}</span>
+                          <button onClick={() => updateCartQty(item.id, 1)} className={`p-1.5 rounded-md transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-white'}`}>
                             <Icon.Plus className="h-3 w-3" />
                           </button>
                         </div>
@@ -1610,126 +1782,183 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </div>
                     </div>
                   ))}
-                  
-                  <div className={`mt-2 border-t ${borderSoft} pt-4`}>
-                    <div className="flex justify-between font-bold text-lg">
-                      <span>Total</span>
-                      <span style={{ color: primaryColor }}>₹{cartTotal.toFixed(2)}</span>
+
+                  {/* Order summary */}
+                  <div className={`mt-2 rounded-2xl p-4 ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-xs ${textMuted}`}>Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} items)</span>
+                      <span className="text-sm font-semibold">₹{cartTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className={`border-t pt-2 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold">Total</span>
+                        <span className="text-lg font-extrabold" style={{ color: primaryColor }}>₹{cartTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ── STEP 2: Customer Details ── */
+                <div className="p-5 flex flex-col gap-4">
+                  {/* Mini order summary */}
+                  <div className={`rounded-2xl p-4 ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-xs ${textMuted}`}>{cart.reduce((s, i) => s + i.quantity, 0)} items</p>
+                        <p className="text-lg font-extrabold" style={{ color: primaryColor }}>₹{cartTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                      </div>
+                      <button
+                        onClick={() => setCheckoutStep(1)}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${isDark ? 'bg-white/10 hover:bg-white/15 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}
+                      >
+                        Edit Cart
+                      </button>
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-3">
-                    <p className={`text-[11px] font-semibold uppercase tracking-wider ${textMuted}`}>Your Details</p>
-                    
-                    {formError && (
-                      <div className="rounded-xl bg-rose-500/10 p-3 ring-1 ring-rose-500/20 text-rose-500 text-xs font-semibold">
-                        {formError}
-                      </div>
-                    )}
+                  <p className={`text-[11px] font-semibold uppercase tracking-wider ${textMuted}`}>Contact Information</p>
 
-                    <input
-                      type="text"
-                      placeholder="Name *"
-                      value={checkoutName}
-                      onChange={e => setCheckoutName(e.target.value)}
-                      className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
-                      style={{ outlineColor: primaryColor }}
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Phone Number *"
-                      value={checkoutPhone}
-                      onChange={e => setCheckoutPhone(e.target.value)}
-                      className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
-                      style={{ outlineColor: primaryColor }}
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email Address *"
-                      value={checkoutEmail}
-                      onChange={e => setCheckoutEmail(e.target.value)}
-                      className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
-                      style={{ outlineColor: primaryColor }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Pincode (6 digits) *"
-                      maxLength={6}
-                      value={checkoutPincode}
-                      onChange={e => setCheckoutPincode(e.target.value.replace(/\D/g, ''))}
-                      className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
-                      style={{ outlineColor: primaryColor }}
-                    />
-                    
-                    {isFetchingPincode && (
-                      <p className={`text-[11px] font-medium ${textMuted} px-2`}>Loading localities...</p>
-                    )}
+                  {formError && (
+                    <div className="rounded-xl bg-rose-500/10 p-3 ring-1 ring-rose-500/20 text-rose-500 text-xs font-semibold flex items-center gap-2">
+                      <Icon.AlertTriangle className="h-4 w-4 shrink-0" />
+                      {formError}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3">
+                    <div className="relative">
+                      <label className={`absolute left-4 top-1 text-[9px] font-semibold uppercase tracking-wider ${textMuted}`}>Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="Enter your full name"
+                        value={checkoutName}
+                        onChange={e => setCheckoutName(e.target.value)}
+                        className={`w-full rounded-xl ${isDark ? 'bg-white/[0.06] ring-1 ring-white/10 text-white placeholder-slate-500 focus:ring-white/25' : 'bg-slate-50 ring-1 ring-slate-200 text-slate-900 placeholder-slate-400 focus:ring-slate-300'} px-4 pt-5 pb-2.5 text-sm outline-none transition focus:ring-2`}
+                      />
+                    </div>
+                    <div className="relative">
+                      <label className={`absolute left-4 top-1 text-[9px] font-semibold uppercase tracking-wider ${textMuted}`}>Phone Number</label>
+                      <input
+                        type="tel"
+                        placeholder="Enter your phone number"
+                        value={checkoutPhone}
+                        onChange={e => setCheckoutPhone(e.target.value)}
+                        className={`w-full rounded-xl ${isDark ? 'bg-white/[0.06] ring-1 ring-white/10 text-white placeholder-slate-500 focus:ring-white/25' : 'bg-slate-50 ring-1 ring-slate-200 text-slate-900 placeholder-slate-400 focus:ring-slate-300'} px-4 pt-5 pb-2.5 text-sm outline-none transition focus:ring-2`}
+                      />
+                    </div>
+                    <div className="relative">
+                      <label className={`absolute left-4 top-1 text-[9px] font-semibold uppercase tracking-wider ${textMuted}`}>Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="Enter your email"
+                        value={checkoutEmail}
+                        onChange={e => setCheckoutEmail(e.target.value)}
+                        className={`w-full rounded-xl ${isDark ? 'bg-white/[0.06] ring-1 ring-white/10 text-white placeholder-slate-500 focus:ring-white/25' : 'bg-slate-50 ring-1 ring-slate-200 text-slate-900 placeholder-slate-400 focus:ring-slate-300'} px-4 pt-5 pb-2.5 text-sm outline-none transition focus:ring-2`}
+                      />
+                    </div>
+                  </div>
+
+                  <p className={`text-[11px] font-semibold uppercase tracking-wider mt-2 ${textMuted}`}>Delivery Address</p>
+
+                  <div className="flex flex-col gap-3">
+                    <div className="relative">
+                      <label className={`absolute left-4 top-1 text-[9px] font-semibold uppercase tracking-wider ${textMuted}`}>Pincode</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Enter 6-digit pincode"
+                          maxLength={6}
+                          value={checkoutPincode}
+                          onChange={e => setCheckoutPincode(e.target.value.replace(/\D/g, ''))}
+                          className={`w-full rounded-xl ${isDark ? 'bg-white/[0.06] ring-1 ring-white/10 text-white placeholder-slate-500 focus:ring-white/25' : 'bg-slate-50 ring-1 ring-slate-200 text-slate-900 placeholder-slate-400 focus:ring-slate-300'} px-4 pt-5 pb-2.5 text-sm outline-none transition focus:ring-2`}
+                        />
+                        {isFetchingPincode && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            <svg className="animate-spin h-4 w-4" style={{ color: primaryColor }} fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                          </div>
+                        )}
+                        {checkoutPincode.length === 6 && postOffices.length > 0 && !isFetchingPincode && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            <Icon.Check className="h-4 w-4 text-emerald-500" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                     {postOffices.length > 0 && (
-                      <select
-                        value={checkoutVillage}
-                        onChange={e => setCheckoutVillage(e.target.value)}
-                        className={`w-full rounded-xl border-none ${surfaceSoft} ring-1 ${borderSoft} px-4 py-3 text-sm focus:ring-2`}
-                        style={{ outlineColor: primaryColor }}
-                      >
-                        <option value="" disabled className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Select Village / Area *</option>
-                        {postOffices.map((po, i) => (
-                          <option key={i} value={po.Name} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
-                            {po.Name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <label className={`absolute left-4 top-1 text-[9px] font-semibold uppercase tracking-wider z-[1] ${textMuted}`}>Village / Area</label>
+                        <select
+                          value={checkoutVillage}
+                          onChange={e => setCheckoutVillage(e.target.value)}
+                          className={`w-full rounded-xl ${isDark ? 'bg-white/[0.06] ring-1 ring-white/10 text-white focus:ring-white/25' : 'bg-slate-50 ring-1 ring-slate-200 text-slate-900 focus:ring-slate-300'} px-4 pt-5 pb-2.5 text-sm outline-none transition focus:ring-2 appearance-none`}
+                        >
+                          <option value="" disabled className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>Select your area</option>
+                          {postOffices.map((po, i) => (
+                            <option key={i} value={po.Name} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                              {po.Name}
+                            </option>
+                          ))}
+                        </select>
+                        <Icon.ChevronRight className={`absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 rotate-90 pointer-events-none ${textMuted}`} />
+                      </div>
                     )}
                   </div>
                 </div>
               )}
             </div>
 
+            {/* Footer actions */}
             {cart.length > 0 && !orderSuccess && (
-              <div className={`border-t ${borderSoft} p-5 flex flex-col gap-2 bg-black/5 dark:bg-white/5`}>
-                <button
-                  onClick={handleWhatsAppCheckout}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98]"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  <Icon.Whatsapp className="h-5 w-5" />
-                  Order via WhatsApp
-                </button>
-                {email && (
+              <div className={`border-t ${borderSoft} p-4 shrink-0 ${isDark ? 'bg-white/[0.02]' : 'bg-slate-50'}`}>
+                {checkoutStep === 1 ? (
+                  /* Step 1 → Proceed to checkout */
                   <button
-                    onClick={handleEmailCheckout}
-                    disabled={isSubmittingOrder}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98] disabled:opacity-70"
+                    onClick={() => { setCheckoutStep(2); setFormError(''); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white shadow-lg transition active:scale-[0.98]"
                     style={{ backgroundColor: primaryColor }}
                   >
-                    {isSubmittingOrder ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Sending...
-                      </span>
-                    ) : (
-                      <>
-                        <Icon.Mail className="h-5 w-5" />
-                        Order via Email
-                      </>
-                    )}
+                    Proceed to Checkout
+                    <Icon.ChevronRight className="h-4 w-4" />
                   </button>
+                ) : (
+                  /* Step 2 → Place order */
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleWhatsAppCheckout}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white shadow-lg transition active:scale-[0.98]"
+                      style={{ backgroundColor: '#25D366' }}
+                    >
+                      <Icon.Whatsapp className="h-5 w-5" />
+                      Order via WhatsApp
+                    </button>
+                    {email && (
+                      <button
+                        onClick={handleEmailCheckout}
+                        disabled={isSubmittingOrder}
+                        className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition active:scale-[0.98] disabled:opacity-70 ${isDark ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-slate-200 text-slate-900 hover:bg-slate-300'}`}
+                      >
+                        {isSubmittingOrder ? (
+                          <span className="flex items-center gap-2">
+                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Placing Order...
+                          </span>
+                        ) : (
+                          <>
+                            <Icon.Mail className="h-5 w-5" />
+                            Order via Email
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-            
-            {orderSuccess && (
-              <div className={`border-t ${borderSoft} p-5 flex flex-col items-center justify-center gap-3 bg-emerald-500/10`}>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
-                  <Icon.Check className="h-6 w-6" />
-                </div>
-                <div className="text-center">
-                  <p className="font-bold text-emerald-600 dark:text-emerald-400">Order Placed Successfully!</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Check your email for the receipt.</p>
-                </div>
               </div>
             )}
           </motion.div>
@@ -2384,7 +2613,13 @@ function ProductViewModal({
   const touchRef = useRef<{ startX: number; startY: number; startTime: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
-  const images = product.images && product.images.length > 0 ? product.images : [];
+  const images = product.images && product.images.length > 0
+    ? product.images.map((img: string) =>
+        img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:'))
+          ? img
+          : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
+      )
+    : ['https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'];
   const hasMultipleImages = images.length > 1;
 
   // Find current product index in the list
@@ -2469,6 +2704,9 @@ function ProductViewModal({
                   transition={{ duration: 0.2 }}
                   className="absolute inset-0 h-full w-full object-cover"
                   draggable={false}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                  }}
                 />
               </AnimatePresence>
 

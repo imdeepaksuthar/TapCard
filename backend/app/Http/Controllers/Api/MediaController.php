@@ -32,18 +32,45 @@ class MediaController extends Controller
         // Store in public disk
         $path = $file->storeAs($folder, $filename, 'public');
         
-        $context = $request->input('context');
-        if ($context === 'product' && $type === 'image') {
+        // Optimize all image uploads — resize based on context
+        if ($type === 'image') {
             try {
                 $fullPath = storage_path('app/public/' . $path);
                 $manager = new ImageManager(new Driver());
                 $image = $manager->decodePath($fullPath);
-                // Crop and resize to exactly 800x600 (4:3 ratio) for premium consistent feel
-                $image->cover(800, 600);
-                $image->save($fullPath);
+
+                $context = $request->input('context', '');
+
+                if ($context === 'product' || $context === 'service') {
+                    // Products/services: consistent 4:3 crop
+                    $image->cover(800, 600);
+                } else {
+                    // All other images: scale down if larger than 1200px, preserve aspect ratio
+                    $width = $image->width();
+                    $height = $image->height();
+                    if ($width > 1200 || $height > 1200) {
+                        $image->scaleDown(1200, 1200);
+                    }
+                }
+
+                // Re-encode as WebP if supported, otherwise keep original format
+                $ext = strtolower($file->getClientOriginalExtension());
+                if (in_array($ext, ['jpg', 'jpeg', 'png', 'bmp'])) {
+                    $webpPath = preg_replace('/\.[^.]+$/', '.webp', $fullPath);
+                    $webpStoragePath = preg_replace('/\.[^.]+$/', '.webp', $path);
+                    $image->toWebp(82)->save($webpPath);
+
+                    // Delete original, update path to webp
+                    if (file_exists($fullPath) && $fullPath !== $webpPath) {
+                        unlink($fullPath);
+                    }
+                    $path = $webpStoragePath;
+                } else {
+                    $image->save($fullPath);
+                }
             } catch (\Exception $e) {
-                \Log::error('Image resize failed: ' . $e->getMessage());
-                // If resize fails, continue with original file
+                \Log::error('Image optimization failed: ' . $e->getMessage());
+                // If optimization fails, continue with original file
             }
         }
         

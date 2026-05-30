@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../../../lib/api';
 import { useAuth } from '../../../context/AuthContext';
+import { compressProductImage } from '../../../lib/compressImage';
 
 interface Service {
   id: number;
@@ -123,10 +124,11 @@ export default function ServicesPage() {
     setFormError(null);
     setUploadingCount(prev => prev + files.length);
 
-    // Upload all files concurrently
+    // Compress then upload all files concurrently
     const uploadPromises = files.map(async (file) => {
+      const compressed = await compressProductImage(file);
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', compressed);
       fd.append('type', 'image');
       fd.append('context', 'service');
       try {

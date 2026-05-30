@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { apiFetch } from '../../../lib/api';
+import { compressProfileImage, compressImage, compressGalleryImage } from '../../../lib/compressImage';
 import dynamic from 'next/dynamic';
 
 const Hero3DBackground = dynamic(() => import('../../components/Hero3DBackground'), {
@@ -634,17 +635,18 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-      // Validate social URLs
+      // Validate social usernames — plain usernames, not full URLs
 
       const socialKeys = ['linkedin', 'instagram', 'facebook', 'twitter', 'youtube'] as const;
 
       socialKeys.forEach(key => {
 
-        const url = formData.social_links?.[key]?.trim();
+        const val = formData.social_links?.[key]?.trim();
 
-        if (url && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(url)) {
+        // If they accidentally paste a full URL, flag it with a helpful message
+        if (val && val.startsWith('http')) {
 
-          newErrors[key] = 'Please enter a valid URL starting with http:// or https://';
+          newErrors[key] = 'Please enter only your username, not the full URL.';
 
         }
 
@@ -664,9 +666,9 @@ export default function CardForm({ id }: CardFormProps) {
 
         const website = formData.company_details?.website?.trim();
 
-        if (website && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(website)) {
+        if (website && !/^(https?:\/\/|www\.)[^\s$.?#][^\s]*$/i.test(website)) {
 
-          newErrors.website = 'Please enter a valid Website URL starting with http:// or https://';
+          newErrors.website = 'Please enter a valid URL (e.g. https://example.com or www.example.com)';
 
         }
 
@@ -782,11 +784,11 @@ export default function CardForm({ id }: CardFormProps) {
 
     if (!file) return;
 
-
+    const compressed = await compressProfileImage(file);
 
     const formPayload = new FormData();
 
-    formPayload.append('file', file);
+    formPayload.append('file', compressed);
 
     formPayload.append('type', 'image');
 
@@ -846,11 +848,11 @@ export default function CardForm({ id }: CardFormProps) {
 
     if (!file) return;
 
-
+    const compressed = await compressProfileImage(file);
 
     const formPayload = new FormData();
 
-    formPayload.append('file', file);
+    formPayload.append('file', compressed);
 
     formPayload.append('type', 'image');
 
@@ -906,11 +908,11 @@ export default function CardForm({ id }: CardFormProps) {
 
     if (!file) return;
 
-
+    const compressed = await compressImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.9 });
 
     const formPayload = new FormData();
 
-    formPayload.append('file', file);
+    formPayload.append('file', compressed);
 
     formPayload.append('type', 'image');
 
@@ -1036,11 +1038,12 @@ export default function CardForm({ id }: CardFormProps) {
 
     socialKeys.forEach(key => {
 
-      const url = formData.social_links?.[key]?.trim();
+      const val = formData.social_links?.[key]?.trim();
 
-      if (url && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(url)) {
+      // If they accidentally paste a full URL, flag it with a helpful message
+      if (val && val.startsWith('http')) {
 
-        newErrors[key] = 'Please enter a valid URL starting with http:// or https://';
+        newErrors[key] = 'Please enter only your username, not the full URL.';
 
       }
 
@@ -1062,9 +1065,9 @@ export default function CardForm({ id }: CardFormProps) {
 
         const website = formData.company_details?.website?.trim();
 
-        if (website && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(website)) {
+        if (website && !/^(https?:\/\/|www\.)[^\s$.?#][^\s]*$/i.test(website)) {
 
-          newErrors.website = 'Please enter a valid Website URL starting with http:// or https://';
+          newErrors.website = 'Please enter a valid URL (e.g. https://example.com or www.example.com)';
 
         }
 
@@ -1706,19 +1709,22 @@ export default function CardForm({ id }: CardFormProps) {
 
                   {[
 
-                    { key: 'linkedin', label: 'LinkedIn Profile', type: 'url', placeholder: 'https://linkedin.com/...' },
+                    { key: 'linkedin',  label: 'LinkedIn',   prefix: 'linkedin.com/in/',   placeholder: 'your-username' },
 
-                    { key: 'instagram', label: 'Instagram Profile', type: 'url', placeholder: 'https://instagram.com/...' },
+                    { key: 'instagram', label: 'Instagram',  prefix: 'instagram.com/',      placeholder: 'your.username' },
 
-                    { key: 'facebook', label: 'Facebook Profile', type: 'url', placeholder: 'https://facebook.com/...' },
+                    { key: 'facebook',  label: 'Facebook',   prefix: 'facebook.com/',       placeholder: 'your.username' },
 
-                    { key: 'twitter', label: 'Twitter / X Profile', type: 'url', placeholder: 'https://twitter.com/...' },
+                    { key: 'twitter',   label: 'X (Twitter)', prefix: 'x.com/',             placeholder: 'yourusername' },
 
-                    { key: 'youtube', label: 'YouTube Channel', type: 'url', placeholder: 'https://youtube.com/...' },
+                    { key: 'youtube',   label: 'YouTube',    prefix: 'youtube.com/@',       placeholder: 'YourChannel' },
 
                   ].map(field => {
 
                     const hasError = !!validationErrors[field.key];
+                    // Strip any stored full URL down to just username on display
+                    const storedVal = (formData.social_links as any)?.[field.key] || '';
+                    const displayVal = storedVal.startsWith('http') ? storedVal.replace(/^https?:\/\/[^/]+\//,'').replace(/^in\//,'') : storedVal;
 
                     return (
 
@@ -1726,79 +1732,35 @@ export default function CardForm({ id }: CardFormProps) {
 
                         <label className="text-sm text-gray-400 block mb-1">{field.label}</label>
 
-                        <input
-
-                          type={field.type}
-
-                          value={(formData.social_links as any)?.[field.key] || ''}
-
-                          onChange={(e) => {
-
-                            const val = e.target.value;
-
-                            setFormData({
-
-                              ...formData,
-
-                              social_links: {
-
-                                ...(formData.social_links || {}),
-
-                                [field.key]: val
-
-                              }
-
-                            });
-
-
-
-                            // Real-time validation
-
-                            let errorMsg = '';
-
-                            if (val.trim() && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(val.trim())) {
-
-                              errorMsg = 'Please enter a valid URL starting with http:// or https://';
-
-                            }
-
-
-
-                            // Update validation errors state
-
-                            setValidationErrors(prev => {
-
-                              const copy = { ...prev };
-
-                              if (errorMsg) {
-
-                                copy[field.key] = errorMsg;
-
-                              } else {
-
+                        <div className={`flex items-center border rounded-xl overflow-hidden transition-all ${
+                          hasError ? 'border-red-500/80 bg-red-500/5' : 'border-white/10 focus-within:border-blue-500'
+                        }`}>
+                          <span className="flex-shrink-0 bg-white/5 border-r border-white/10 px-3 py-3 text-xs text-gray-500 font-mono select-none whitespace-nowrap">
+                            {field.prefix}
+                          </span>
+                          <input
+                            type="text"
+                            value={displayVal}
+                            onChange={(e) => {
+                              // Store just the plain username
+                              const val = e.target.value.replace(/^@/, '').replace(/\s+/g, '');
+                              setFormData({
+                                ...formData,
+                                social_links: {
+                                  ...(formData.social_links || {}),
+                                  [field.key]: val
+                                }
+                              });
+                              setValidationErrors(prev => {
+                                const copy = { ...prev };
                                 delete copy[field.key];
-
-                              }
-
-                              return copy;
-
-                            });
-
-                          }}
-
-                          className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
-
-                            hasError
-
-                              ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
-
-                              : 'border-white/10 focus:border-blue-500'
-
-                          }`}
-
-                          placeholder={field.placeholder}
-
-                        />
+                                return copy;
+                              });
+                            }}
+                            className="flex-1 min-w-0 bg-transparent px-3 py-3 text-white focus:outline-none text-sm"
+                            placeholder={field.placeholder}
+                          />
+                        </div>
 
                         {hasError && (
 
@@ -2078,9 +2040,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                             let errorMsg = '';
 
-                            if (val.trim() && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(val.trim())) {
+                            if (val.trim() && !/^(https?:\/\/|www\.)[^\s$.?#][^\s]*$/i.test(val.trim())) {
 
-                              errorMsg = 'Please enter a valid Website URL starting with http:// or https://';
+                              errorMsg = 'Please enter a valid URL (e.g. https://example.com or www.example.com)';
 
                             }
 
@@ -2781,9 +2743,11 @@ export default function CardForm({ id }: CardFormProps) {
 
                       for (const file of files) {
 
+                        const compressed = await compressGalleryImage(file);
+
                         const formPayload = new FormData();
 
-                        formPayload.append('file', file);
+                        formPayload.append('file', compressed);
 
                         formPayload.append('type', 'image');
 
@@ -3094,57 +3058,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                     </div>
 
-                    <div className="flex justify-between items-center mb-1">
 
-                      <label className="text-sm text-gray-400 block">GPS Coordinates</label>
-
-                      <button type="button" onClick={getCurrentLocation} disabled={isFetchingLocation} className={`text-xs ${isFetchingLocation ? 'text-gray-500' : 'text-blue-400 hover:text-blue-300'} transition-colors flex items-center gap-1`}>
-
-                        {isFetchingLocation ? (
-
-                          <span className="flex items-center gap-1">
-
-                            <svg className="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-
-                            Fetching...
-
-                          </span>
-
-                        ) : (
-
-                          <>
-
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-
-                            Get Current Location
-
-                          </>
-
-                        )}
-
-                      </button>
-
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                      <div>
-
-                        <label className="text-sm text-gray-400 block mb-1">Latitude</label>
-
-                        <input type="text" value={formData.location_info?.latitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), latitude: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 23.0225" />
-
-                      </div>
-
-                      <div>
-
-                        <label className="text-sm text-gray-400 block mb-1">Longitude</label>
-
-                        <input type="text" value={formData.location_info?.longitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), longitude: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 72.5714" />
-
-                      </div>
-
-                    </div>
 
                   </motion.div>
 
@@ -3473,117 +3387,7 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-            <div className="p-6 bg-[#0B1528]/50 backdrop-blur-xl rounded-2xl border border-white/10 space-y-6">
 
-              <div className="flex items-center gap-6">
-
-                <div
-
-                  className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg overflow-hidden"
-
-                  style={{
-
-                    backgroundColor: formData.custom_branding.theme_color.startsWith('#') ? formData.custom_branding.theme_color : (formData.custom_branding.theme_color === 'blue' ? '#3b82f6' : formData.custom_branding.theme_color === 'indigo' ? '#6366f1' : formData.custom_branding.theme_color === 'purple' ? '#a855f7' : formData.custom_branding.theme_color === 'green' ? '#22c55e' : formData.custom_branding.theme_color === 'rose' ? '#f43f5e' : '#f97316'),
-
-                    boxShadow: `0 10px 15px -3px ${formData.custom_branding.theme_color.startsWith('#') ? formData.custom_branding.theme_color : (formData.custom_branding.theme_color === 'blue' ? '#3b82f6' : formData.custom_branding.theme_color === 'indigo' ? '#6366f1' : formData.custom_branding.theme_color === 'purple' ? '#a855f7' : formData.custom_branding.theme_color === 'green' ? '#22c55e' : formData.custom_branding.theme_color === 'rose' ? '#f43f5e' : '#f97316')}4D`
-
-                  }}
-
-                >
-
-                  {formData.personal_info?.profile_image ? <img src={formData.personal_info.profile_image} className="w-full h-full object-cover" /> : (formData.personal_info?.name?.charAt(0).toUpperCase() || 'U')}
-
-                </div>
-
-                <div>
-
-                  <h3 className="text-2xl font-bold text-white">{formData.personal_info?.name || 'Your Name'}</h3>
-
-                  <p
-
-                    className="font-medium"
-
-                    style={{ color: formData.custom_branding.theme_color.startsWith('#') ? formData.custom_branding.theme_color : (formData.custom_branding.theme_color === 'blue' ? '#60a5fa' : formData.custom_branding.theme_color === 'indigo' ? '#818cf8' : formData.custom_branding.theme_color === 'purple' ? '#c084fc' : formData.custom_branding.theme_color === 'green' ? '#4ade80' : formData.custom_branding.theme_color === 'rose' ? '#fb7185' : '#fb923c') }}
-
-                  >{formData.personal_info?.designation || 'Your Designation'}</p>
-
-                  
-
-                  {formData.category_id && (
-
-                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1 font-medium bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10 w-fit">
-
-                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M6 20a2 2 0 002 2h8a2 2 0 002-2V8l-6-6H8a2 2 0 00-2 2v16z"></path></svg>
-
-                      {categories.find(c => c.id.toString() === formData.category_id)?.name}
-
-                      {formData.subcategory_id && ` › ${categories.find(c => c.id.toString() === formData.category_id)?.children?.find((sc: any) => sc.id.toString() === formData.subcategory_id)?.name}`}
-
-                    </p>
-
-                  )}
-
-                  
-
-                  <p className="text-gray-400 text-sm mt-1">{formData.company_details?.company_name}</p>
-
-                </div>
-
-              </div>
-
-
-
-              <div className="grid grid-cols-3 gap-3">
-
-                {['Call', 'WhatsApp', 'Email'].map((action) => (
-
-                  <div
-
-                    key={action}
-
-                    className="p-3 bg-white/5 rounded-xl border border-white/10 text-center cursor-pointer hover:bg-white/10 transition-colors"
-
-                  >
-
-                    <div
-
-                      className="text-sm font-medium"
-
-                      style={{ color: formData.custom_branding.theme_color.startsWith('#') ? formData.custom_branding.theme_color : (formData.custom_branding.theme_color === 'blue' ? '#3b82f6' : formData.custom_branding.theme_color === 'indigo' ? '#6366f1' : formData.custom_branding.theme_color === 'purple' ? '#a855f7' : formData.custom_branding.theme_color === 'green' ? '#22c55e' : formData.custom_branding.theme_color === 'rose' ? '#f43f5e' : '#f97316') }}
-
-                    >
-
-                      {action}
-
-                    </div>
-
-                  </div>
-
-                ))}
-
-              </div>
-
-
-
-              <button
-
-                className="w-full py-3 rounded-xl text-white font-bold transition-transform hover:scale-[1.02]"
-
-                style={{
-
-                  backgroundColor: formData.custom_branding.theme_color.startsWith('#') ? formData.custom_branding.theme_color : (formData.custom_branding.theme_color === 'blue' ? '#3b82f6' : formData.custom_branding.theme_color === 'indigo' ? '#6366f1' : formData.custom_branding.theme_color === 'purple' ? '#a855f7' : formData.custom_branding.theme_color === 'green' ? '#22c55e' : formData.custom_branding.theme_color === 'rose' ? '#f43f5e' : '#f97316'),
-
-                  boxShadow: `0 4px 14px 0 ${formData.custom_branding.theme_color.startsWith('#') ? formData.custom_branding.theme_color : (formData.custom_branding.theme_color === 'blue' ? '#3b82f6' : formData.custom_branding.theme_color === 'indigo' ? '#6366f1' : formData.custom_branding.theme_color === 'purple' ? '#a855f7' : formData.custom_branding.theme_color === 'green' ? '#22c55e' : formData.custom_branding.theme_color === 'rose' ? '#f43f5e' : '#f97316')}4D`
-
-                }}
-
-              >
-
-                Save Contact
-
-              </button>
-
-            </div>
 
           </motion.div>
 
@@ -4449,10 +4253,7 @@ export default function CardForm({ id }: CardFormProps) {
                       </RenderSection>
                     )}
 
-                    {/* Footer */}
-                    <div className={`mt-6 text-center text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                      Powered by <span className="font-semibold" style={{ color: primaryColor }}>Card Setu</span>
-                    </div>
+
                   </div>
                 </div>
               </div>

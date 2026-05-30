@@ -1,13 +1,16 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
-import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Header from './components/Header';
-import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, Palette, CheckCircle2, QrCode, Contact, Share2, ChevronDown } from 'lucide-react';
+import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, QrCode, CheckCircle2, ChevronDown, Star, CreditCard, BarChart3, Palette } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../lib/api';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const Scene3D = dynamic(() => import('./components/Scene3D'), { ssr: false });
 
@@ -15,361 +18,385 @@ const bentoFeatures = [
   {
     title: "Tap to Share",
     desc: "Instantly transfer your contact details using NFC technology. No app required.",
-    icon: <Smartphone className="text-white w-8 h-8" />,
-    colSpan: "col-span-1 md:col-span-2",
-    bg: "bg-gradient-to-br from-zinc-800/50 to-zinc-900/50",
-    delay: 0.1
+    icon: <Smartphone className="w-6 h-6" />,
+    colSpan: "md:col-span-2",
   },
   {
     title: "QR Ready",
     desc: "For older phones, simply scan the dynamic QR code.",
-    icon: <QrCode className="text-white w-8 h-8" />,
-    colSpan: "col-span-1",
-    bg: "bg-gradient-to-br from-blue-900/40 to-zinc-900/50",
-    delay: 0.2
+    icon: <QrCode className="w-6 h-6" />,
+    colSpan: "",
   },
   {
     title: "Bank-Level Security",
     desc: "Your data is encrypted and securely stored. Total control over what you share.",
-    icon: <Shield className="text-white w-8 h-8" />,
-    colSpan: "col-span-1",
-    bg: "bg-gradient-to-br from-indigo-900/40 to-zinc-900/50",
-    delay: 0.3
+    icon: <Shield className="w-6 h-6" />,
+    colSpan: "",
   },
   {
     title: "Lead Generation",
     desc: "Capture incoming leads automatically. Export directly to your CRM.",
-    icon: <Users className="text-white w-8 h-8" />,
-    colSpan: "col-span-1 md:col-span-2",
-    bg: "bg-gradient-to-br from-zinc-800/50 to-zinc-900/50",
-    delay: 0.4
-  }
+    icon: <Users className="w-6 h-6" />,
+    colSpan: "md:col-span-2",
+  },
 ];
 
 const steps = [
-  { num: "01", title: "Create Your Profile", desc: "Sign up and build your digital identity in minutes. Add links, socials, and payment methods." },
-  { num: "02", title: "Customize Design", desc: "Choose from premium templates. Add your logo, colors, and completely own the look." },
-  { num: "03", title: "Share Instantly", desc: "Tap your NFC card or share your unique link. Connections are saved immediately." }
+  { num: "01", title: "Create Your Profile", desc: "Sign up and build your digital identity in minutes. Add links, socials, and payment methods.", icon: <CreditCard className="w-7 h-7" /> },
+  { num: "02", title: "Customize Design", desc: "Choose from premium templates. Add your logo, colors, and completely own the look.", icon: <Palette className="w-7 h-7" /> },
+  { num: "03", title: "Share Instantly", desc: "Tap your NFC card or share your unique link. Connections are saved immediately.", icon: <Zap className="w-7 h-7" /> },
+];
+
+const faqs = [
+  { q: 'How does the NFC card work?', a: 'Our NFC cards contain a tiny microchip that sends your digital profile link to any modern smartphone when tapped against it. No app is required by the receiver.' },
+  { q: 'Can I update my info after sharing?', a: 'Yes! Your card links to your digital profile. Any updates you make in your dashboard are instantly reflected for anyone who has your link or taps your card.' },
+  { q: 'Is there a monthly fee?', a: 'The basic digital profile is 100% free forever. We offer a Pro plan for $5/month that includes advanced analytics, custom colors, and lead capture features.' },
+  { q: "What if they don't have NFC?", a: 'Every digital profile comes with a dynamic QR code. You can have them scan the QR code from your phone screen or print it on physical marketing materials.' },
 ];
 
 export default function Home() {
   const [stats, setStats] = useState({ users: 0, cards: 0 });
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const { scrollY, scrollYProgress } = useScroll();
-  const heroH = typeof window !== 'undefined' ? window.innerHeight : 800;
-  const heroProgress = useTransform(scrollY, [0, heroH], [0, 1]);
-  const sceneOpacity = useTransform(heroProgress, [0.99, 1], [1, 0]);
-  const yHero = useTransform(scrollYProgress, [0, 1], [0, 300]);
-  const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const mainRef = useRef<HTMLElement>(null);
+  const sceneWrapRef = useRef<HTMLDivElement>(null);
+  const scrollProgressRef = useRef({ value: 0 });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await apiFetch<{ users: number, cards: number }>('/api/homepage-stats', { method: 'GET' });
+        const data = await apiFetch<{ users: number; cards: number }>('/api/homepage-stats', { method: 'GET' });
         setStats(data);
-      } catch (err) {
+      } catch {
         setStats({ users: 15420, cards: 52100 });
       }
     };
     fetchStats();
+
+    // Drive scroll progress for the 3D scene (hero height only)
+    const onScroll = () => {
+      const heroH = window.innerHeight;
+      scrollProgressRef.current.value = Math.min(1, window.scrollY / heroH);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // ── GSAP Animations ──
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
+
+    // Hero entrance timeline
+    const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    heroTl
+      .from('.hero-badge', { opacity: 0, scale: 0.85, duration: 0.7, delay: 0.2 })
+      .from('.hero-title', { opacity: 0, y: 60, duration: 1 }, '-=0.4')
+      .from('.hero-subtitle', { opacity: 0, y: 40, duration: 0.8 }, '-=0.6')
+      .from('.hero-cta', { opacity: 0, y: 30, duration: 0.7 }, '-=0.5')
+      .from('.hero-scroll-cue', { opacity: 0, duration: 0.8 }, '-=0.3');
+
+    // 3D scene — fade out as user scrolls past hero
+    if (sceneWrapRef.current) {
+      gsap.to(sceneWrapRef.current, {
+        scrollTrigger: {
+          trigger: '.hero-section',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 0.5,
+        },
+        opacity: 0,
+        ease: 'none',
+      });
+    }
+
+    // Section titles
+    gsap.utils.toArray<HTMLElement>('.gsap-section-title').forEach((el) => {
+      gsap.from(el, {
+        scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' },
+        opacity: 0,
+        y: 50,
+        duration: 0.9,
+        ease: 'power3.out',
+      });
+    });
+
+    // Bento feature cards — staggered
+    gsap.from('.bento-card', {
+      scrollTrigger: { trigger: '.bento-grid', start: 'top 80%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 40,
+      duration: 0.7,
+      stagger: 0.12,
+      ease: 'power2.out',
+    });
+
+    // Steps
+    gsap.from('.step-card', {
+      scrollTrigger: { trigger: '.steps-container', start: 'top 80%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 50,
+      duration: 0.7,
+      stagger: 0.15,
+      ease: 'power2.out',
+    });
+
+    // Pricing cards
+    gsap.from('.pricing-card', {
+      scrollTrigger: { trigger: '.pricing-grid', start: 'top 80%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 40,
+      scale: 0.95,
+      duration: 0.7,
+      stagger: 0.12,
+      ease: 'power2.out',
+    });
+
+    // FAQ items
+    gsap.from('.faq-item', {
+      scrollTrigger: { trigger: '.faq-list', start: 'top 80%', toggleActions: 'play none none none' },
+      opacity: 0,
+      x: -30,
+      duration: 0.6,
+      stagger: 0.1,
+      ease: 'power2.out',
+    });
+
+    // CTA section
+    gsap.from('.cta-content', {
+      scrollTrigger: { trigger: '.cta-section', start: 'top 75%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 60,
+      scale: 0.96,
+      duration: 1,
+      ease: 'power3.out',
+    });
+
+    // Parallax background glows
+    mm.add('(min-width: 768px)', () => {
+      gsap.to('.hero-glow', {
+        scrollTrigger: { trigger: '.hero-section', start: 'top top', end: 'bottom top', scrub: 1 },
+        y: 200,
+        opacity: 0,
+      });
+    });
+
+  }, { scope: mainRef });
+
   return (
-    <main className="relative min-h-screen bg-black text-white selection:bg-blue-500/30 font-sans overflow-x-hidden">
+    <main ref={mainRef} className="relative min-h-screen bg-black text-white selection:bg-blue-500/30 font-sans overflow-x-hidden">
       <Header />
 
-      {/* Fixed scroll-driven 3D scene — sits behind hero, naturally hidden when later sections scroll over it */}
-      <motion.div 
-        className="fixed inset-0 z-0 pointer-events-none"
-        style={{ opacity: sceneOpacity }}
-      >
-        <Scene3D scrollProgress={heroProgress} />
-      </motion.div>
+      {/* Fixed 3D scene — renders behind hero, fades on scroll via GSAP */}
+      <div ref={sceneWrapRef} className="fixed inset-0 z-0 pointer-events-none">
+        <Scene3D scrollProgress={scrollProgressRef} />
+      </div>
 
-      {/* Hero Section */}
-      <section className="relative pt-24 pb-32 md:pt-32 md:pb-40 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between min-h-screen overflow-hidden">
+      {/* ─── Hero Section ─── */}
+      <section className="hero-section relative pt-28 pb-24 md:pt-36 md:pb-32 px-5 sm:px-6 max-w-7xl mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
 
-        {/* Animated Background Grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+        {/* Background grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
-        {/* Apple-style subtle background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none" />
+        {/* Background glow */}
+        <div className="hero-glow absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none" />
 
-        <motion.div 
-          style={{ y: yHero, opacity: opacityHero }}
-          className="relative z-10 flex flex-col lg:flex-row items-center justify-between w-full gap-12"
-        >
-          {/* Left Text Content */}
-          <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:w-1/2">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="inline-flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 px-4 py-2 rounded-full text-xs font-semibold tracking-wide text-zinc-300 mb-8 backdrop-blur-xl"
-            >
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between w-full gap-12 lg:gap-16">
+          {/* Left */}
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:w-1/2 max-w-2xl">
+            <div className="hero-badge inline-flex items-center gap-2.5 bg-zinc-900/60 border border-zinc-800 px-4 py-2 rounded-full text-[11px] font-semibold tracking-widest text-zinc-400 mb-8 backdrop-blur-xl uppercase">
               <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
               </span>
-              INTRODUCING THE FUTURE OF NETWORKING
-            </motion.div>
+              The Future of Networking
+            </div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="text-5xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tighter mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 leading-[1.05]"
-            >
-              Networking. <br className="hidden lg:block"/>
+            <h1 className="hero-title text-[2.75rem] sm:text-6xl md:text-7xl font-bold tracking-tight mb-6 leading-[1.08]">
+              <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/50">Networking.</span>
+              <br />
               <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Reimagined.</span>
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-lg md:text-xl text-zinc-400 max-w-xl mb-10 font-medium tracking-tight leading-relaxed"
-            >
+            <p className="hero-subtitle text-base sm:text-lg md:text-xl text-zinc-400 max-w-lg mb-10 leading-relaxed">
               The premium digital business card for modern professionals. Share your identity with a single tap.
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto z-20 justify-center lg:justify-start"
-            >
-              <Link href="/register" className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.25)]">
+            <div className="hero-cta flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <Link
+                href="/register"
+                className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.15)]"
+              >
                 Get Started Free
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-            </motion.div>
+              <Link
+                href="#features"
+                className="px-8 py-4 rounded-full font-semibold border border-zinc-800 text-zinc-300 hover:bg-zinc-900 transition-colors flex items-center justify-center gap-2"
+              >
+                Learn More
+              </Link>
+            </div>
           </div>
 
-          {/* Right Spacer Column (NFC Card shifts right on desktop, rendering here) */}
+          {/* Right spacer — 3D scene renders in the fixed layer behind */}
           <div className="hidden lg:block lg:w-1/2 h-[450px] pointer-events-none" />
-
-          {/* Mobile Spacer (for centered card below text) */}
-          <div className="mt-12 h-[260px] sm:h-[320px] lg:hidden pointer-events-none" />
-        </motion.div>
+          {/* Mobile spacer */}
+          <div className="mt-8 h-[260px] sm:h-[320px] lg:hidden pointer-events-none" />
+        </div>
 
         {/* Scroll cue */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 1 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-500 text-[10px] tracking-[0.3em] font-semibold z-10"
-        >
-          <span>SCROLL TO EXPLORE</span>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-px h-8 bg-gradient-to-b from-zinc-500 to-transparent"
-          />
-        </motion.div>
+        <div className="hero-scroll-cue absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-600 text-[10px] tracking-[0.25em] font-semibold z-10">
+          <span>SCROLL</span>
+          <div className="scroll-line w-px h-8 bg-gradient-to-b from-zinc-600 to-transparent" />
+        </div>
       </section>
 
-      {/* Bento Grid Features */}
-      <section id="features" className="relative z-10 py-32 px-6">
+      {/* ─── Bento Grid Features ─── */}
+      <section id="features" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 bg-zinc-950/50">
         <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Designed for <br/> <span className="text-zinc-500">seamless connection.</span></h2>
-          </motion.div>
+          <div className="gsap-section-title text-center mb-16 sm:mb-20">
+            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">Features</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
+              Designed for <span className="text-zinc-500">seamless connection.</span>
+            </h2>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
             {bentoFeatures.map((f, i) => (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.8, delay: f.delay, ease: [0.16, 1, 0.3, 1] }}
-                className={`relative overflow-hidden rounded-[2.5rem] border border-zinc-800/50 p-10 ${f.colSpan} ${f.bg} group`}
+                className={`bento-card group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-zinc-800/60 p-7 sm:p-9 ${f.colSpan} bg-zinc-900/40 hover:bg-zinc-900/70 transition-colors duration-300`}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 h-full flex flex-col justify-between">
-                  <div className="w-14 h-14 bg-black/50 border border-zinc-700/50 rounded-2xl flex items-center justify-center mb-12 backdrop-blur-md">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mb-8 text-blue-400 group-hover:bg-blue-500/15 transition-colors">
                     {f.icon}
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold mb-3 tracking-tight">{f.title}</h3>
-                    <p className="text-zinc-400 font-medium leading-relaxed">{f.desc}</p>
-                  </div>
+                  <h3 className="text-xl font-bold mb-2 tracking-tight">{f.title}</h3>
+                  <p className="text-zinc-400 text-sm leading-relaxed">{f.desc}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Sticky Step Section */}
-      <section id="how-it-works" className="relative bg-zinc-950 py-32 px-6 border-t border-zinc-900">
-        <div className="max-w-6xl mx-auto">
-          <motion.h2 
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl md:text-6xl font-bold tracking-tighter mb-24 text-center"
-          >
-            How it works.
-          </motion.h2>
+      {/* ─── How It Works ─── */}
+      <section id="how-it-works" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 border-t border-zinc-900">
+        <div className="max-w-5xl mx-auto">
+          <div className="gsap-section-title text-center mb-16 sm:mb-20">
+            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">How it works</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
+              Three simple steps.
+            </h2>
+          </div>
 
-          <div className="grid md:grid-cols-2 gap-16 md:gap-24 relative">
-            {/* Sticky Visual Side */}
-            <div className="hidden md:block relative h-full">
-              <div className="sticky top-1/4 h-[500px] bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-[3rem] overflow-hidden flex items-center justify-center shadow-2xl">
-                 {/* Abstract representation of a card */}
-                 <motion.div 
-                   animate={{ rotateY: [0, 10, -10, 0] }}
-                   transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                   className="w-64 h-96 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl p-6 shadow-2xl shadow-blue-500/20 border border-white/20"
-                 >
-                   <div className="w-12 h-12 rounded-full bg-white/20 mb-4" />
-                   <div className="w-3/4 h-4 bg-white/20 rounded-full mb-2" />
-                   <div className="w-1/2 h-3 bg-white/10 rounded-full" />
-                 </motion.div>
-              </div>
-            </div>
-
-            {/* Scrolling Steps */}
-            <div className="flex flex-col gap-24 py-12 md:py-32">
-              {steps.map((step, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, x: 30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-20%" }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex gap-8 items-start"
-                >
-                  <div className="text-2xl font-mono text-zinc-600 font-bold mt-1">{step.num}</div>
-                  <div>
-                    <h3 className="text-3xl font-bold tracking-tight mb-4">{step.title}</h3>
-                    <p className="text-xl text-zinc-400 leading-relaxed">{step.desc}</p>
+          <div className="steps-container grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {steps.map((step, i) => (
+              <div key={i} className="step-card relative group">
+                <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-7 sm:p-8 hover:bg-zinc-900/70 transition-colors duration-300 h-full flex flex-col">
+                  {/* Step number */}
+                  <div className="absolute top-6 right-6 text-[4rem] font-black text-zinc-800/50 leading-none select-none">{step.num}</div>
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/15 to-indigo-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6 group-hover:from-blue-500/25 group-hover:to-indigo-500/25 transition-colors">
+                    {step.icon}
                   </div>
-                </motion.div>
-              ))}
-            </div>
+                  <h3 className="text-xl font-bold tracking-tight mb-3">{step.title}</h3>
+                  <p className="text-zinc-400 text-sm leading-relaxed flex-1">{step.desc}</p>
+                  {/* Connector line */}
+                  {i < steps.length - 1 && (
+                    <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-px bg-gradient-to-r from-zinc-700 to-transparent z-20" />
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
+      {/* ─── Pricing ─── */}
+      <section id="pricing" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 border-t border-zinc-900">
+        <div className="max-w-5xl mx-auto">
+          <div className="gsap-section-title text-center mb-16 sm:mb-20">
+            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">Pricing</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
+              Simple, transparent <span className="text-zinc-500">pricing.</span>
+            </h2>
+          </div>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="relative z-10 py-32 px-6 bg-black border-t border-zinc-900">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Simple, transparent <br/> <span className="text-zinc-500">pricing.</span></h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Free */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 flex flex-col"
-            >
-              <h3 className="text-xl font-semibold mb-2">Starter</h3>
-              <p className="text-zinc-400 mb-6 text-sm">Perfect for individuals starting out.</p>
-              <div className="text-4xl font-bold mb-8">Free</div>
-              <ul className="space-y-4 mb-8 flex-grow text-zinc-300 text-sm">
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> 1 Digital Business Card</li>
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Basic Analytics</li>
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Standard Templates</li>
+          <div className="pricing-grid grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+            {/* Starter */}
+            <div className="pricing-card rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-7 sm:p-8 flex flex-col hover:border-zinc-700 transition-colors">
+              <h3 className="text-lg font-bold mb-1">Starter</h3>
+              <p className="text-zinc-500 text-sm mb-6">Perfect for individuals.</p>
+              <div className="text-4xl font-extrabold mb-8">Free</div>
+              <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> 1 Digital Business Card</li>
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Basic Analytics</li>
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Standard Templates</li>
               </ul>
-              <Link href="/register" className="block text-center w-full py-3 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-medium">Get Started</Link>
-            </motion.div>
+              <Link href="/register" className="block text-center w-full py-3.5 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-semibold text-sm">
+                Get Started
+              </Link>
+            </div>
 
             {/* Pro */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-gradient-to-b from-blue-900/20 to-zinc-900 border border-blue-500/30 rounded-3xl p-8 flex flex-col relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>
-              <h3 className="text-xl font-semibold mb-2">Pro</h3>
-              <p className="text-zinc-400 mb-6 text-sm">For active professionals.</p>
-              <div className="text-4xl font-bold mb-8">$5<span className="text-lg text-zinc-500 font-normal">/mo</span></div>
-              <ul className="space-y-4 mb-8 flex-grow text-zinc-300 text-sm">
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Unlimited Cards</li>
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Advanced Analytics</li>
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Custom NFC Programming</li>
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Lead Capture</li>
+            <div className="pricing-card rounded-2xl sm:rounded-3xl border border-blue-500/30 bg-gradient-to-b from-blue-950/40 to-zinc-900/60 p-7 sm:p-8 flex flex-col relative overflow-hidden ring-1 ring-blue-500/10">
+              <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-wider">POPULAR</div>
+              <h3 className="text-lg font-bold mb-1">Pro</h3>
+              <p className="text-zinc-500 text-sm mb-6">For active professionals.</p>
+              <div className="text-4xl font-extrabold mb-8">$5<span className="text-lg text-zinc-500 font-normal">/mo</span></div>
+              <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Unlimited Cards</li>
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Advanced Analytics</li>
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Custom NFC Programming</li>
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Lead Capture</li>
               </ul>
-              <Link href="/register" className="block text-center w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors font-medium">Upgrade to Pro</Link>
-            </motion.div>
+              <Link href="/register" className="block text-center w-full py-3.5 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors font-semibold text-sm shadow-lg shadow-blue-600/20">
+                Upgrade to Pro
+              </Link>
+            </div>
 
             {/* Enterprise */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 flex flex-col"
-            >
-              <h3 className="text-xl font-semibold mb-2">Enterprise</h3>
-              <p className="text-zinc-400 mb-6 text-sm">For teams and companies.</p>
-              <div className="text-4xl font-bold mb-8">Custom</div>
-              <ul className="space-y-4 mb-8 flex-grow text-zinc-300 text-sm">
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Team Management</li>
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Centralized Billing</li>
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> CRM Integrations</li>
-                <li className="flex gap-3 items-center"><CheckCircle2 size={18} className="text-blue-500" /> Dedicated Manager</li>
+            <div className="pricing-card rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-7 sm:p-8 flex flex-col hover:border-zinc-700 transition-colors">
+              <h3 className="text-lg font-bold mb-1">Enterprise</h3>
+              <p className="text-zinc-500 text-sm mb-6">For teams and companies.</p>
+              <div className="text-4xl font-extrabold mb-8">Custom</div>
+              <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Team Management</li>
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Centralized Billing</li>
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> CRM Integrations</li>
+                <li className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> Dedicated Manager</li>
               </ul>
-              <Link href="/contact" className="block text-center w-full py-3 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-medium">Contact Sales</Link>
-            </motion.div>
+              <Link href="/contact" className="block text-center w-full py-3.5 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-semibold text-sm">
+                Contact Sales
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section id="faq" className="relative z-10 py-32 px-6 bg-zinc-950 border-t border-zinc-900">
+      {/* ─── FAQ ─── */}
+      <section id="faq" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 border-t border-zinc-900">
         <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">Frequently Asked Questions</h2>
-            <p className="text-zinc-400">Everything you need to know about the product and billing.</p>
-          </motion.div>
+          <div className="gsap-section-title text-center mb-16">
+            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">FAQ</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">Frequently Asked Questions</h2>
+            <p className="text-zinc-500 text-sm">Everything you need to know about the product.</p>
+          </div>
 
-          <div className="space-y-4">
-            {[
-              { q: 'How does the NFC card work?', a: 'Our NFC cards contain a tiny microchip that sends your digital profile link to any modern smartphone when tapped against it. No app is required by the receiver.' },
-              { q: 'Can I update my info after sharing?', a: 'Yes! Your card links to your digital profile. Any updates you make in your dashboard are instantly reflected for anyone who has your link or taps your card.' },
-              { q: 'Is there a monthly fee?', a: 'The basic digital profile is 100% free forever. We offer a Pro plan for $5/month that includes advanced analytics, custom colors, and lead capture features.' },
-              { q: 'What if they don\'t have NFC?', a: 'Every digital profile comes with a dynamic QR code. You can have them scan the QR code from your phone screen or print it on physical marketing materials.' }
-            ].map((faq, i) => (
-              <div key={i} className="bg-black border border-zinc-800 rounded-2xl overflow-hidden transition-all duration-300 hover:border-zinc-700">
-                <button 
+          <div className="faq-list space-y-3">
+            {faqs.map((faq, i) => (
+              <div key={i} className="faq-item rounded-2xl border border-zinc-800/60 bg-zinc-900/40 overflow-hidden transition-colors hover:border-zinc-700">
+                <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full text-left px-6 py-5 font-medium flex justify-between items-center focus:outline-none"
+                  className="w-full text-left px-6 py-5 font-medium flex justify-between items-center focus:outline-none gap-4"
                 >
-                  <span className="pr-4">{faq.q}</span>
-                  <ChevronDown className={`transform transition-transform duration-300 text-zinc-500 ${openFaq === i ? 'rotate-180' : ''}`} size={20} />
+                  <span className="text-sm sm:text-base">{faq.q}</span>
+                  <ChevronDown className={`shrink-0 transform transition-transform duration-300 text-zinc-500 ${openFaq === i ? 'rotate-180' : ''}`} size={18} />
                 </button>
-                <div className={`px-6 pb-5 text-zinc-400 text-sm overflow-hidden transition-all duration-300 ${openFaq === i ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 pb-0'}`}>
-                  {faq.a}
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${openFaq === i ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}
+                >
+                  <div className="px-6 pb-5 text-zinc-400 text-sm leading-relaxed">{faq.a}</div>
                 </div>
               </div>
             ))}
@@ -377,44 +404,36 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Premium CTA */}
-      <section className="relative z-10 py-40 px-6 text-center overflow-hidden">
-        {/* Background glow for CTA */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] h-[500px] bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
-        
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-4xl mx-auto relative z-10"
-        >
-          <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-8 text-white">Elevate your brand.</h2>
-          <p className="text-xl md:text-2xl text-zinc-400 mb-12 max-w-2xl mx-auto tracking-tight">
+      {/* ─── CTA ─── */}
+      <section className="cta-section relative z-10 py-32 sm:py-40 px-5 sm:px-6 text-center overflow-hidden border-t border-zinc-900">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[700px] h-[400px] bg-blue-600/8 blur-[100px] rounded-full pointer-events-none" />
+        <div className="cta-content max-w-3xl mx-auto relative z-10">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">Elevate your brand.</h2>
+          <p className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-xl mx-auto">
             Join {stats.users.toLocaleString()}+ professionals already using Card Setu to make lasting impressions.
           </p>
-          <div className="flex justify-center">
-            <Link href="/register" className="group relative bg-white text-black px-12 py-5 rounded-full font-bold text-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-3">
-              Create Your Card Now
-              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-        </motion.div>
+          <Link
+            href="/register"
+            className="group inline-flex items-center gap-3 bg-white text-black px-10 py-4 sm:px-12 sm:py-5 rounded-full font-bold text-base sm:text-lg transition-transform hover:scale-[1.03] active:scale-95"
+          >
+            Create Your Card Now
+            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
       </section>
 
-
-      {/* Comprehensive Footer */}
-      <footer className="border-t border-zinc-900 bg-black pt-24 pb-12 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-12 mb-16">
+      {/* ─── Footer ─── */}
+      <footer className="border-t border-zinc-900 bg-black pt-16 sm:pt-24 pb-10 sm:pb-12 px-5 sm:px-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-10 sm:gap-12 mb-12 sm:mb-16">
           <div className="col-span-2">
-            <img src="/logo-dark.png" alt="Card Setu" className="h-8 mb-6" />
-            <p className="text-zinc-400 text-sm max-w-sm mb-6 leading-relaxed">
+            <img src="/logo-dark.png" alt="Card Setu" className="h-7 sm:h-8 mb-5" />
+            <p className="text-zinc-500 text-sm max-w-sm leading-relaxed">
               The premium digital business card for modern professionals. Networking reimagined with a single tap.
             </p>
           </div>
           <div>
-            <h4 className="text-white font-semibold mb-6">Product</h4>
-            <ul className="space-y-4 text-sm text-zinc-400">
+            <h4 className="text-white font-semibold text-sm mb-5">Product</h4>
+            <ul className="space-y-3 text-sm text-zinc-500">
               <li><Link href="#features" className="hover:text-white transition-colors">Features</Link></li>
               <li><Link href="#how-it-works" className="hover:text-white transition-colors">How it Works</Link></li>
               <li><Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link></li>
@@ -422,8 +441,8 @@ export default function Home() {
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-semibold mb-6">Company</h4>
-            <ul className="space-y-4 text-sm text-zinc-400">
+            <h4 className="text-white font-semibold text-sm mb-5">Company</h4>
+            <ul className="space-y-3 text-sm text-zinc-500">
               <li><Link href="#" className="hover:text-white transition-colors">About Us</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Contact</Link></li>
@@ -431,17 +450,17 @@ export default function Home() {
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-semibold mb-6">Legal</h4>
-            <ul className="space-y-4 text-sm text-zinc-400">
+            <h4 className="text-white font-semibold text-sm mb-5">Legal</h4>
+            <ul className="space-y-3 text-sm text-zinc-500">
               <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Refund Policy</Link></li>
             </ul>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto border-t border-zinc-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-zinc-600 text-sm font-medium">
+        <div className="max-w-6xl mx-auto border-t border-zinc-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-zinc-600 text-sm">
           <p>&copy; {new Date().getFullYear()} Card Setu. All rights reserved.</p>
-          <div className="flex gap-4">
+          <div className="flex gap-5">
             <Link href="#" className="hover:text-zinc-400 transition-colors">Twitter</Link>
             <Link href="#" className="hover:text-zinc-400 transition-colors">LinkedIn</Link>
             <Link href="#" className="hover:text-zinc-400 transition-colors">Instagram</Link>
@@ -449,16 +468,16 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Floating WhatsApp Widget */}
-      <a 
+      {/* WhatsApp Widget */}
+      <a
         href="https://wa.me/+919983878055"
-        target="_blank" 
+        target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-[99] flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-[0_4px_14px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform hover:shadow-[0_6px_20px_rgba(37,211,102,0.6)] group"
+        className="fixed bottom-6 right-6 z-[99] flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-[0_4px_14px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform"
         aria-label="Chat on WhatsApp"
       >
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
-          <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
+          <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z" />
         </svg>
       </a>
     </main>

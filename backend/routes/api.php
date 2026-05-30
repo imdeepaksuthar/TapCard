@@ -104,10 +104,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     
+    // Analytics
+    Route::get('/analytics/summary', [\App\Http\Controllers\Api\AnalyticsController::class, 'summary']);
+
     // AI Generation Endpoint
     Route::post('/cards/ai-optimize', [BusinessCardController::class, 'optimizeContent']);
 
     // Product Actions (All authenticated users can manage products)
+    Route::post('/products/import', [ProductController::class, 'import']);
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
