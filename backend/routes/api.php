@@ -46,6 +46,10 @@ Route::middleware('throttle:60,1')->group(function () {
     // Homepage Stats
     Route::get('/homepage-stats', [\App\Http\Controllers\Api\PublicController::class, 'homepageStats']);
 
+    // Public Search & Discovery
+    Route::get('/cards/search', [\App\Http\Controllers\Api\PublicController::class, 'searchCards']);
+    Route::get('/cards/recent', [\App\Http\Controllers\Api\PublicController::class, 'recentCards']);
+
     // Order Checkout Endpoint
     Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store']);
 

@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Header from './components/Header';
-import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, QrCode, CheckCircle2, ChevronDown, Star, CreditCard, BarChart3, Palette } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, QrCode, CheckCircle2, ChevronDown, Star, CreditCard, BarChart3, Palette, Search, Eye, X } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { apiFetch } from '../lib/api';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -61,6 +61,30 @@ export default function Home() {
   const sceneWrapRef = useRef<HTMLDivElement>(null);
   const scrollProgressRef = useRef({ value: 0 });
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [recentCards, setRecentCards] = useState<any[]>([]);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (query.length < 2) { setSearchResults([]); return; }
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${API}/api/cards/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) setSearchResults(await res.json());
+      } catch { /* ignore */ }
+      finally { setIsSearching(false); }
+    }, 300);
+  }, []);
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -72,13 +96,35 @@ export default function Home() {
     };
     fetchStats();
 
+    // Fetch recently added cards
+    const fetchRecent = async () => {
+      try {
+        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${API}/api/cards/recent`);
+        if (res.ok) setRecentCards(await res.json());
+      } catch { /* ignore */ }
+    };
+    fetchRecent();
+
     // Drive scroll progress for the 3D scene (hero height only)
     const onScroll = () => {
       const heroH = window.innerHeight;
       scrollProgressRef.current.value = Math.min(1, window.scrollY / heroH);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+
+    // Close search dropdown on outside click
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   // ── GSAP Animations ──
@@ -92,7 +138,19 @@ export default function Home() {
       .from('.hero-title', { opacity: 0, y: 60, duration: 1 }, '-=0.4')
       .from('.hero-subtitle', { opacity: 0, y: 40, duration: 0.8 }, '-=0.6')
       .from('.hero-cta', { opacity: 0, y: 30, duration: 0.7 }, '-=0.5')
-      .from('.hero-scroll-cue', { opacity: 0, duration: 0.8 }, '-=0.3');
+      .from('.hero-scroll-cue', { opacity: 0, duration: 0.8 }, '-=0.3')
+      .from('.hero-search', { opacity: 0, y: 20, duration: 0.7 }, '-=0.5');
+
+    // Recent cards grid
+    gsap.from('.recent-cards-grid > *', {
+      scrollTrigger: { trigger: '.recent-cards-grid', start: 'top 85%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 30,
+      scale: 0.95,
+      duration: 0.5,
+      stagger: 0.08,
+      ease: 'power2.out',
+    });
 
     // 3D scene — fade out as user scrolls past hero
     if (sceneWrapRef.current) {
@@ -235,6 +293,69 @@ export default function Home() {
                 Learn More
               </Link>
             </div>
+
+            {/* ── Search Bar ── */}
+            <div ref={searchRef} className="hero-search relative mt-8 w-full max-w-lg">
+              <div className={`relative flex items-center rounded-2xl border transition-all duration-200 ${searchFocused ? 'border-blue-500/50 bg-zinc-900/90 ring-1 ring-blue-500/20' : 'border-zinc-800 bg-zinc-900/60'} backdrop-blur-xl`}>
+                <Search size={18} className="absolute left-4 text-zinc-500 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search business cards..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-3.5 pl-11 pr-10 outline-none rounded-2xl"
+                />
+                {searchQuery && (
+                  <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="absolute right-4 text-zinc-500 hover:text-white transition-colors">
+                    <X size={16} />
+                  </button>
+                )}
+                {isSearching && (
+                  <div className="absolute right-4">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              {searchFocused && searchQuery.length >= 2 && (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl border border-zinc-800 bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden z-50 max-h-[360px] overflow-y-auto">
+                  {searchResults.length > 0 ? (
+                    searchResults.map((card: any) => (
+                      <Link
+                        key={card.slug}
+                        href={`/${card.slug}`}
+                        onClick={() => setSearchFocused(false)}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-zinc-800/50 last:border-b-0"
+                      >
+                        {card.image ? (
+                          <img src={card.image} alt="" className="w-10 h-10 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center shrink-0 ring-1 ring-white/10">
+                            <span className="text-sm font-bold text-white/70">{(card.name || '?')[0]}</span>
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-white truncate">{card.name}</p>
+                          <p className="text-xs text-zinc-500 truncate">
+                            {[card.designation, card.company].filter(Boolean).join(' · ') || card.slug}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-zinc-600 shrink-0">
+                          <Eye size={12} />
+                          <span className="text-[10px] font-medium">{card.views?.toLocaleString()}</span>
+                        </div>
+                      </Link>
+                    ))
+                  ) : !isSearching ? (
+                    <div className="px-4 py-8 text-center text-zinc-500 text-sm">
+                      No cards found for "{searchQuery}"
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right spacer — 3D scene renders in the fixed layer behind */}
@@ -249,6 +370,49 @@ export default function Home() {
           <div className="scroll-line w-px h-8 bg-gradient-to-b from-zinc-600 to-transparent" />
         </div>
       </section>
+
+      {/* ─── Recently Added Cards ─── */}
+      {recentCards.length > 0 && (
+        <section className="relative z-10 py-16 sm:py-20 px-5 sm:px-6 border-t border-zinc-900/50">
+          <div className="max-w-6xl mx-auto">
+            <div className="gsap-section-title flex items-center justify-between mb-8">
+              <div>
+                <p className="text-blue-400 text-xs font-semibold tracking-widest uppercase mb-2">Discover</p>
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Recently Added</h2>
+              </div>
+            </div>
+
+            <div className="recent-cards-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+              {recentCards.map((card: any) => (
+                <Link
+                  key={card.slug}
+                  href={`/${card.slug}`}
+                  className="group rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-4 flex flex-col items-center text-center hover:bg-zinc-900/80 hover:border-zinc-700 transition-all duration-200"
+                >
+                  {card.image ? (
+                    <img src={card.image} alt={card.name} className="w-14 h-14 rounded-full object-cover ring-2 ring-white/10 mb-3 group-hover:ring-blue-500/30 transition-all" loading="lazy" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center ring-2 ring-white/10 mb-3 group-hover:ring-blue-500/30 transition-all">
+                      <span className="text-lg font-bold text-white/60">{(card.name || '?')[0]}</span>
+                    </div>
+                  )}
+                  <p className="text-sm font-semibold text-white truncate w-full">{card.name}</p>
+                  {card.designation && (
+                    <p className="text-[11px] text-zinc-500 truncate w-full mt-0.5">{card.designation}</p>
+                  )}
+                  {card.company && (
+                    <p className="text-[10px] text-zinc-600 truncate w-full mt-0.5">{card.company}</p>
+                  )}
+                  <div className="flex items-center gap-1 mt-2 text-zinc-600">
+                    <Eye size={10} />
+                    <span className="text-[10px] font-medium">{card.views?.toLocaleString() || 0}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─── Bento Grid Features ─── */}
       <section id="features" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 bg-zinc-950/50">
