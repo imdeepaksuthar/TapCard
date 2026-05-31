@@ -399,6 +399,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
   // Native Appointment Booking State
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [showAllProducts, setShowAllProducts] = useState(false);
   const [bookingDate, setBookingDate] = useState<string>('');
   const [bookingTime, setBookingTime] = useState<string>('');
   const [bookingName, setBookingName] = useState('');
@@ -816,6 +817,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col px-3 pb-32 pt-4 sm:max-w-xl sm:px-5 sm:pt-6 md:max-w-2xl md:pb-36 md:pt-8">
         {/* ============ CARD ============ */}
         <div className={`relative overflow-hidden rounded-3xl border ${borderSoft} ${surface} shadow-2xl shadow-black/10 backdrop-blur`}>
+          <div className={showAllProducts ? 'hidden' : ''}>
           {/* ---- HERO ---- */}
           <div className="relative h-44 w-full overflow-hidden sm:h-52 md:h-60">
             {/* Lightweight CSS gradient hero — no WebGL */}
@@ -859,8 +861,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             </div>
           </div>
 
+          </div>
+
           {/* ---- PROFILE ---- */}
           <div className="relative px-5 pb-2 sm:px-7">
+            <div className={showAllProducts ? 'hidden' : ''}>
             <div className="-mt-16 flex flex-col items-center text-center sm:-mt-20">
               <div className="relative h-28 w-28 sm:h-32 sm:w-32">
                 <div
@@ -1345,9 +1350,20 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               </Section>
             )}
 
+            </div>
+
             {/* ---- PRODUCTS / SERVICES (SHOP) ---- */}
             {!isPersonal && items && items.length > 0 && (
-              <div className="mt-6">
+              <div className={showAllProducts ? "mt-4 sm:mt-6" : "mt-6"}>
+                {showAllProducts && (
+                  <button 
+                    onClick={() => { setShowAllProducts(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+                    className={`mb-6 flex w-fit items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-all active:scale-95 ${isDark ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                  >
+                    <Icon.ChevronLeft className="h-4 w-4 -ml-1" />
+                    Back to Profile
+                  </button>
+                )}
                 <div className="mb-2.5 flex items-center justify-between">
                   <h3 className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{itemLabel}</h3>
                   <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{items.length} items</span>
@@ -1395,9 +1411,13 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
                 {/* Product Grid */}
                 {filteredProducts.length > 0 ? (
-                  filteredProducts.length === 1 ? (
-                    <div className="flex justify-center w-full">
-                      {filteredProducts.map((product: any) => {
+                  (() => {
+                    const displayProducts = showAllProducts ? filteredProducts : filteredProducts.slice(0, 10);
+                    return (
+                      <>
+                        {displayProducts.length === 1 ? (
+                          <div className="flex justify-center w-full">
+                            {displayProducts.map((product: any) => {
                         const inCart = cart.some(item => item.id === product.id);
                         return (
                           <div
@@ -1470,10 +1490,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                           </div>
                         );
                       })}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                      {filteredProducts.map((product: any) => {
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            {displayProducts.map((product: any) => {
                         const inCart = cart.some(item => item.id === product.id);
                         const waHref = cleanedWhatsapp
                           ? `https://wa.me/${cleanedWhatsapp}?text=${encodeURIComponent(`Hi! I'm interested in *${product.name}*${Number(product.price) > 0 ? ` priced at ₹${Number(product.price).toLocaleString('en-IN')}` : ''}. Please share more details.`)}`
@@ -1569,9 +1589,24 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                             </div>
                           </div>
                         );
-                      })}
-                    </div>
-                  )
+                              })}
+                            </div>
+                        )}
+
+                        {!showAllProducts && filteredProducts.length > 10 && (
+                          <div className="mt-8 flex justify-center">
+                            <button
+                              onClick={() => { setShowAllProducts(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                              className={`flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold shadow-md transition-transform active:scale-95 ${isDark ? 'bg-white/10 text-white hover:bg-white/15 ring-1 ring-white/20' : 'bg-white text-slate-900 hover:bg-slate-50 ring-1 ring-slate-200'}`}
+                            >
+                              View All {filteredProducts.length} Products
+                              <Icon.ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()
                 ) : (
                   <div className={`flex flex-col items-center justify-center rounded-3xl py-12 text-center ${cardStyle}`}>
                     <Icon.Search className={`mb-3 h-8 w-8 opacity-20 ${isDark ? 'text-white' : 'text-slate-900'}`} />
@@ -1582,6 +1617,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               </div>
             )}
 
+            <div className={showAllProducts ? 'hidden' : ''}>
             {/* ---- APPOINTMENT / SCHEDULE ---- */}
             {isProfessional && card.appointment_details?.is_enabled && (
               <div className="mt-6 w-full">
@@ -1625,6 +1661,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             )}
 
 
+            </div>
           </div>
         </div>
       </div>
@@ -1761,12 +1798,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       <div className={`h-14 w-14 overflow-hidden rounded-xl shrink-0 ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
                         {item.image_url ? (
                           <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
-                        ) : item.images?.[0] ? (
+                        ) : item.images?.[0] && (item.images[0].startsWith('http') || item.images[0].startsWith('/') || item.images[0].startsWith('data:')) ? (
                           <img src={item.images[0]} alt={item.name} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Icon.Building className={`h-6 w-6 ${isDark ? 'text-white/20' : 'text-slate-300'}`} />
-                          </div>
+                          <img src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80" alt={item.name} className="h-full w-full object-cover" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">

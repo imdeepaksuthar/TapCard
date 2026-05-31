@@ -67,6 +67,7 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [recentCards, setRecentCards] = useState<any[]>([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   const [plans, setPlans] = useState<any[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -104,6 +105,7 @@ export default function Home() {
         const res = await fetch(`${API}/api/cards/recent`);
         if (res.ok) setRecentCards(await res.json());
       } catch { /* ignore */ }
+      finally { setIsLoadingRecent(false); }
     };
     fetchRecent();
 
@@ -382,45 +384,78 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="relative z-10 bg-black w-full">
       {/* ─── Recently Added Cards ─── */}
-      {recentCards.length > 0 && (
-        <section className="relative z-10 py-16 sm:py-20 px-5 sm:px-6 border-t border-zinc-900/50">
+      {(recentCards.length > 0 || isLoadingRecent) && (
+        <section className="relative z-10 py-16 sm:py-20 px-5 sm:px-6 border-t border-zinc-900/50 min-h-[400px]">
           <div className="max-w-6xl mx-auto">
-            <div className="gsap-section-title flex items-center justify-between mb-8">
+            <div className="gsap-section-title flex items-center justify-between mb-10">
               <div>
-                <p className="text-blue-400 text-xs font-semibold tracking-widest uppercase mb-2">Discover</p>
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Recently Added</h2>
+                <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold tracking-widest uppercase">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                  </span>
+                  Discover Network
+                </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white">Recently Joined</h2>
               </div>
             </div>
 
-            <div className="recent-cards-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-              {recentCards.map((card: any) => (
+            {isLoadingRecent ? (
+              <div className="recent-cards-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="animate-pulse rounded-3xl border border-white/5 bg-white/[0.03] p-5 flex flex-col items-center h-[260px]">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 mb-5" />
+                    <div className="w-3/4 h-4 bg-white/10 rounded mb-2" />
+                    <div className="w-1/2 h-3 bg-white/10 rounded mt-2" />
+                    <div className="w-16 h-6 bg-white/10 rounded-full mt-auto" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="recent-cards-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+                {recentCards.map((card: any) => (
                 <Link
                   key={card.slug}
                   href={`/${card.slug}`}
-                  className="group rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-4 flex flex-col items-center text-center hover:bg-zinc-900/80 hover:border-zinc-700 transition-all duration-200"
+                  className="group relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.03] p-5 flex flex-col items-center text-center hover:bg-white/[0.08] hover:border-white/10 transition-all duration-500 backdrop-blur-md hover:-translate-y-1 shadow-2xl hover:shadow-blue-500/10"
                 >
-                  {card.image ? (
-                    <img src={card.image} alt={card.name} className="w-14 h-14 rounded-full object-cover ring-2 ring-white/10 mb-3 group-hover:ring-blue-500/30 transition-all" loading="lazy" />
-                  ) : (
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center ring-2 ring-white/10 mb-3 group-hover:ring-blue-500/30 transition-all">
-                      <span className="text-lg font-bold text-white/60">{(card.name || '?')[0]}</span>
+                  <div className="absolute inset-0 bg-gradient-to-b from-blue-500/0 via-blue-500/0 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative mb-5 z-10">
+                    <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    {card.image ? (
+                      <img src={card.image} alt={card.name} className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-4 ring-zinc-900 group-hover:ring-blue-500/30 shadow-xl transition-all duration-500 group-hover:scale-105" loading="lazy" />
+                    ) : (
+                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-4 ring-zinc-900 group-hover:ring-blue-500/30 shadow-xl transition-all duration-500 group-hover:scale-105">
+                        <span className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-zinc-300 to-zinc-600">{(card.name || '?')[0]}</span>
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 right-0 bg-zinc-900 rounded-full p-1.5 border border-zinc-800 shadow-lg z-20">
+                      <div className="bg-emerald-500 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                     </div>
-                  )}
-                  <p className="text-sm font-semibold text-white truncate w-full">{card.name}</p>
-                  {card.designation && (
-                    <p className="text-[11px] text-zinc-500 truncate w-full mt-0.5">{card.designation}</p>
-                  )}
-                  {card.company && (
-                    <p className="text-[10px] text-zinc-600 truncate w-full mt-0.5">{card.company}</p>
-                  )}
-                  <div className="flex items-center gap-1 mt-2 text-zinc-600">
-                    <Eye size={10} />
-                    <span className="text-[10px] font-medium">{card.views?.toLocaleString() || 0}</span>
+                  </div>
+                  
+                  <div className="relative z-10 w-full flex flex-col items-center">
+                    <h3 className="text-base sm:text-lg font-bold text-white truncate w-full mb-1 group-hover:text-blue-400 transition-colors">{card.name}</h3>
+                    
+                    {card.designation && (
+                      <p className="text-[11px] sm:text-xs font-medium text-zinc-400 truncate w-full">{card.designation}</p>
+                    )}
+                    {card.company && (
+                      <p className="text-[10px] sm:text-[11px] text-zinc-500 truncate w-full mt-1.5 uppercase tracking-wider">{card.company}</p>
+                    )}
+                    
+                    <div className="mt-5 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/5 text-zinc-400 w-fit transition-colors group-hover:bg-blue-500/10 group-hover:border-blue-500/20 group-hover:text-blue-400">
+                      <Eye size={12} className="opacity-70" />
+                      <span className="text-[10px] font-bold tracking-wide">{card.views?.toLocaleString() || 0}</span>
+                    </div>
                   </div>
                 </Link>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -592,6 +627,7 @@ export default function Home() {
           </Link>
         </div>
       </section>
+      </div>
 
       {/* ─── Footer ─── */}
       <footer className="border-t border-zinc-900 bg-black pt-16 sm:pt-24 pb-10 sm:pb-12 px-5 sm:px-6">
