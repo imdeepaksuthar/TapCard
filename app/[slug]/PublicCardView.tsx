@@ -177,6 +177,15 @@ const Icon = {
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
     </svg>
   ),
+  FileText: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  ),
   Trash: (p: AnyObj) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M3 6h18" />
@@ -1440,8 +1449,8 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                   }`}
                                   style={inCart ? {} : { backgroundColor: primaryColor }}
                                 >
-                                  {inCart ? <Icon.Check className="h-4 w-4" /> : <Icon.ShoppingCart className="h-4 w-4" />}
-                                  <span>{inCart ? 'Added' : 'Add to Cart'}</span>
+                                  {inCart ? <Icon.Check className="h-4 w-4" /> : (isProfessional ? <Icon.FileText className="h-4 w-4" /> : <Icon.ShoppingCart className="h-4 w-4" />)}
+                                  <span>{inCart ? 'Added' : (isProfessional ? 'Add to Quote' : 'Add to Cart')}</span>
                                 </button>
                               </div>
                               {cleanedWhatsapp && (
@@ -1536,8 +1545,8 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                   className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] sm:text-xs font-bold text-white transition-all active:scale-95 ${inCart ? 'bg-emerald-500 shadow-emerald-500/30 shadow-md' : 'shadow-md'}`}
                                   style={inCart ? {} : { backgroundColor: primaryColor }}
                                 >
-                                  {inCart ? <Icon.Check className="h-3 w-3" /> : <Icon.ShoppingCart className="h-3 w-3" />}
-                                  <span>{inCart ? 'Added' : 'Add'}</span>
+                                  {inCart ? <Icon.Check className="h-3 w-3" /> : (isProfessional ? <Icon.FileText className="h-3 w-3" /> : <Icon.ShoppingCart className="h-3 w-3" />)}
+                                  <span>{inCart ? 'Added' : (isProfessional ? 'Quote' : 'Add')}</span>
                                 </button>
                               </div>
 
@@ -1692,7 +1701,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   </button>
                 )}
                 <h2 className="text-lg font-bold truncate">
-                  {orderSuccess ? 'Order Placed' : checkoutStep === 1 ? 'Your Cart' : 'Your Details'}
+                  {orderSuccess ? (isProfessional ? 'Request Sent' : 'Order Placed') : checkoutStep === 1 ? (isProfessional ? 'Your Quotation' : 'Your Cart') : 'Your Details'}
                 </h2>
                 {checkoutStep === 1 && cart.length > 0 && !orderSuccess && (
                   <button onClick={() => setCart([])} className="text-xs font-semibold text-rose-500 hover:text-rose-600 transition underline underline-offset-2 shrink-0">
@@ -1732,17 +1741,17 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       <Icon.Check className="h-6 w-6" />
                     </div>
                   </div>
-                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">Order Placed Successfully!</p>
-                  <p className={`mt-2 text-sm ${textMuted}`}>We've received your order. You'll get a confirmation shortly.</p>
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{isProfessional ? 'Request Sent Successfully!' : 'Order Placed Successfully!'}</p>
+                  <p className={`mt-2 text-sm ${textMuted}`}>We've received your request. We'll get back to you shortly.</p>
                 </div>
               ) : cart.length === 0 ? (
                 /* ── Empty cart ── */
                 <div className="flex flex-col items-center justify-center py-16 px-5">
                   <div className={`flex h-16 w-16 items-center justify-center rounded-full mb-4 ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
-                    <Icon.ShoppingCart className={`h-8 w-8 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />
+                    {isProfessional ? <Icon.FileText className={`h-8 w-8 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} /> : <Icon.ShoppingCart className={`h-8 w-8 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />}
                   </div>
-                  <p className={`font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Your cart is empty</p>
-                  <p className={`mt-1 text-sm ${textMuted}`}>Add items to get started</p>
+                  <p className={`font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{isProfessional ? 'No items selected' : 'Your cart is empty'}</p>
+                  <p className={`mt-1 text-sm ${textMuted}`}>Select items to get started</p>
                 </div>
               ) : checkoutStep === 1 ? (
                 /* ── STEP 1: Cart Review ── */
@@ -1921,7 +1930,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                     className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white shadow-lg transition active:scale-[0.98]"
                     style={{ backgroundColor: primaryColor }}
                   >
-                    Proceed to Checkout
+                    {isProfessional ? 'Request Quotation' : 'Proceed to Checkout'}
                     <Icon.ChevronRight className="h-4 w-4" />
                   </button>
                 ) : (
@@ -1933,7 +1942,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       style={{ backgroundColor: '#25D366' }}
                     >
                       <Icon.Whatsapp className="h-5 w-5" />
-                      Order via WhatsApp
+                      {isProfessional ? 'Request via WhatsApp' : 'Order via WhatsApp'}
                     </button>
                     {email && (
                       <button
@@ -1947,13 +1956,13 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                             </svg>
-                            Placing Order...
+                            {isProfessional ? 'Sending Request...' : 'Placing Order...'}
                           </span>
                         ) : (
-                          <>
+                          <span className="flex items-center gap-2">
                             <Icon.Mail className="h-5 w-5" />
-                            Order via Email
-                          </>
+                            {isProfessional ? 'Request via Email' : 'Order via Email'}
+                          </span>
                         )}
                       </button>
                     )}
@@ -1973,7 +1982,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           style={{ backgroundColor: primaryColor, color: '#fff', boxShadow: `0 8px 32px ${primary30}` }}
         >
           <div className="relative">
-            <Icon.ShoppingCart className="h-6 w-6" />
+            {isProfessional ? <Icon.FileText className="h-6 w-6" /> : <Icon.ShoppingCart className="h-6 w-6" />}
             <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#12121A]">
               {cartItemCount}
             </span>
@@ -2002,6 +2011,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             inCart={cart.some(item => item.id === productToView.id)}
             isDark={isDark}
             primaryColor={primaryColor}
+            isProfessional={isProfessional}
           />
         )}
       </AnimatePresence>
@@ -2307,17 +2317,48 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   
                   <div>
                     <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Select Date</label>
-                    <input 
-                      type="date" 
-                      required
-                      min={new Date().toISOString().split('T')[0]}
-                      value={bookingDate}
-                      onChange={(e) => {
-                        setBookingDate(e.target.value);
-                        setBookingTime('');
-                      }}
-                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors ${isDark ? 'bg-black/50 border-white/10 text-white [color-scheme:dark]' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
-                    />
+                    <div className="flex gap-2 overflow-x-auto pb-2 snap-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {Array.from({ length: 30 }).map((_, i) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + i);
+                        
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        const dateString = `${year}-${month}-${day}`;
+                        
+                        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                        const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+                        const dayNum = d.getDate();
+                        const isSelected = bookingDate === dateString;
+                        
+                        const workingDays = card.appointment_details?.working_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+                        if (!workingDays.includes(dayName)) return null;
+
+                        return (
+                          <button
+                            key={dateString}
+                            type="button"
+                            onClick={() => {
+                              setBookingDate(dateString);
+                              setBookingTime('');
+                            }}
+                            className={`flex flex-col items-center justify-center min-w-[72px] py-3 rounded-2xl border snap-start transition-all ${
+                              isSelected 
+                                ? 'text-white shadow-lg' 
+                                : isDark 
+                                  ? 'border-white/10 text-slate-300 hover:bg-white/5' 
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                            style={isSelected ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}}
+                          >
+                            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-1">{monthName}</span>
+                            <span className="text-2xl font-black mb-1">{dayNum}</span>
+                            <span className="text-[10px] uppercase font-semibold opacity-80">{dayName}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {bookingDate && (
@@ -2598,6 +2639,7 @@ function ProductViewModal({
   inCart,
   isDark,
   primaryColor,
+  isProfessional,
 }: {
   product: any;
   imgIdx: number;
@@ -2609,6 +2651,7 @@ function ProductViewModal({
   inCart: boolean;
   isDark: boolean;
   primaryColor: string;
+  isProfessional: boolean;
 }) {
   const touchRef = useRef<{ startX: number; startY: number; startTime: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -2784,8 +2827,8 @@ function ProductViewModal({
               className="rounded-xl px-5 py-3 font-bold text-white shadow-md transition active:scale-95 flex items-center gap-2"
               style={{ backgroundColor: inCart ? '#10b981' : primaryColor }}
             >
-              {inCart ? <Icon.Check className="h-5 w-5" /> : <Icon.ShoppingCart className="h-5 w-5" />}
-              {inCart ? 'In Cart' : 'Add to Cart'}
+              {inCart ? <Icon.Check className="h-5 w-5" /> : (isProfessional ? <Icon.FileText className="h-5 w-5" /> : <Icon.ShoppingCart className="h-5 w-5" />)}
+              <span className="font-semibold">{inCart ? 'Added' : (isProfessional ? 'Add to Quote' : 'Add to Cart')}</span>
             </button>
           </div>
         </div>
