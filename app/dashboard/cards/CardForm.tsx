@@ -148,7 +148,7 @@ export default function CardForm({ id }: CardFormProps) {
 
     },
 
-    appointment_details: { is_enabled: false, booking_url: '', title: 'Book an Appointment', booking_type: 'url', working_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], start_time: '09:00', end_time: '17:00', slot_duration: '30' }
+    appointment_details: { is_enabled: false, booking_url: '', title: 'Book an Appointment', booking_type: 'native', working_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], start_time: '09:00', end_time: '17:00', slot_duration: '30' }
   });
 
 
@@ -315,39 +315,12 @@ export default function CardForm({ id }: CardFormProps) {
 
         setIsGstVerified(true);
 
-        // Autofill business name
-
-        if (data.data?.legal_name) {
-
-          setFormData(prev => ({
-
-            ...prev,
-
-            company_details: {
-
-              ...(prev.company_details || {}),
-
-              company_name: data.data.legal_name
-
-            }
-
-          }));
-
-          // Clear company name error and gst error if any
-
-          setValidationErrors(prev => {
-
-            const copy = { ...prev };
-
-            delete copy.company_name;
-
-            delete copy.gst;
-
-            return copy;
-
-          });
-
-        }
+        // Clear gst error if any on successful verification
+        setValidationErrors(prev => {
+          const copy = { ...prev };
+          delete copy.gst;
+          return copy;
+        });
 
       } else {
 
@@ -481,7 +454,13 @@ export default function CardForm({ id }: CardFormProps) {
 
           custom_branding: { ...prev.custom_branding, ...(data.custom_branding || {}) },
 
-          appointment_details: { ...prev.appointment_details, ...(data.appointment_details || {}) },
+          appointment_details: { 
+            ...prev.appointment_details, 
+            ...(data.appointment_details || {}),
+            booking_type: (data.appointment_details?.booking_type === 'url' && !data.appointment_details?.booking_url) 
+              ? 'native' 
+              : (data.appointment_details?.booking_type || 'native')
+          },
 
           proprietor_details: Array.isArray(data.proprietor_details) && data.proprietor_details.length > 0
 
@@ -1241,43 +1220,53 @@ export default function CardForm({ id }: CardFormProps) {
 
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
 
               {[
 
-                { id: 'personal', title: 'Personal', desc: 'Share your personal contacts and social links.', icon: 'user' },
+                { id: 'personal', title: 'Personal', desc: 'Share your personal contacts and social links.', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', gradient: 'from-violet-500 to-purple-600' },
 
-                { id: 'professional', title: 'Professional', desc: 'For freelancers to showcase work and skills.', icon: 'briefcase' },
+                { id: 'professional', title: 'Professional', desc: 'For freelancers to showcase work and skills.', icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', gradient: 'from-blue-500 to-cyan-500' },
 
-                { id: 'business', title: 'Business', desc: 'Include company details, GST, and payment info.', icon: 'building' }
+                { id: 'business', title: 'Business', desc: 'Include company details, GST, and payment info.', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', gradient: 'from-amber-500 to-orange-600' }
 
-              ].map((type) => (
-
+              ].map((type) => {
+                const isSelected = formData.card_type === type.id;
+                return (
                 <div
 
                   key={type.id}
 
                   onClick={() => setFormData({ ...formData, card_type: type.id })}
 
-                  className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 ${formData.card_type === type.id ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'
-
+                  className={`group cursor-pointer rounded-2xl p-5 sm:p-6 border-2 transition-all duration-300 relative overflow-hidden ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-xl shadow-blue-500/10 scale-[1.02]' : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06] hover:scale-[1.01]'
                     }`}
 
                 >
+                  {/* Selection glow */}
+                  {isSelected && <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 pointer-events-none" />}
 
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${formData.card_type === type.id ? 'bg-blue-500 text-white' : 'bg-white/10 text-gray-400'}`}>
+                  <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 ${isSelected ? `bg-gradient-to-br ${type.gradient} text-white shadow-lg` : 'bg-white/[0.07] text-gray-400 group-hover:bg-white/10'}`}>
 
-                    <div className="w-6 h-6 border-2 border-current rounded-full" />
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={type.icon} /></svg>
 
                   </div>
 
-                  <h3 className="text-xl font-bold mb-2">{type.title}</h3>
-
-                  <p className="text-sm text-gray-400 leading-relaxed">{type.desc}</p>
+                  <div className="relative">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <h3 className="text-lg font-bold">{type.title}</h3>
+                      {isSelected && (
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-400 leading-relaxed">{type.desc}</p>
+                  </div>
 
                 </div>
-
-              ))}
+                );
+              })}
 
             </div>
 
@@ -2860,13 +2849,21 @@ export default function CardForm({ id }: CardFormProps) {
 
                             <input type="time" value={hours.open || ''} disabled={hours.closed} onChange={(e) => {
 
-                              setFormData({
+                              const val = e.target.value;
 
-                                ...formData,
+                              const newHours = { ...formData.opening_hours, [day]: { ...hours, open: val } };
 
-                                opening_hours: { ...formData.opening_hours, [day]: { ...hours, open: e.target.value } }
+                              Object.keys(newHours).forEach(d => {
+
+                                if (d !== day && !formData.opening_hours[d].open) {
+
+                                  newHours[d] = { ...newHours[d], open: val };
+
+                                }
 
                               });
+
+                              setFormData({ ...formData, opening_hours: newHours });
 
                             }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
 
@@ -2874,13 +2871,21 @@ export default function CardForm({ id }: CardFormProps) {
 
                             <input type="time" value={hours.close || ''} disabled={hours.closed} onChange={(e) => {
 
-                              setFormData({
+                              const val = e.target.value;
 
-                                ...formData,
+                              const newHours = { ...formData.opening_hours, [day]: { ...hours, close: val } };
 
-                                opening_hours: { ...formData.opening_hours, [day]: { ...hours, close: e.target.value } }
+                              Object.keys(newHours).forEach(d => {
+
+                                if (d !== day && !formData.opening_hours[d].close) {
+
+                                  newHours[d] = { ...newHours[d], close: val };
+
+                                }
 
                               });
+
+                              setFormData({ ...formData, opening_hours: newHours });
 
                             }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
 
@@ -3060,6 +3065,58 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
+                    <div className="flex items-center justify-center my-4">
+
+                      <div className="h-px bg-white/10 flex-1"></div>
+
+                      <span className="px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">OR</span>
+
+                      <div className="h-px bg-white/10 flex-1"></div>
+
+                    </div>
+
+
+
+                    <div className="space-y-4">
+
+                      <div className="flex gap-4">
+
+                        <div className="flex-1">
+
+                          <label className="text-sm text-gray-400 block mb-1">Latitude</label>
+
+                          <input type="text" value={formData.location_info?.latitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), latitude: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 28.6139" />
+
+                        </div>
+
+                        <div className="flex-1">
+
+                          <label className="text-sm text-gray-400 block mb-1">Longitude</label>
+
+                          <input type="text" value={formData.location_info?.longitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), longitude: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 77.2090" />
+
+                        </div>
+
+                      </div>
+
+                      <button type="button" onClick={getCurrentLocation} disabled={isFetchingLocation} className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl px-4 py-3 text-sm font-medium transition-colors disabled:opacity-50">
+
+                        {isFetchingLocation ? (
+
+                          <svg className="animate-spin h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+
+                        ) : (
+
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+
+                        )}
+
+                        {isFetchingLocation ? 'Getting location...' : 'Get from Current Location'}
+
+                      </button>
+
+                    </div>
+
                   </motion.div>
 
                 )}
@@ -3099,12 +3156,12 @@ export default function CardForm({ id }: CardFormProps) {
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-1.5">Booking Method</label>
                           <select
-                            value={formData.appointment_details?.booking_type || 'url'}
+                            value={formData.appointment_details?.booking_type || 'native'}
                             onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), booking_type: e.target.value } })}
                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
                           >
-                            <option value="url" className="bg-slate-900">External Booking URL (Calendly, etc.)</option>
                             <option value="native" className="bg-slate-900">TapCard Native Slot Booking</option>
+                            <option value="url" className="bg-slate-900">External Booking URL (Calendly, etc.)</option>
                           </select>
                         </div>
                         
@@ -3119,7 +3176,7 @@ export default function CardForm({ id }: CardFormProps) {
                           />
                         </div>
 
-                        {(!formData.appointment_details?.booking_type || formData.appointment_details?.booking_type === 'url') ? (
+                        {(formData.appointment_details?.booking_type === 'url') ? (
                           <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">Booking URL</label>
                             <input 
@@ -3411,13 +3468,13 @@ export default function CardForm({ id }: CardFormProps) {
 
       <div className="w-full md:w-1/2 lg:w-3/5 flex flex-col h-full border-r border-white/5 overflow-y-auto no-scrollbar">
 
-        <div className="p-6 max-w-4xl mx-auto w-full">
+        <div className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
 
           <div className="mb-8">
 
-            <button onClick={() => router.push('/dashboard/cards')} className="text-sm text-gray-400 hover:text-white flex items-center gap-2 transition-colors mb-6">
+            <button onClick={() => router.push('/dashboard/cards')} className="text-sm text-gray-400 hover:text-white flex items-center gap-1.5 transition-all duration-200 mb-6 group">
 
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+              <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
 
               Back to Cards
 
@@ -3425,35 +3482,59 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-            <div className="flex items-center justify-between mb-2">
+            {/* Enhanced Stepper */}
+            <div className="relative mb-4">
+              {/* Progress bar background */}
+              <div className="absolute top-5 left-[10%] right-[10%] h-1 bg-white/10 rounded-full" />
+              {/* Progress bar fill */}
+              <div
+                className="absolute top-5 left-[10%] h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${((currentStep - 1) / (totalSteps - 1)) * 80}%` }}
+              />
 
-              {Array.from({ length: totalSteps }).map((_, index) => (
+              <div className="relative flex items-start justify-between">
+                {[
+                  { label: 'Card Type', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+                  { label: 'Basic Info', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                  { label: 'Contact', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+                  { label: 'Business', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+                  { label: 'Theme', icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01' }
+                ].map((step, index) => {
+                  const stepNum = index + 1;
+                  const isCompleted = currentStep > stepNum;
+                  const isActive = currentStep === stepNum;
+                  const isUpcoming = currentStep < stepNum;
 
-                <div key={index} className="flex-1 flex flex-col items-center relative">
-
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-300 ${
-
-                    currentStep > index + 1 ? 'bg-green-500 text-white' : currentStep === index + 1 ? 'bg-blue-500 text-white ring-4 ring-blue-500/20' : 'bg-white/10 text-gray-500'
-
-                  }`}>
-
-                    {currentStep > index + 1 ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> : index + 1}
-
-                  </div>
-
-                  {index < totalSteps - 1 && <div className={`absolute top-4 left-1/2 w-full h-[2px] -z-0 transition-all duration-500 ${currentStep > index + 1 ? 'bg-green-500' : 'bg-white/10'}`} />}
-
-                </div>
-
-              ))}
-
+                  return (
+                    <div key={index} className="flex flex-col items-center" style={{ width: '20%' }}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-500 relative
+                        ${isCompleted ? 'bg-gradient-to-br from-green-400 to-emerald-600 text-white shadow-lg shadow-green-500/30 scale-100' : ''}
+                        ${isActive ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/40 scale-110 ring-[3px] ring-blue-400/30' : ''}
+                        ${isUpcoming ? 'bg-white/[0.07] text-gray-500 border border-white/10' : ''}
+                      `}>
+                        {isCompleted ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        ) : isActive ? (
+                          <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={step.icon} /></svg>
+                        ) : (
+                          <span className="text-xs">{stepNum}</span>
+                        )}
+                        {isActive && <span className="absolute -inset-1 rounded-full bg-blue-500/20 animate-ping opacity-30" />}
+                      </div>
+                      <span className={`mt-2 text-[11px] font-medium transition-colors duration-300 text-center leading-tight
+                        ${isActive ? 'text-blue-400' : isCompleted ? 'text-green-400/80' : 'text-gray-600'}
+                      `}>{step.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
           </div>
 
 
 
-          <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl">
+          <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
 
             {error && (
 
@@ -3473,32 +3554,46 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-            <div className="flex justify-between mt-12 pt-6 border-t border-white/5">
+            <div className="flex justify-between items-center mt-10 pt-6 border-t border-white/5">
 
-              <button onClick={handlePrev} disabled={currentStep === 1 || isSubmitting} className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${currentStep === 1 ? 'opacity-0 cursor-default' : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'}`}>
+              <button onClick={handlePrev} disabled={currentStep === 1 || isSubmitting} className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${currentStep === 1 ? 'opacity-0 cursor-default pointer-events-none' : 'bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20'}`}>
 
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
                 Back
 
               </button>
 
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500 hidden sm:block">Step {currentStep} of {totalSteps}</span>
 
+                {currentStep < totalSteps ? (
 
-              {currentStep < totalSteps ? (
+                  <button onClick={handleNext} disabled={currentStep === 1 && !formData.card_type} className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${currentStep === 1 && !formData.card_type ? 'bg-blue-500/50 text-white/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98]'}`}>
 
-                <button onClick={handleNext} disabled={currentStep === 1 && !formData.card_type} className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${currentStep === 1 && !formData.card_type ? 'bg-blue-500/50 text-white/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg shadow-blue-500/20'}`}>
+                    Next Step
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
 
-                  Next Step
-
-                </button>
-              ) : (
-                <button 
-                  onClick={handleSubmit} 
-                  disabled={isSubmitting} 
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2.5 px-8 rounded-xl transition-all duration-300 shadow-lg shadow-green-500/20 flex items-center gap-2 disabled:opacity-70"
-                >
-                  {isSubmitting ? (id ? 'Saving...' : 'Generating...') : (id ? 'Save Changes' : 'Finish & Go to Dashboard')}
-                </button>
-              )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2.5 px-8 rounded-xl transition-all duration-300 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 disabled:opacity-70"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                        {id ? 'Saving...' : 'Generating...'}
+                      </>
+                    ) : (
+                      <>
+                        {id ? 'Save Changes' : 'Finish & Go to Dashboard'}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -59,9 +59,9 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
   options.credentials = 'include';
 
-  // Abort after 10 seconds to prevent infinite loading
+  // Abort after 30 seconds to prevent infinite loading
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     const response = await fetch(url, {
