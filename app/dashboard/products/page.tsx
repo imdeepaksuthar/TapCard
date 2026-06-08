@@ -334,19 +334,19 @@ export default function ProductsPage() {
     });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8">
       {/* Header & Controls */}
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
           <div>
-            <h1 className="text-2xl font-bold">Products</h1>
-            <p className="text-gray-400 text-sm">Manage and organize your product catalog.</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Products</h1>
+            <p className="text-gray-400 mt-2">Manage and organize your product catalog.</p>
           </div>
           {isAdmin && (
             <div className="flex items-center gap-3">
               <button
                 onClick={openImportModal}
-                className="flex items-center gap-2 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 hover:border-white/20 text-gray-300 font-medium py-2.5 px-5 rounded-xl transition-all duration-300 active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 hover:border-white/20 text-gray-300 font-medium py-2.5 px-5 rounded-2xl transition-all duration-300 active:scale-95 shadow-lg cursor-pointer"
               >
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -355,7 +355,7 @@ export default function ProductsPage() {
               </button>
               <button
                 onClick={openAddModal}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 active:scale-95"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold py-2.5 px-6 rounded-2xl transition-all duration-300 shadow-lg shadow-blue-500/30 active:scale-95"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -368,7 +368,7 @@ export default function ProductsPage() {
 
         {/* Toolbar */}
         {!isLoading && !error && products.length > 0 && (
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-4 rounded-3xl shadow-lg">
             {/* Search */}
             <div className="relative flex-1">
               <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -379,7 +379,7 @@ export default function ProductsPage() {
                 placeholder="Search products..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl pl-12 pr-4 py-2.5 text-white text-sm outline-none transition-all duration-300"
+                className="w-full bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-2xl pl-12 pr-4 py-3 text-white text-sm outline-none transition-all duration-300 shadow-inner"
               />
             </div>
 
@@ -388,8 +388,8 @@ export default function ProductsPage() {
               <select 
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+                className="bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-2xl px-5 py-3 text-sm font-semibold text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer shadow-inner"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
               >
                 <option value="all" className="bg-[#0F1C35]">All Status</option>
                 <option value="active" className="bg-[#0F1C35]">Active Only</option>
@@ -399,8 +399,8 @@ export default function ProductsPage() {
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+                className="bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-2xl px-5 py-3 text-sm font-semibold text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer shadow-inner"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
               >
                 <option value="newest" className="bg-[#0F1C35]">Newest First</option>
                 <option value="price-asc" className="bg-[#0F1C35]">Price: Low to High</option>
@@ -421,20 +421,20 @@ export default function ProductsPage() {
         <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-sm">{error}</div>
       )}
       {!isLoading && !error && products.length === 0 && (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-12 text-center">
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-16 text-center shadow-xl">
           <p className="text-gray-400">No products available yet. Check back soon!</p>
         </div>
       )}
 
       {/* Product Grid */}
       {!isLoading && products.length > 0 && filteredAndSortedProducts.length === 0 && (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-12 text-center mt-6">
-          <svg className="w-12 h-12 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <h3 className="text-lg font-bold text-white">No products found</h3>
-          <p className="text-gray-400 mt-1">Try adjusting your filters or search query.</p>
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-16 text-center mt-6 shadow-xl">
+          <svg className="w-16 h-16 text-gray-500 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <h3 className="text-xl font-bold text-white tracking-tight">No products found</h3>
+          <p className="text-gray-400 mt-2">Try adjusting your filters or search query.</p>
           <button 
             onClick={() => { setSearchQuery(''); setFilterStatus('all'); setSortBy('newest'); }}
-            className="mt-4 text-sm text-blue-400 hover:text-blue-300 hover:underline"
+            className="mt-6 text-sm font-semibold text-blue-400 hover:text-blue-300 hover:underline"
           >
             Clear all filters
           </button>
@@ -457,7 +457,7 @@ export default function ProductsPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 flex flex-col relative group"
+                className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative group"
               >
                 {/* Status toggle badge with switch */}
                 {isAdmin && (

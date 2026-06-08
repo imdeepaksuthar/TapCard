@@ -110,26 +110,27 @@ function StatCard({ title, value, subtitle, icon, trend, color = '#3b82f6', spar
   title: string; value: string | number; subtitle?: string; icon: React.ReactNode; trend?: string; color?: string; sparkData?: number[];
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gray-900/60 border border-white/5 p-5 flex flex-col gap-3 group hover:border-white/10 transition-colors">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
+    <div className="relative overflow-hidden rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 flex flex-col gap-4 group hover:border-white/20 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300" style={{ boxShadow: `0 10px 40px -10px ${color}15` }}>
+      <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom right, ${color}, transparent)` }} />
+      <div className="flex items-start justify-between relative z-10">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: `${color}15`, boxShadow: `0 4px 20px -2px ${color}40` }}>
             <div style={{ color }}>{icon}</div>
           </div>
           <div>
-            <p className="text-xs text-gray-400 font-medium">{title}</p>
-            <p className="text-2xl font-bold text-white tracking-tight">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+            <p className="text-sm text-gray-400 font-medium mb-1">{title}</p>
+            <p className="text-3xl font-bold text-white tracking-tight">{typeof value === 'number' ? value.toLocaleString() : value}</p>
           </div>
         </div>
         {trend && (
-          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${trend.startsWith('+') || trend.startsWith('↑') ? 'bg-emerald-500/10 text-emerald-400' : trend === '0' ? 'bg-gray-500/10 text-gray-400' : 'bg-rose-500/10 text-rose-400'}`}>
+          <span className={`text-xs font-bold px-2.5 py-1.5 rounded-xl shadow-sm ${trend.startsWith('+') || trend.startsWith('↑') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : trend === '0' ? 'bg-gray-500/10 text-gray-400 border border-gray-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
             {trend}
           </span>
         )}
       </div>
-      {subtitle && <p className="text-[11px] text-gray-500">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-gray-500 relative z-10">{subtitle}</p>}
       {sparkData && sparkData.length > 1 && (
-        <Sparkline data={sparkData} color={color} height={32} className="mt-1 opacity-60 group-hover:opacity-100 transition-opacity" />
+        <Sparkline data={sparkData} color={color} height={36} className="mt-2 opacity-70 group-hover:opacity-100 transition-opacity relative z-10" />
       )}
     </div>
   );
@@ -218,19 +219,19 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8">
       {/* Header + Period Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Analytics</h1>
-          <p className="text-sm text-gray-400 mt-1">Track your card performance, leads, and revenue</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Analytics</h1>
+          <p className="text-gray-400 mt-2">Track your card performance, leads, and revenue in real-time.</p>
         </div>
-        <div className="flex items-center gap-1 bg-gray-900/60 border border-white/5 rounded-xl p-1">
+        <div className="flex items-center gap-1.5 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-lg">
           {PERIODS.map(p => (
             <button
               key={p.value}
               onClick={() => setDays(p.value)}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${days === p.value ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+              className={`px-5 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 ${days === p.value ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
             >
               {p.label}
             </button>
@@ -239,12 +240,12 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-900/40 border border-white/5 rounded-xl p-1 overflow-x-auto">
+      <div className="flex gap-2 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-2xl p-2 overflow-x-auto shadow-lg">
         {(['overview', 'cards', 'leads', 'orders'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 min-w-[80px] px-4 py-2.5 text-xs font-semibold rounded-lg transition-all capitalize ${activeTab === tab ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`flex-1 min-w-[100px] px-5 py-3 text-sm font-bold rounded-xl transition-all duration-300 capitalize ${activeTab === tab ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
             {tab}
           </button>
@@ -292,32 +293,32 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Conversion funnel */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
-              <p className="text-xs text-gray-400 font-medium mb-1">View → Lead</p>
-              <p className="text-3xl font-bold text-white">{o.conversion_rate}%</p>
-              <div className="mt-3 w-full bg-gray-800 rounded-full h-2">
-                <div className="h-2 rounded-full bg-blue-500 transition-all" style={{ width: `${Math.min(o.conversion_rate, 100)}%` }} />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl flex flex-col justify-center">
+              <p className="text-sm text-gray-400 font-medium mb-2">View → Lead</p>
+              <p className="text-4xl font-bold text-white tracking-tight">{o.conversion_rate}%</p>
+              <div className="mt-4 w-full bg-white/5 rounded-full h-2 border border-white/10">
+                <div className="h-2 rounded-full bg-blue-500 transition-all shadow-[0_0_10px_rgba(59,130,246,0.8)]" style={{ width: `${Math.min(o.conversion_rate, 100)}%` }} />
               </div>
             </div>
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
-              <p className="text-xs text-gray-400 font-medium mb-1">Lead → Order</p>
-              <p className="text-3xl font-bold text-white">{o.order_conversion}%</p>
-              <div className="mt-3 w-full bg-gray-800 rounded-full h-2">
-                <div className="h-2 rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.min(o.order_conversion, 100)}%` }} />
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl flex flex-col justify-center">
+              <p className="text-sm text-gray-400 font-medium mb-2">Lead → Order</p>
+              <p className="text-4xl font-bold text-white tracking-tight">{o.order_conversion}%</p>
+              <div className="mt-4 w-full bg-white/5 rounded-full h-2 border border-white/10">
+                <div className="h-2 rounded-full bg-emerald-500 transition-all shadow-[0_0_10px_rgba(16,185,129,0.8)]" style={{ width: `${Math.min(o.order_conversion, 100)}%` }} />
               </div>
             </div>
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
-              <p className="text-xs text-gray-400 font-medium mb-1">Catalog</p>
-              <p className="text-3xl font-bold text-white">{o.total_products + o.total_services}</p>
-              <p className="text-xs text-gray-500 mt-1">{o.total_products} products, {o.total_services} services</p>
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl flex flex-col justify-center">
+              <p className="text-sm text-gray-400 font-medium mb-2">Catalog</p>
+              <p className="text-4xl font-bold text-white tracking-tight">{o.total_products + o.total_services}</p>
+              <p className="text-sm text-gray-500 mt-2">{o.total_products} products, {o.total_services} services</p>
             </div>
           </div>
 
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Leads chart */}
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-white">Leads Over Time</h3>
                 <span className="text-xs text-gray-500">{days} days</span>
@@ -326,7 +327,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Revenue chart */}
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-white">Revenue Over Time</h3>
                 <span className="text-xs text-gray-500">{days} days</span>
@@ -337,15 +338,15 @@ export default function AnalyticsPage() {
 
           {/* Breakdowns row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
               <h3 className="text-sm font-semibold text-white mb-4">Leads by Status</h3>
               <DonutChart segments={Object.entries(data.breakdowns.leads_by_status).map(([k, v]) => ({ label: k, value: v, color: statusColors[k] || '#6b7280' }))} size={100} />
             </div>
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
               <h3 className="text-sm font-semibold text-white mb-4">Orders by Status</h3>
               <DonutChart segments={Object.entries(data.breakdowns.orders_by_status).map(([k, v]) => ({ label: k, value: v, color: statusColors[k] || '#6b7280' }))} size={100} />
             </div>
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
               <h3 className="text-sm font-semibold text-white mb-4">Appointments</h3>
               <DonutChart segments={Object.entries(data.breakdowns.appointments_by_status).map(([k, v]) => ({ label: k, value: v, color: statusColors[k] || '#6b7280' }))} size={100} />
             </div>
@@ -353,7 +354,7 @@ export default function AnalyticsPage() {
 
           {/* Top Products */}
           {data.top_products.length > 0 && (
-            <div className="rounded-2xl bg-gray-900/60 border border-white/5 p-5">
+            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
               <h3 className="text-sm font-semibold text-white mb-4">Top Products by Revenue</h3>
               <div className="space-y-3">
                 {data.top_products.map((p, i) => {
@@ -383,7 +384,7 @@ export default function AnalyticsPage() {
       {/* ═══════════════ CARDS TAB ═══════════════ */}
       {activeTab === 'cards' && (
         <div className="space-y-4">
-          <div className="rounded-2xl bg-gray-900/60 border border-white/5 overflow-hidden">
+          <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
@@ -441,7 +442,7 @@ export default function AnalyticsPage() {
             <StatCard title="Conversion" value={`${o.conversion_rate}%`} icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>} color="#f59e0b" />
           </div>
 
-          <div className="rounded-2xl bg-gray-900/60 border border-white/5 overflow-hidden">
+          <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 overflow-hidden shadow-xl">
             <div className="px-5 py-3 border-b border-white/5">
               <h3 className="text-sm font-semibold text-white">Recent Leads</h3>
             </div>
@@ -493,7 +494,7 @@ export default function AnalyticsPage() {
             <StatCard title="Avg. Order" value={`₹${o.avg_order_value.toLocaleString('en-IN')}`} icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>} color="#8b5cf6" />
           </div>
 
-          <div className="rounded-2xl bg-gray-900/60 border border-white/5 overflow-hidden">
+          <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 overflow-hidden shadow-xl">
             <div className="px-5 py-3 border-b border-white/5">
               <h3 className="text-sm font-semibold text-white">Recent Orders</h3>
             </div>

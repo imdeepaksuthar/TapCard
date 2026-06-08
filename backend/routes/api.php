@@ -24,6 +24,11 @@ use App\Http\Controllers\Api\OTPAuthController;
 |
 */
 
+Route::get('/ping', function() {
+    return response()->json(['message' => 'pong']);
+});
+
+
 // Public routes (Rate limited to 60 req/min)
 Route::middleware('throttle:60,1')->group(function () {
     // Public Profile Fetch by Slug
@@ -60,8 +65,8 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::get('/verify-pincode/{pincode}', [BusinessCardController::class, 'verifyPincode']);
 });
 
-// Auth routes (Rate limited to 5 req/min)
-Route::middleware('throttle:5,1')->group(function () {
+// Auth routes (Rate limited to 60 req/min for development)
+Route::middleware('throttle:60,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
@@ -93,6 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Card CRUD Actions
     Route::apiResource('cards', BusinessCardController::class);
+    Route::patch('/cards/{card}/toggle-status', [BusinessCardController::class, 'toggleStatus']);
     Route::get('/appointments', [\App\Http\Controllers\Api\AppointmentController::class, 'index']);
     Route::put('/appointments/{id}/status', [\App\Http\Controllers\Api\AppointmentController::class, 'updateStatus']);
     

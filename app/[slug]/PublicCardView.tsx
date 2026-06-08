@@ -460,7 +460,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     }
   };
 
-  const cartItemCount = cart.length;
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
 
   const addToCart = (product: any) => {
@@ -476,11 +476,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   const updateCartQty = (id: any, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === id) {
-        const newQty = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQty };
+        return { ...item, quantity: item.quantity + delta };
       }
       return item;
-    }));
+    }).filter(item => item.quantity > 0));
   };
 
   const removeFromCart = (id: any) => {
@@ -814,12 +813,12 @@ export default function PublicCardView({ data, products = [], services = [] }: {
         <MeshGradient color={primaryColor} isDark={isDark} intensity={0.4} />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-md flex-col px-3 pb-32 pt-4 sm:max-w-xl sm:px-5 sm:pt-6 md:max-w-2xl md:pb-36 md:pt-8">
+      <div className="relative z-10 mx-auto flex w-full max-w-[clamp(400px,90vw,800px)] flex-col px-1.5 pt-1.5 pb-24 sm:px-[clamp(1rem,3vw,3rem)] sm:pt-[clamp(1rem,5vh,4rem)] sm:pb-[clamp(5rem,10vh,10rem)]">
         {/* ============ CARD ============ */}
         <div className={`relative overflow-hidden rounded-3xl border ${borderSoft} ${surface} shadow-2xl shadow-black/10 backdrop-blur`}>
           <div className={showAllProducts ? 'hidden' : ''}>
           {/* ---- HERO ---- */}
-          <div className="relative h-44 w-full overflow-hidden sm:h-52 md:h-60">
+          <div className="relative h-[clamp(10rem,25vh,16rem)] w-full overflow-hidden">
             {/* Lightweight CSS gradient hero — no WebGL */}
             <div
               className="absolute inset-0"
@@ -864,10 +863,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           </div>
 
           {/* ---- PROFILE ---- */}
-          <div className="relative px-5 pb-2 sm:px-7">
+          <div className="relative px-[clamp(1.25rem,4vw,2.5rem)] pb-[clamp(0.5rem,2vw,1rem)]">
             <div className={showAllProducts ? 'hidden' : ''}>
-            <div className="-mt-16 flex flex-col items-center text-center sm:-mt-20">
-              <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+            <div className="-mt-[clamp(3.5rem,10vw,5rem)] flex flex-col items-center text-center">
+              <div className="relative h-[clamp(7rem,18vw,10rem)] w-[clamp(7rem,18vw,10rem)]">
                 <div
                   className="absolute -inset-1 rounded-full opacity-60 blur-lg"
                   style={{ background: `conic-gradient(from 0deg, ${primaryColor}, ${palette.accent}, ${palette.complement}, ${primaryColor})` }}
@@ -888,10 +887,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               </div>
 
               {personalInfo.name && (
-                <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-[26px]">{personalInfo.name}</h1>
+                <h1 className="mt-4 text-[clamp(1.5rem,4vw+0.5rem,2.5rem)] font-bold tracking-tight">{personalInfo.name}</h1>
               )}
               {personalInfo.designation && (
-                <p className={`mt-1 text-sm ${textSubtle} sm:text-[15px]`}>{personalInfo.designation}</p>
+                <p className={`mt-1 text-[clamp(0.875rem,2vw,1.125rem)] ${textSubtle}`}>{personalInfo.designation}</p>
               )}
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
@@ -947,7 +946,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               initial="hidden"
               animate="show"
               variants={sectionVariants}
-              className="mt-6 grid grid-cols-4 gap-2 sm:gap-3"
+              className="mt-6 grid grid-cols-4 gap-[clamp(0.5rem,2vw,1rem)]"
             >
               <QuickAction
                 disabled={!cleanedPhone}
@@ -1451,41 +1450,45 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               {product.description && (
                                 <p className={`mt-2 text-xs font-medium line-clamp-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{product.description}</p>
                               )}
-                              <div className="mt-4 flex items-center justify-between gap-2">
+                              <div className="mt-auto pt-4 flex flex-col gap-2">
                                 {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
                                   <p className={`text-lg sm:text-xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>₹{Number(product.price).toLocaleString('en-IN')}</p>
                                 ) : null}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (inCart) {
-                                      setIsCartOpen(true);
-                                    } else {
-                                      addToCart(product);
-                                    }
-                                  }}
-                                  className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all active:scale-95 ${
-                                    inCart ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-white shadow-md'
-                                  }`}
-                                  style={inCart ? {} : { backgroundColor: primaryColor }}
-                                >
-                                  {inCart ? <Icon.Check className="h-4 w-4" /> : (isProfessional ? <Icon.FileText className="h-4 w-4" /> : <Icon.ShoppingCart className="h-4 w-4" />)}
-                                  <span>{inCart ? 'Added' : (isProfessional ? 'Add to Quote' : 'Add to Cart')}</span>
-                                </button>
+                                <div className="flex items-center gap-2 w-full">
+                                  {inCart ? (
+                                    <div className={`flex-1 flex shrink-0 items-center justify-between rounded-xl px-2 py-1.5 transition-all shadow-md`} style={{ backgroundColor: primaryColor }}>
+                                      <button onClick={(e) => { e.stopPropagation(); updateCartQty(product.id, -1); }} className="p-1.5 text-white active:scale-95 hover:bg-black/20 rounded-lg"><Icon.Minus className="h-4 w-4" /></button>
+                                      <span className="text-white font-bold text-xs">{cart.find(i => i.id === product.id)?.quantity || 1}</span>
+                                      <button onClick={(e) => { e.stopPropagation(); updateCartQty(product.id, 1); }} className="p-1.5 text-white active:scale-95 hover:bg-black/20 rounded-lg"><Icon.Plus className="h-4 w-4" /></button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToCart(product);
+                                      }}
+                                      className={`flex-1 flex shrink-0 items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95 text-white shadow-md`}
+                                      style={{ backgroundColor: primaryColor }}
+                                    >
+                                      {isProfessional ? <Icon.FileText className="h-4 w-4 shrink-0" /> : <Icon.ShoppingCart className="h-4 w-4 shrink-0" />}
+                                      <span className="whitespace-nowrap">{isProfessional ? 'Add to Quote' : 'Add'}</span>
+                                    </button>
+                                  )}
+                                  {cleanedWhatsapp && (
+                                    <a
+                                      href={`https://wa.me/${cleanedWhatsapp}?text=${encodeURIComponent(`Hi! I'm interested in *${product.name}*${Number(product.price) > 0 ? ` priced at ₹${Number(product.price).toLocaleString('en-IN')}` : ''}. Please share more details.`)}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex shrink-0 items-center justify-center rounded-xl p-2.5 text-white transition-all active:scale-95 hover:opacity-90 aspect-square"
+                                      style={{ backgroundColor: '#25D366' }}
+                                      title="WhatsApp Inquiry"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 sm:h-5 sm:w-5 shrink-0"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+                                    </a>
+                                  )}
+                                </div>
                               </div>
-                              {cleanedWhatsapp && (
-                                <a
-                                  href={`https://wa.me/${cleanedWhatsapp}?text=${encodeURIComponent(`Hi! I'm interested in *${product.name}*${Number(product.price) > 0 ? ` priced at ₹${Number(product.price).toLocaleString('en-IN')}` : ''}. Please share more details.`)}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold text-white transition-all active:scale-95 hover:opacity-90"
-                                  style={{ backgroundColor: '#25D366' }}
-                                >
-                                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
-                                  WhatsApp Inquiry
-                                </a>
-                              )}
                             </div>
                           </div>
                         );
@@ -1545,47 +1548,57 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               {/* Divider */}
                               <div className={`my-2.5 h-px w-full ${isDark ? 'bg-white/10' : 'bg-slate-100'}`} />
 
-                              {/* Price row */}
-                              <div className="flex items-center justify-between gap-2">
-                                <div>
+                              {/* Price and Buttons */}
+                              <div className="mt-auto flex flex-col gap-2.5">
+                                <div className="min-w-0 w-full">
                                   {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? (
-                                    <p className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    <p className={`truncate text-sm sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                       ₹{Number(product.price).toLocaleString('en-IN')}
                                     </p>
                                   ) : (
-                                    <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Price on request</p>
+                                    <p className={`truncate text-[10px] sm:text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Price on request</p>
                                   )}
                                 </div>
-                                {/* Add to Cart */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (inCart) { setIsCartOpen(true); } else { addToCart(product); }
-                                  }}
-                                  className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] sm:text-xs font-bold text-white transition-all active:scale-95 ${inCart ? 'bg-emerald-500 shadow-emerald-500/30 shadow-md' : 'shadow-md'}`}
-                                  style={inCart ? {} : { backgroundColor: primaryColor }}
-                                >
-                                  {inCart ? <Icon.Check className="h-3 w-3" /> : (isProfessional ? <Icon.FileText className="h-3 w-3" /> : <Icon.ShoppingCart className="h-3 w-3" />)}
-                                  <span>{inCart ? 'Added' : (isProfessional ? 'Quote' : 'Add')}</span>
-                                </button>
-                              </div>
+                                <div className="flex items-center gap-1.5 w-full">
+                                  {/* Add to Cart */}
+                                  {inCart ? (
+                                    <div className={`flex-1 flex shrink-0 items-center justify-between rounded-lg px-1.5 py-1 transition-all shadow-md`} style={{ backgroundColor: primaryColor }}>
+                                      <button onClick={(e) => { e.stopPropagation(); updateCartQty(product.id, -1); }} className="p-1.5 text-white active:scale-95 hover:bg-black/20 rounded-md"><Icon.Minus className="h-3 w-3" /></button>
+                                      <span className="text-white font-bold text-[11px] sm:text-xs">{cart.find(i => i.id === product.id)?.quantity || 1}</span>
+                                      <button onClick={(e) => { e.stopPropagation(); updateCartQty(product.id, 1); }} className="p-1.5 text-white active:scale-95 hover:bg-black/20 rounded-md"><Icon.Plus className="h-3 w-3" /></button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToCart(product);
+                                      }}
+                                      className={`flex-1 flex shrink-0 items-center justify-center gap-1 rounded-lg py-2 text-[11px] sm:text-xs font-bold text-white transition-all active:scale-95 shadow-md`}
+                                      style={{ backgroundColor: primaryColor }}
+                                    >
+                                      {isProfessional ? <Icon.FileText className="h-3 w-3 shrink-0" /> : <Icon.ShoppingCart className="h-3 w-3 shrink-0" />}
+                                      <span className="whitespace-nowrap">{isProfessional ? 'Quote' : 'Add'}</span>
+                                    </button>
+                                  )}
 
-                              {/* WhatsApp Inquiry */}
-                              {waHref && (
-                                <a
-                                  href={waHref}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] sm:text-xs font-bold text-white transition-all active:scale-95 hover:brightness-110"
-                                  style={{ backgroundColor: '#25D366' }}
-                                >
-                                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 flex-shrink-0">
-                                    <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
-                                  </svg>
-                                  WhatsApp Inquiry
-                                </a>
-                              )}
+                                  {/* WhatsApp Inquiry */}
+                                  {waHref && (
+                                    <a
+                                      href={waHref}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex shrink-0 items-center justify-center rounded-lg p-2 sm:p-2.5 text-white transition-all active:scale-95 hover:brightness-110 aspect-square"
+                                      style={{ backgroundColor: '#25D366' }}
+                                      title="WhatsApp Inquiry"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0">
+                                        <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
+                                      </svg>
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         );
@@ -2007,22 +2020,6 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             )}
           </motion.div>
         </div>
-      )}
-
-      {/* ---- FLOATING CART BUTTON ---- */}
-      {cartItemCount > 0 && (
-        <button
-          onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-24 right-4 z-[90] flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition hover:scale-105 active:scale-95 sm:bottom-8 sm:right-8"
-          style={{ backgroundColor: primaryColor, color: '#fff', boxShadow: `0 8px 32px ${primary30}` }}
-        >
-          <div className="relative">
-            {isProfessional ? <Icon.FileText className="h-6 w-6" /> : <Icon.ShoppingCart className="h-6 w-6" />}
-            <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#12121A]">
-              {cartItemCount}
-            </span>
-          </div>
-        </button>
       )}
 
       {/* ---- PRODUCT VIEW MODAL ---- */}
@@ -2496,6 +2493,42 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Cart Footer */}
+      {cartItemCount > 0 && (
+        <div className={`fixed bottom-0 left-0 right-0 z-[90] p-4 pb-safe bg-white shadow-[0_-4px_15px_rgba(0,0,0,0.1)] transform transition-transform translate-y-0 ${isDark ? 'dark:bg-[#12121A] border-t border-white/10' : ''}`}>
+          <div className="mx-auto max-w-[clamp(400px,90vw,800px)]">
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="w-full flex items-center justify-between rounded-2xl px-5 py-3.5 text-white font-bold text-sm shadow-xl active:scale-[0.98] transition-all"
+              style={{ backgroundColor: primaryColor }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2 shrink-0">
+                  {cart.slice(0, 3).map((item, i) => (
+                    <img 
+                      key={i} 
+                      src={
+                        item.images?.[0] && (item.images[0].startsWith('http') || item.images[0].startsWith('/') || item.images[0].startsWith('data:'))
+                          ? item.images[0]
+                          : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=60&q=80'
+                      } 
+                      alt="" 
+                      className="w-8 h-8 rounded-full border-2 border-white/20 object-cover shrink-0 bg-white/10" 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=60&q=80';
+                      }}
+                    />
+                  ))}
+                  {cart.length > 3 && <div className="w-8 h-8 rounded-full border-2 border-white/20 bg-black/20 flex items-center justify-center text-[10px] text-white shrink-0">+{cart.length - 3}</div>}
+                </div>
+                <span className="truncate">{cartItemCount} item{cartItemCount > 1 ? 's' : ''} added</span>
+              </div>
+              <span className="flex items-center gap-1 shrink-0">Continue <Icon.ChevronRight className="w-4 h-4" /></span>
+            </button>
+          </div>
+        </div>
+      )}
 
     </main>
   );

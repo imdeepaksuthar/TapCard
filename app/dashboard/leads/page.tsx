@@ -83,19 +83,19 @@ export default function Leads() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8">
       {/* Title Section with Filter */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
         <div>
-          <h1 className="text-2xl font-bold">Captured Leads</h1>
-          <p className="text-gray-400 text-sm">Manage contacts captured from your digital cards.</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Captured Leads</h1>
+          <p className="text-gray-400 mt-2">Manage contacts captured from your digital cards.</p>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-400">Filter:</span>
+        <div className="flex items-center gap-3 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-2 sm:p-3 rounded-2xl shadow-lg">
+          <span className="text-gray-400 text-sm pl-2 font-medium">Filter:</span>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as any)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+            className="bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-2 text-sm font-semibold text-gray-300 outline-none transition-all duration-300 shadow-inner cursor-pointer"
           >
             <option value="all">All</option>
             <option value="new">New</option>
@@ -111,17 +111,17 @@ export default function Leads() {
           <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
         </div>
       ) : filteredLeads.length === 0 ? (
-        <div className="flex flex-col justify-center items-center h-96 text-center">
-          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-            <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-16 flex flex-col justify-center items-center text-center shadow-xl">
+          <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
             </svg>
           </div>
-          <h3 className="text-xl font-bold mb-2">No leads found</h3>
-          <p className="text-gray-400 mb-6 max-w-sm">When people submit contact forms on your digital cards, they will appear here.</p>
+          <h3 className="text-xl font-bold tracking-tight text-white mb-2">No leads found</h3>
+          <p className="text-gray-400 max-w-sm">When people submit contact forms on your digital cards, they will appear here.</p>
         </div>
       ) : (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden">
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>

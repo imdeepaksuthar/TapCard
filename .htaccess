@@ -5,18 +5,18 @@ RewriteRule ^_next/(.*)$ .next/$1 [L]
 </IfModule>
 
 # DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
-PassengerAppRoot "/home/sqciaqth/tapcard.mamtastationery.com"
-PassengerBaseURI "/"
-PassengerNodejs "/home/sqciaqth/nodevenv/tapcard.mamtastationery.com/22/bin/node"
-PassengerAppType node
-PassengerStartupFile server.js
+# PassengerAppRoot "/home/sqciaqth/tapcard.mamtastationery.com"
+# PassengerBaseURI "/"
+# PassengerNodejs "/home/sqciaqth/nodevenv/tapcard.mamtastationery.com/22/bin/node"
+# PassengerAppType node
+# PassengerStartupFile server.js
 # DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
 # DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
-PassengerAppRoot "/home/sqciaqth/tapcard.mamtastationery.com"
-PassengerBaseURI "/"
-PassengerNodejs "/home/sqciaqth/nodevenv/tapcard.mamtastationery.com/22/bin/node"
-PassengerAppType node
-PassengerStartupFile server.js
+# PassengerAppRoot "/home/sqciaqth/tapcard.mamtastationery.com"
+# PassengerBaseURI "/"
+# PassengerNodejs "/home/sqciaqth/nodevenv/tapcard.mamtastationery.com/22/bin/node"
+# PassengerAppType node
+# PassengerStartupFile server.js
 # DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
 # DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN
 <IfModule Litespeed>

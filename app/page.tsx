@@ -257,12 +257,12 @@ export default function Home() {
       <Header />
 
       {/* Fixed 3D scene — renders behind hero, fades on scroll via GSAP */}
-      <div ref={sceneWrapRef} className="fixed inset-0 z-0 pointer-events-none">
+      <div ref={sceneWrapRef} className="fixed inset-0 z-0 pointer-events-none hidden lg:block">
         <Scene3D scrollProgress={scrollProgressRef} />
       </div>
 
       {/* ─── Hero Section ─── */}
-      <section className="hero-section relative pt-28 pb-24 md:pt-36 md:pb-32 px-5 sm:px-6 max-w-7xl mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
+      <section id="home" className="hero-section relative pt-[clamp(7rem,12vh,11rem)] pb-[clamp(5rem,8vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] max-w-[1440px] mx-auto min-h-[100dvh] flex flex-col justify-center overflow-hidden">
 
         {/* Background grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
@@ -270,7 +270,7 @@ export default function Home() {
         {/* Background glow */}
         <div className="hero-glow absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between w-full gap-12 lg:gap-16">
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between w-full gap-[clamp(2rem,5vw,4rem)]">
           {/* Left */}
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:w-1/2 max-w-2xl">
             <div className="hero-badge inline-flex items-center gap-2.5 bg-zinc-900/60 border border-zinc-800 px-4 py-2 rounded-full text-[11px] font-semibold tracking-widest text-zinc-400 mb-8 backdrop-blur-xl uppercase">
@@ -281,17 +281,17 @@ export default function Home() {
               The Future of Networking
             </div>
 
-            <h1 className="hero-title text-[2.75rem] sm:text-6xl md:text-7xl font-bold tracking-tight mb-6 leading-[1.08]">
-              <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/50">Networking.</span>
+            <h1 className="hero-title text-[clamp(2.75rem,5vw+1rem,4.5rem)] font-black tracking-tighter mb-[clamp(1rem,3vh,1.5rem)] leading-[1.05] drop-shadow-2xl">
+              <span className="text-white">Networking.</span>
               <br />
-              <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Reimagined.</span>
+              <span className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-lg">Reimagined.</span>
             </h1>
 
-            <p className="hero-subtitle text-base sm:text-lg md:text-xl text-zinc-400 max-w-lg mb-10 leading-relaxed">
-              The premium digital business card for modern professionals. Share your identity with a single tap.
+            <p className="hero-subtitle text-[clamp(1rem,1vw+0.75rem,1.25rem)] text-zinc-300 font-medium max-w-lg mb-[clamp(2rem,4vh,2.5rem)] leading-relaxed">
+              The premium digital business card for modern professionals. Share your identity with a single tap, backed by enterprise-grade security and analytics.
             </p>
 
-            <div className="hero-cta flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="hero-cta flex flex-col sm:flex-row gap-[clamp(0.75rem,2vw,1rem)] w-full sm:w-auto">
               <Link
                 href="/register"
                 className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.15)]"
@@ -372,9 +372,7 @@ export default function Home() {
           </div>
 
           {/* Right spacer — 3D scene renders in the fixed layer behind */}
-          <div className="hidden lg:block lg:w-1/2 h-[450px] pointer-events-none" />
-          {/* Mobile spacer */}
-          <div className="mt-8 h-[260px] sm:h-[320px] lg:hidden pointer-events-none" />
+          <div className="hidden lg:block lg:w-1/2 h-[clamp(350px,40vw,500px)] pointer-events-none" />
         </div>
 
         {/* Scroll cue */}
@@ -385,10 +383,21 @@ export default function Home() {
       </section>
 
       <div className="relative z-10 bg-black w-full">
+
+      {/* ─── Trusted By ─── */}
+      <section className="relative z-10 py-12 border-t border-b border-white/5 bg-zinc-950/80 overflow-hidden flex flex-col items-center justify-center">
+        <p className="text-[10px] font-bold tracking-[0.3em] text-zinc-500 uppercase mb-8 text-center">Trusted by forward-thinking teams globally</p>
+        <div className="flex flex-wrap justify-center gap-10 sm:gap-20 items-center max-w-5xl mx-auto px-6 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
+          {['ACME Corp', 'GLOBAL', 'NEXUS', 'PINNACLE', 'LUMIÈRE', 'QUANTUM'].map((brand, i) => (
+            <span key={i} className="text-xl sm:text-2xl font-black text-zinc-400 tracking-tighter hover:text-white transition-colors cursor-default">{brand}</span>
+          ))}
+        </div>
+      </section>
+
       {/* ─── Recently Added Cards ─── */}
       {(recentCards.length > 0 || isLoadingRecent) && (
-        <section className="relative z-10 py-16 sm:py-20 px-5 sm:px-6 border-t border-zinc-900/50 min-h-[400px]">
-          <div className="max-w-6xl mx-auto">
+        <section className="relative z-10 py-[clamp(4rem,8vh,6rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900/50 min-h-[400px]">
+          <div className="max-w-[1440px] mx-auto">
             <div className="gsap-section-title flex items-center justify-between mb-10">
               <div>
                 <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold tracking-widest uppercase">
@@ -398,7 +407,7 @@ export default function Home() {
                   </span>
                   Discover Network
                 </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white">Recently Joined</h2>
+                <h2 className="text-[clamp(1.75rem,3vw+0.5rem,2.5rem)] font-bold tracking-tight text-white">Recently Joined</h2>
               </div>
             </div>
 
@@ -460,12 +469,36 @@ export default function Home() {
         </section>
       )}
 
+      {/* ─── Scale / Metrics ─── */}
+      <section className="relative z-10 py-[clamp(6rem,12vh,10rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900 bg-black overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)] pointer-events-none" />
+        <div className="max-w-[1440px] mx-auto text-center relative z-10">
+          <h2 className="text-[clamp(2.5rem,5vw+1rem,4.5rem)] font-black tracking-tighter mb-4 text-white">Scale with confidence.</h2>
+          <p className="text-[clamp(1rem,2vw,1.25rem)] text-zinc-400 mb-16 max-w-2xl mx-auto">Enterprise-grade infrastructure powering millions of connections worldwide.</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12 divide-y sm:divide-y-0 sm:divide-x divide-zinc-800/60">
+            <div className="flex flex-col items-center justify-center pt-8 sm:pt-0 group">
+              <div className="text-[clamp(3.5rem,6vw,5.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">99.9%</div>
+              <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Uptime SLA</div>
+            </div>
+            <div className="flex flex-col items-center justify-center pt-8 sm:pt-0 group">
+              <div className="text-[clamp(3.5rem,6vw,5.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-emerald-400 to-emerald-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">2M+</div>
+              <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Card Taps</div>
+            </div>
+            <div className="flex flex-col items-center justify-center pt-8 sm:pt-0 group">
+              <div className="text-[clamp(3.5rem,6vw,5.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-400 to-purple-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">50k+</div>
+              <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Active Professionals</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Bento Grid Features ─── */}
-      <section id="features" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 bg-zinc-950/50">
-        <div className="max-w-6xl mx-auto">
-          <div className="gsap-section-title text-center mb-16 sm:mb-20">
-            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">Features</p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
+      <section id="features" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] bg-zinc-950/50">
+        <div className="max-w-[1440px] mx-auto">
+          <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,5rem)]">
+            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">Features</p>
+            <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight leading-tight">
               Designed for <span className="text-zinc-500">seamless connection.</span>
             </h2>
           </div>
@@ -491,11 +524,11 @@ export default function Home() {
       </section>
 
       {/* ─── How It Works ─── */}
-      <section id="how-it-works" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 border-t border-zinc-900">
-        <div className="max-w-5xl mx-auto">
-          <div className="gsap-section-title text-center mb-16 sm:mb-20">
-            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">How it works</p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
+      <section id="how-it-works" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
+        <div className="max-w-[1440px] mx-auto">
+          <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,5rem)]">
+            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">How it works</p>
+            <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight leading-tight">
               Three simple steps.
             </h2>
           </div>
@@ -523,11 +556,11 @@ export default function Home() {
       </section>
 
       {/* ─── Pricing ─── */}
-      <section id="pricing" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 border-t border-zinc-900">
-        <div className="max-w-5xl mx-auto">
-          <div className="gsap-section-title text-center mb-16 sm:mb-20">
-            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">Pricing</p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
+      <section id="pricing" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
+        <div className="max-w-[1440px] mx-auto">
+          <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,5rem)]">
+            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">Pricing</p>
+            <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight leading-tight">
               Simple, transparent <span className="text-zinc-500">pricing.</span>
             </h2>
           </div>
@@ -581,12 +614,12 @@ export default function Home() {
       </section>
 
       {/* ─── FAQ ─── */}
-      <section id="faq" className="relative z-10 py-24 sm:py-32 px-5 sm:px-6 border-t border-zinc-900">
-        <div className="max-w-3xl mx-auto">
-          <div className="gsap-section-title text-center mb-16">
-            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">FAQ</p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">Frequently Asked Questions</h2>
-            <p className="text-zinc-500 text-sm">Everything you need to know about the product.</p>
+      <section id="faq" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
+        <div className="max-w-[1024px] mx-auto">
+          <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,4rem)]">
+            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">FAQ</p>
+            <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight mb-4 leading-tight">Frequently Asked Questions</h2>
+            <p className="text-[clamp(0.875rem,1.5vw,1rem)] text-zinc-500">Everything you need to know about the product.</p>
           </div>
 
           <div className="faq-list space-y-3">
@@ -611,11 +644,11 @@ export default function Home() {
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="cta-section relative z-10 py-32 sm:py-40 px-5 sm:px-6 text-center overflow-hidden border-t border-zinc-900">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[700px] h-[400px] bg-blue-600/8 blur-[100px] rounded-full pointer-events-none" />
+      <section className="cta-section relative z-10 py-[clamp(6rem,12vh,10rem)] px-[clamp(1.25rem,3vw,3rem)] text-center overflow-hidden border-t border-zinc-900">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(300px,50vw,700px)] h-[clamp(200px,30vw,400px)] bg-blue-600/8 blur-[100px] rounded-full pointer-events-none" />
         <div className="cta-content max-w-3xl mx-auto relative z-10">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">Elevate your brand.</h2>
-          <p className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-xl mx-auto">
+          <h2 className="text-[clamp(2.5rem,5vw+1rem,4rem)] font-bold tracking-tight mb-6 leading-tight">Elevate your brand.</h2>
+          <p className="text-[clamp(1rem,1.5vw+0.5rem,1.25rem)] text-zinc-400 mb-[clamp(2rem,4vh,2.5rem)] max-w-xl mx-auto leading-relaxed">
             Join {stats.users.toLocaleString()}+ professionals already using Card Setu to make lasting impressions.
           </p>
           <Link
@@ -630,8 +663,8 @@ export default function Home() {
       </div>
 
       {/* ─── Footer ─── */}
-      <footer className="border-t border-zinc-900 bg-black pt-16 sm:pt-24 pb-10 sm:pb-12 px-5 sm:px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-10 sm:gap-12 mb-12 sm:mb-16">
+      <footer className="border-t border-zinc-900 bg-black pt-[clamp(4rem,8vh,6rem)] pb-[clamp(2rem,4vh,3rem)] px-[clamp(1.25rem,3vw,3rem)]">
+        <div className="max-w-[1440px] mx-auto grid grid-cols-2 md:grid-cols-5 gap-[clamp(2rem,4vw,3rem)] mb-[clamp(3rem,6vh,4rem)]">
           <div className="col-span-2">
             <img src="/logo-dark.png" alt="Card Setu" className="h-7 sm:h-8 mb-5" />
             <p className="text-zinc-500 text-sm max-w-sm leading-relaxed">

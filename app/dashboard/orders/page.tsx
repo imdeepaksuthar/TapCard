@@ -97,18 +97,18 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
         <div>
-          <h1 className="text-2xl font-bold">Orders</h1>
-          <p className="text-gray-400 text-sm">Manage and fulfill your customer orders.</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Orders</h1>
+          <p className="text-gray-400 mt-2">Manage and fulfill your customer orders.</p>
         </div>
       </div>
 
       {/* Toolbar */}
       {!isLoading && !error && orders.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-4 rounded-3xl shadow-lg">
           <div className="relative flex-1">
             <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -118,14 +118,14 @@ export default function OrdersPage() {
               placeholder="Search by name, email, or Order ID..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl pl-12 pr-4 py-2.5 text-white text-sm outline-none transition-all duration-300"
+              className="w-full bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-2xl pl-12 pr-4 py-3 text-white text-sm outline-none transition-all duration-300 shadow-inner"
             />
           </div>
           <select 
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 cursor-pointer"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+            className="bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-2xl px-5 py-3 text-sm font-semibold text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 cursor-pointer shadow-inner"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
           >
             <option value="all" className="bg-[#0F1C35]">All Status</option>
             <option value="pending" className="bg-[#0F1C35]">Pending</option>
@@ -147,20 +147,20 @@ export default function OrdersPage() {
 
       {/* Empty State */}
       {!isLoading && !error && orders.length === 0 && (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-12 text-center">
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-16 text-center shadow-xl">
+          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">No Orders Yet</h3>
+          <h3 className="text-xl font-bold text-white tracking-tight mb-2">No Orders Yet</h3>
           <p className="text-gray-400">When customers place orders from your card, they will appear here.</p>
         </div>
       )}
 
       {/* Orders Table */}
       {!isLoading && orders.length > 0 && (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden">
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-gray-400">
               <thead className="bg-white/5 text-gray-300 uppercase font-semibold text-xs border-b border-white/5">

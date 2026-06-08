@@ -175,6 +175,8 @@ export default function CardForm({ id }: CardFormProps) {
 
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
+  const [activeBusinessTab, setActiveBusinessTab] = useState<'company' | 'payments' | 'address_hours' | 'gallery'>('company');
+
 
 
   const handlePincodeChange = async (pincode: string) => {
@@ -526,213 +528,145 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-  const handleNext = () => {
-
+  const getStepErrors = (step: number) => {
     const newErrors: Record<string, string> = {};
 
-
-
-    if (currentStep === 1) {
-
+    if (step === 1) {
       if (!formData.card_type) {
-
         newErrors.card_type = 'Please select a card type.';
-
       }
-
     }
 
-    if (currentStep === 2) {
-
+    if (step === 2) {
       if (!formData.personal_info?.name?.trim()) {
-
         newErrors.name = 'Full Name is required.';
-
       }
-
       if (!formData.category_id) {
-
         newErrors.category_id = 'Category is required.';
-
       }
-
       if (!formData.subcategory_id) {
-
         newErrors.subcategory_id = 'Subcategory is required.';
-
       }
-
     }
 
-    if (currentStep === 3) {
-
+    if (step === 3) {
       // Validate Phone
-
       const phone = formData.social_links?.phone?.trim();
-
       if (!phone) {
-
         newErrors.phone = 'Phone Number is required.';
-
       } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(phone)) {
-
         newErrors.phone = 'Please enter a valid Phone Number (10-15 digits).';
-
       }
-
-
 
       // Validate Email
-
       const email = formData.social_links?.email?.trim();
-
       if (!email) {
-
         newErrors.email = 'Email is required.';
-
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-
         newErrors.email = 'Please enter a valid email address.';
-
       }
-
-
 
       // Validate WhatsApp
-
       const whatsapp = formData.social_links?.whatsapp?.trim();
-
       if (!whatsapp) {
-
         newErrors.whatsapp = 'WhatsApp Number is required.';
-
       } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(whatsapp)) {
-
         newErrors.whatsapp = 'Please enter a valid WhatsApp Number (10-15 digits).';
-
       }
 
-
-
       // Validate social usernames — plain usernames, not full URLs
-
       const socialKeys = ['linkedin', 'instagram', 'facebook', 'twitter', 'youtube'] as const;
-
       socialKeys.forEach(key => {
-
         const val = formData.social_links?.[key]?.trim();
-
-        // If they accidentally paste a full URL, flag it with a helpful message
         if (val && val.startsWith('http')) {
-
           newErrors[key] = 'Please enter only your username, not the full URL.';
-
         }
-
       });
-
     }
 
-    if (currentStep === 4 && formData.card_type !== 'personal') {
-
+    if (step === 4 && formData.card_type !== 'personal') {
       if (formData.custom_branding.show_company) {
-
         if (!formData.company_details?.company_name?.trim()) {
-
           newErrors.company_name = 'Company Name is required.';
-
         }
-
         const website = formData.company_details?.website?.trim();
-
         if (website && !/^(https?:\/\/|www\.)[^\s$.?#][^\s]*$/i.test(website)) {
-
           newErrors.website = 'Please enter a valid URL (e.g. https://example.com or www.example.com)';
-
         }
-
         const gst = formData.company_details?.gst?.trim();
-
         if (gst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gst)) {
-
           newErrors.gst = 'Please enter a valid 15-character GST number.';
-
         }
-
       }
 
       if (formData.custom_branding.show_proprietor) {
-
         formData.proprietor_details.forEach((proprietor, index) => {
-
           if (proprietor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proprietor.email)) {
-
             newErrors[`proprietor_${index}_email`] = 'Please enter a valid email address.';
-
           }
-
         });
-
       }
 
       if (formData.custom_branding.show_payment) {
-
         const upi_id = formData.payment_info?.upi_id?.trim();
-
         if (upi_id && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi_id)) {
-
           newErrors.upi_id = 'Please enter a valid UPI ID.';
-
         }
-
         const ifsc_code = formData.payment_info?.ifsc_code?.trim();
-
         if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifsc_code)) {
-
           newErrors.ifsc_code = 'Please enter a valid 11-digit IFSC code.';
-
         }
-
         const account_number = formData.payment_info?.account_number?.trim();
-
         if (account_number && !/^[0-9]{9,18}$/.test(account_number)) {
-
           newErrors.account_number = 'Please enter a valid Bank Account Number (9-18 digits).';
-
         }
-
         const phonepe = formData.payment_info?.phonepe?.trim();
-
         if (phonepe && !/^\+?[0-9\s\-()]{10,15}$/.test(phonepe)) {
-
           newErrors.phonepe = 'Please enter a valid PhonePe Number (10-15 digits).';
-
         }
-
       }
-
     }
 
+    return newErrors;
+  };
 
-
+  const handleNext = () => {
+    const newErrors = getStepErrors(currentStep);
     setValidationErrors(newErrors);
 
-
-
     if (Object.keys(newErrors).length > 0) {
-
       setError('');
-
       return;
-
     }
 
+    setError('');
+    if (currentStep < totalSteps) setCurrentStep(prev => prev + 1);
+  };
 
+  const handleStepClick = (targetStep: number) => {
+    if (targetStep === currentStep) return;
+
+    if (targetStep < currentStep) {
+      setError('');
+      setValidationErrors({});
+      setCurrentStep(targetStep);
+      return;
+    }
+
+    // Validate all steps between currentStep and targetStep - 1
+    for (let s = currentStep; s < targetStep; s++) {
+      const stepErrors = getStepErrors(s);
+      if (Object.keys(stepErrors).length > 0) {
+        setValidationErrors(stepErrors);
+        setError(`Please fix the errors in Step ${s} before proceeding.`);
+        setCurrentStep(s);
+        return;
+      }
+    }
 
     setError('');
-
-    if (currentStep < totalSteps) setCurrentStep(prev => prev + 1);
-
+    setValidationErrors({});
+    setCurrentStep(targetStep);
   };
 
 
@@ -1202,6 +1136,38 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
+  const getBusinessTabHasErrors = (tabId: string) => {
+    if (Object.keys(validationErrors).length === 0) return false;
+
+    if (tabId === 'company') {
+      return !!(
+        validationErrors.company_name ||
+        validationErrors.gst ||
+        validationErrors.website ||
+        Object.keys(validationErrors).some(k => k.startsWith('proprietor_'))
+      );
+    }
+    if (tabId === 'payments') {
+      return !!(
+        validationErrors.account_number ||
+        validationErrors.ifsc_code ||
+        validationErrors.upi_id ||
+        validationErrors.phonepe
+      );
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    if (currentStep === 4) {
+      if (formData.card_type === 'personal') {
+        if (activeBusinessTab !== 'address_hours' && activeBusinessTab !== 'gallery') {
+          setActiveBusinessTab('address_hours');
+        }
+      }
+    }
+  }, [currentStep, formData.card_type, activeBusinessTab]);
+
   const renderStepContent = () => {
 
     switch (currentStep) {
@@ -1220,7 +1186,7 @@ export default function CardForm({ id }: CardFormProps) {
 
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
 
               {[
 
@@ -1294,11 +1260,30 @@ export default function CardForm({ id }: CardFormProps) {
 
                 {profileImagePreviewUrl ? (
 
-                  <img src={profileImagePreviewUrl} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-white/10" />
+                  <div className="relative group rounded-full w-16 h-16 shrink-0">
+                    <img src={profileImagePreviewUrl} alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-white/10 group-hover:opacity-50 transition-opacity" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileImagePreviewUrl('');
+                        setFormData({
+                          ...formData,
+                          profile_image: '',
+                          personal_info: { ...formData.personal_info, profile_image: '' }
+                        });
+                        const fileInput = document.getElementById('profile-upload') as HTMLInputElement;
+                        if (fileInput) fileInput.value = '';
+                      }}
+                      className="absolute -top-1 -right-1 w-6 h-6 bg-red-500/80 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-md"
+                      title="Remove image"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
 
                 ) : (
 
-                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-gray-500 border-2 border-dashed border-white/20">Img</div>
+                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-gray-500 border-2 border-dashed border-white/20 shrink-0">Img</div>
 
                 )}
 
@@ -1306,7 +1291,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                   <label className="text-sm text-gray-400 block mb-1">Profile Photo</label>
 
-                  <input type="file" accept="image/*" onChange={handleFileUpload} className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                  <input id="profile-upload" type="file" accept="image/*" onChange={handleFileUpload} className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
 
                 </div>
 
@@ -1362,7 +1347,7 @@ export default function CardForm({ id }: CardFormProps) {
 
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                 <div>
 
@@ -1542,7 +1527,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                 <h3 className="text-lg font-semibold text-white mb-3">Contact Information</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                   {[
 
@@ -1566,109 +1551,117 @@ export default function CardForm({ id }: CardFormProps) {
 
                         </label>
 
-                        <input
-
-                          type={field.type}
-
-                          value={(formData.social_links as any)?.[field.key] || ''}
-
-                          onChange={(e) => {
-
-                            const val = e.target.value;
-
-                            setFormData({
-
-                              ...formData,
-
-                              social_links: {
-
-                                ...(formData.social_links || {}),
-
-                                [field.key]: val
-
-                              }
-
-                            });
-
-
-
-                            // Real-time validation
-
-                            let errorMsg = '';
-
-                            if (field.key === 'phone') {
-
-                              if (!val.trim()) {
-
-                                errorMsg = 'Phone Number is required.';
-
-                              } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(val.trim())) {
-
-                                errorMsg = 'Please enter a valid Phone Number (10-15 digits).';
-
-                              }
-
-                            } else if (field.key === 'email') {
-
-                              if (!val.trim()) {
-
-                                errorMsg = 'Email is required.';
-
-                              } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
-
-                                errorMsg = 'Please enter a valid email address.';
-
-                              }
-
-                            } else if (field.key === 'whatsapp') {
-
-                              if (!val.trim()) {
-
-                                errorMsg = 'WhatsApp Number is required.';
-
-                              } else if (!/^\+?[0-9\s\-()]{10,15}$/.test(val.trim())) {
-
-                                errorMsg = 'Please enter a valid WhatsApp Number (10-15 digits).';
-
-                              }
-
+                        {(() => {
+                          const rawValue = (formData.social_links as any)?.[field.key] || '';
+                          let code = '+91';
+                          let number = rawValue;
+                          
+                          if (field.type === 'tel') {
+                            const match = rawValue.match(/^(\+\d{1,4})\s(.*)$/);
+                            if (match) {
+                              code = match[1];
+                              number = match[2];
+                            } else if (rawValue.startsWith('+')) {
+                               const parts = rawValue.split(' ');
+                               if (parts.length > 1) {
+                                 code = parts[0];
+                                 number = parts.slice(1).join(' ');
+                               }
                             }
+                          }
 
+                          return (
+                            <div className={field.type === 'tel' ? 'flex items-center relative' : ''}>
+                              {field.type === 'tel' && (
+                                <div className="absolute inset-y-[1px] left-[1px] flex items-center border-r border-white/10 z-10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors rounded-l-xl">
+                                  <select
+                                    value={code}
+                                    onChange={(e) => {
+                                      const newCode = e.target.value;
+                                      const newVal = `${newCode} ${number}`;
+                                      setFormData({
+                                        ...formData,
+                                        social_links: {
+                                          ...(formData.social_links || {}),
+                                          [field.key]: newVal
+                                        }
+                                      });
+                                    }}
+                                    className="h-full bg-transparent border-none text-gray-300 focus:outline-none focus:ring-0 pl-3 pr-8 rounded-l-xl cursor-pointer text-sm font-semibold tracking-wide appearance-none"
+                                    style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                                  >
+                                    <option value="+1" className="bg-[#1a2234] text-white">US +1</option>
+                                    <option value="+44" className="bg-[#1a2234] text-white">UK +44</option>
+                                    <option value="+91" className="bg-[#1a2234] text-white">IN +91</option>
+                                    <option value="+61" className="bg-[#1a2234] text-white">AU +61</option>
+                                    <option value="+971" className="bg-[#1a2234] text-white">AE +971</option>
+                                    <option value="+65" className="bg-[#1a2234] text-white">SG +65</option>
+                                    <option value="+60" className="bg-[#1a2234] text-white">MY +60</option>
+                                    <option value="+49" className="bg-[#1a2234] text-white">DE +49</option>
+                                    <option value="+33" className="bg-[#1a2234] text-white">FR +33</option>
+                                  </select>
+                                  <svg className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                              )}
+                              <input
+                                type={field.type}
+                                value={field.type === 'tel' ? number : rawValue}
+                                onChange={(e) => {
+                                  const numOrEmail = e.target.value;
+                                  const val = field.type === 'tel' ? `${code} ${numOrEmail}` : numOrEmail;
 
+                                  setFormData({
+                                    ...formData,
+                                    social_links: {
+                                      ...(formData.social_links || {}),
+                                      [field.key]: val
+                                    }
+                                  });
 
-                            // Update validation errors state
+                                  // Real-time validation
+                                  let errorMsg = '';
+                                  if (field.key === 'phone') {
+                                    if (!numOrEmail.trim()) {
+                                      errorMsg = 'Phone Number is required.';
+                                    } else if (!/^[0-9\s\-()]{6,15}$/.test(numOrEmail.trim())) {
+                                      errorMsg = 'Please enter a valid Phone Number (6-15 digits).';
+                                    }
+                                  } else if (field.key === 'email') {
+                                    if (!val.trim()) {
+                                      errorMsg = 'Email is required.';
+                                    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
+                                      errorMsg = 'Please enter a valid email address.';
+                                    }
+                                  } else if (field.key === 'whatsapp') {
+                                    if (!numOrEmail.trim()) {
+                                      errorMsg = 'WhatsApp Number is required.';
+                                    } else if (!/^[0-9\s\-()]{6,15}$/.test(numOrEmail.trim())) {
+                                      errorMsg = 'Please enter a valid WhatsApp Number (6-15 digits).';
+                                    }
+                                  }
 
-                            setValidationErrors(prev => {
-
-                              const copy = { ...prev };
-
-                              if (errorMsg) {
-
-                                copy[field.key] = errorMsg;
-
-                              } else {
-
-                                delete copy[field.key];
-
-                              }
-
-                              return copy;
-
-                            });
-
-                          }}
-
-                          className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
-
-                            hasError
-
-                              ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
-
-                              : 'border-white/10 focus:border-blue-500'
-
-                          }`}
-
-                        />
+                                  // Update validation errors state
+                                  setValidationErrors(prev => {
+                                    const copy = { ...prev };
+                                    if (errorMsg) {
+                                      copy[field.key] = errorMsg;
+                                    } else {
+                                      delete copy[field.key];
+                                    }
+                                    return copy;
+                                  });
+                                }}
+                                className={`w-full bg-white/5 border rounded-xl py-3 text-white focus:outline-none transition-all ${
+                                  field.type === 'tel' ? 'pl-[104px] pr-4' : 'px-4'
+                                } ${
+                                  hasError
+                                    ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
+                                    : 'border-white/10 focus:border-blue-500'
+                                }`}
+                              />
+                            </div>
+                          );
+                        })()}
 
                         {hasError && (
 
@@ -1694,7 +1687,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                 <h3 className="text-lg font-semibold text-white mb-3">Social Media Profiles</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                   {[
 
@@ -1774,24 +1767,61 @@ export default function CardForm({ id }: CardFormProps) {
         );
 
       case 4:
+        const availableTabs = formData.card_type === 'personal'
+          ? [
+              { id: 'address_hours', label: 'Address & Location', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+              { id: 'gallery', label: 'Gallery', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' }
+            ]
+          : [
+              { id: 'company', label: 'Company & Team', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+              { id: 'payments', label: 'Payments', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+              { id: 'address_hours', label: 'Address & Hours', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+              { id: 'gallery', label: 'Gallery', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' }
+            ];
 
         return (
-
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-
             <div>
-
               <h2 className="text-2xl font-bold mb-2">Business & Payments</h2>
-
               <p className="text-gray-400 mb-6">Setup your company details and payment links.</p>
-
             </div>
 
-
+            {/* Sub-tab Navigation */}
+            <div className="flex border-b border-white/10 pb-px mb-6 overflow-x-auto no-scrollbar gap-2">
+              {availableTabs.map(tab => {
+                const isActive = activeBusinessTab === tab.id;
+                const hasErrors = getBusinessTabHasErrors(tab.id);
+                
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveBusinessTab(tab.id as any)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all duration-300 relative whitespace-nowrap focus:outline-none border-b-2
+                      ${isActive 
+                        ? 'text-blue-400 border-blue-500 bg-blue-500/5' 
+                        : 'text-gray-400 border-transparent hover:text-gray-200 hover:bg-white/5'}`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d={tab.icon} />
+                    </svg>
+                    <span>{tab.label}</span>
+                    
+                    {/* Error indicator dot */}
+                    {hasErrors && (
+                      <span className="w-2 h-2 rounded-full bg-red-500 absolute top-1.5 right-1.5 animate-pulse shadow-md shadow-red-500/50" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
             <div className="space-y-6">
-
-              {formData.card_type !== 'personal' && (
+              {/* COMPANY & TEAM TAB */}
+              {activeBusinessTab === 'company' && formData.card_type !== 'personal' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  {/* Company Details */}
+                  {formData.card_type !== 'personal' && (
 
                 <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
 
@@ -1853,7 +1883,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                         <div>
 
@@ -2072,10 +2102,269 @@ export default function CardForm({ id }: CardFormProps) {
                 </div>
 
               )}
+                  
+                  {/* Proprietor Details */}
+                  {formData.card_type !== 'personal' && (
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+
+                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+
+                    <div>
+
+                      <h3 className="font-semibold text-white">Proprietor / Team Details</h3>
+
+                      <p className="text-sm text-gray-400">Add founders, co-founders, or key team members</p>
+
+                    </div>
+
+                    <label className="relative inline-flex items-center cursor-pointer">
+
+                      <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_proprietor} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_proprietor: e.target.checked } })} />
+
+                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+
+                    </label>
+
+                  </div>
+
+                  {formData.custom_branding.show_proprietor && (
+
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-6">
+
+                      {formData.proprietor_details.map((proprietor, index) => (
+
+                        <div key={index} className="space-y-4 p-4 border border-white/10 rounded-xl bg-black/10 relative">
+
+                          {formData.proprietor_details.length > 1 && (
+
+                            <button
+
+                              type="button"
+
+                              onClick={() => {
+
+                                const newDetails = [...formData.proprietor_details];
+
+                                newDetails.splice(index, 1);
+
+                                setFormData({ ...formData, proprietor_details: newDetails });
+
+                              }}
+
+                              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+
+                            >
+
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+
+                            </button>
+
+                          )}
+
+                          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+
+                            <div className="shrink-0">
+
+                              <label className="text-sm text-gray-400 block mb-2">Photo</label>
+
+                              <div className="relative w-16 h-16 rounded-xl border border-white/10 overflow-hidden bg-black/50 shrink-0 group">
+
+                                {proprietor.image ? (
+
+                                  <>
+                                    <img src={proprietor.image} alt="Proprietor" className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" />
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        const newDetails = [...formData.proprietor_details];
+                                        newDetails[index].image = '';
+                                        setFormData({ ...formData, proprietor_details: newDetails });
+                                        const fileInput = document.getElementById(`proprietor-upload-${index}`) as HTMLInputElement;
+                                        if (fileInput) fileInput.value = '';
+                                      }}
+                                      className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                      title="Remove image"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                  </>
+
+                                ) : (
+
+                                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 group-hover:bg-white/5 transition-colors">
+
+                                    <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+
+                                  </div>
+
+                                )}
+
+                                <input id={`proprietor-upload-${index}`} type="file" accept="image/*" className={`absolute inset-0 w-full h-full cursor-pointer ${proprietor.image ? 'hidden' : 'opacity-0'}`} onChange={(e) => handleProprietorImageUpload(index, e)} />
+
+                              </div>
+
+                            </div>
+
+                            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                              <div>
+
+                                <label className="text-sm text-gray-400 block mb-1">Name</label>
+
+                                <input type="text" value={proprietor.name || ''} onChange={(e) => {
+
+                                  const newDetails = [...formData.proprietor_details];
+
+                                  newDetails[index].name = e.target.value;
+
+                                  setFormData({ ...formData, proprietor_details: newDetails });
+
+                                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="John Doe" />
+
+                              </div>
+
+                              <div>
+
+                                <label className="text-sm text-gray-400 block mb-1">Designation</label>
+
+                                <input type="text" value={proprietor.designation || ''} onChange={(e) => {
+
+                                  const newDetails = [...formData.proprietor_details];
+
+                                  newDetails[index].designation = e.target.value;
+
+                                  setFormData({ ...formData, proprietor_details: newDetails });
+
+                                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
+
+                              </div>
+
+                            </div>
+
+                          </div>
 
 
 
-              {formData.card_type !== 'personal' && (
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                            <div>
+
+                              <label className="text-sm text-gray-400 block mb-1">Email</label>
+
+                              <input type="email" value={proprietor.email || ''} onChange={(e) => {
+
+                                const newDetails = [...formData.proprietor_details];
+
+                                newDetails[index].email = e.target.value;
+
+                                setFormData({ ...formData, proprietor_details: newDetails });
+
+                              }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_email`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="john@example.com" />
+
+                              {validationErrors[`proprietor_${index}_email`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_email`]}</p>}
+
+                            </div>
+
+                            <div>
+
+                              <label className="text-sm text-gray-400 block mb-1">Phone Number</label>
+
+                              <input type="tel" value={proprietor.phone || ''} onChange={(e) => {
+
+                                const newDetails = [...formData.proprietor_details];
+
+                                newDetails[index].phone = e.target.value;
+
+                                setFormData({ ...formData, proprietor_details: newDetails });
+
+                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
+
+                            </div>
+
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                            <div>
+
+                              <label className="text-sm text-gray-400 block mb-1">WhatsApp Number</label>
+
+                              <input type="tel" value={proprietor.whatsapp || ''} onChange={(e) => {
+
+                                const newDetails = [...formData.proprietor_details];
+
+                                newDetails[index].whatsapp = e.target.value;
+
+                                setFormData({ ...formData, proprietor_details: newDetails });
+
+                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
+
+                            </div>
+
+                            <div>
+
+                              <label className="text-sm text-gray-400 block mb-1">Date of Birth</label>
+
+                              <input type="date" value={proprietor.dob || ''} onChange={(e) => {
+
+                                const newDetails = [...formData.proprietor_details];
+
+                                newDetails[index].dob = e.target.value;
+
+                                setFormData({ ...formData, proprietor_details: newDetails });
+
+                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+                      ))}
+
+                      <button
+
+                        type="button"
+
+                        onClick={() => {
+
+                          setFormData({
+
+                            ...formData,
+
+                            proprietor_details: [...formData.proprietor_details, { name: '', designation: '', email: '', phone: '', whatsapp: '', dob: '', image: '' }]
+
+                          });
+
+                        }}
+
+                        className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl text-blue-400 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+
+                      >
+
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+
+                        Add Another Member
+
+                      </button>
+
+                    </motion.div>
+
+                  )}
+
+                </div>
+
+              )}
+                </motion.div>
+              )}
+
+              {/* PAYMENTS TAB */}
+              {activeBusinessTab === 'payments' && formData.card_type !== 'personal' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  {/* Payment Details */}
+                  {formData.card_type !== 'personal' && (
 
                 <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
 
@@ -2151,7 +2440,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                         </h4>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                           <div className="md:col-span-2">
 
@@ -2293,25 +2582,45 @@ export default function CardForm({ id }: CardFormProps) {
 
                         </h4>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                          <div>
+                          <div className="flex-1 space-y-2">
 
-                            <label className="text-sm text-gray-400 block mb-1">Payment QR Code</label>
+                              <label className="text-sm font-medium text-gray-400 block mb-1">
 
-                            <div className="flex items-center gap-3">
+                                Upload Custom QR Code
 
-                              {formData.payment_info?.qr_path && (
+                              </label>
 
-                                <img src={formData.payment_info.qr_path} alt="QR" className="h-10 w-10 rounded-lg object-cover bg-white p-0.5" />
-
-                              )}
-
-                              <input type="file" accept="image/*" onChange={handleQrUpload} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                              <input id="qr-upload" type="file" accept="image/*" onChange={handleQrUpload} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
 
                             </div>
 
-                          </div>
+                            {(formData.payment_info?.qr_path) && (
+
+                              <div className="relative w-24 h-24 rounded-xl border border-white/10 overflow-hidden bg-black/50 shrink-0 group">
+
+                                <img src={formData.payment_info.qr_path} alt="QR Code Preview" className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" />
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({
+                                      ...formData,
+                                      payment_info: { ...formData.payment_info, qr_path: '' }
+                                    });
+                                    const fileInput = document.getElementById('qr-upload') as HTMLInputElement;
+                                    if (fileInput) fileInput.value = '';
+                                  }}
+                                  className="absolute top-1 right-1 w-6 h-6 bg-red-500/80 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                  title="Remove image"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+
+                              </div>
+
+                            )}
 
                           <div>
 
@@ -2444,375 +2753,14 @@ export default function CardForm({ id }: CardFormProps) {
                 </div>
 
               )}
-
-
-
-              {/* Proprietor / Team Details */}
-
-              {formData.card_type !== 'personal' && (
-                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-
-                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
-
-                    <div>
-
-                      <h3 className="font-semibold text-white">Proprietor / Team Details</h3>
-
-                      <p className="text-sm text-gray-400">Add founders, co-founders, or key team members</p>
-
-                    </div>
-
-                    <label className="relative inline-flex items-center cursor-pointer">
-
-                      <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_proprietor} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_proprietor: e.target.checked } })} />
-
-                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-
-                    </label>
-
-                  </div>
-
-                  {formData.custom_branding.show_proprietor && (
-
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-6">
-
-                      {formData.proprietor_details.map((proprietor, index) => (
-
-                        <div key={index} className="space-y-4 p-4 border border-white/10 rounded-xl bg-black/10 relative">
-
-                          {formData.proprietor_details.length > 1 && (
-
-                            <button
-
-                              type="button"
-
-                              onClick={() => {
-
-                                const newDetails = [...formData.proprietor_details];
-
-                                newDetails.splice(index, 1);
-
-                                setFormData({ ...formData, proprietor_details: newDetails });
-
-                              }}
-
-                              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-
-                            >
-
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-
-                            </button>
-
-                          )}
-
-                          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-
-                            <div className="shrink-0">
-
-                              <label className="text-sm text-gray-400 block mb-2">Photo</label>
-
-                              <div className="relative w-24 h-24 rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center hover:border-blue-500 transition-colors group cursor-pointer">
-
-                                {proprietor.image ? (
-
-                                  <img src={proprietor.image} alt={proprietor.name} className="w-full h-full object-cover" />
-
-                                ) : (
-
-                                  <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-
-                                )}
-
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-
-                                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-
-                                </div>
-
-                                <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleProprietorImageUpload(index, e)} />
-
-                              </div>
-
-                            </div>
-
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                              <div>
-
-                                <label className="text-sm text-gray-400 block mb-1">Name</label>
-
-                                <input type="text" value={proprietor.name || ''} onChange={(e) => {
-
-                                  const newDetails = [...formData.proprietor_details];
-
-                                  newDetails[index].name = e.target.value;
-
-                                  setFormData({ ...formData, proprietor_details: newDetails });
-
-                                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="John Doe" />
-
-                              </div>
-
-                              <div>
-
-                                <label className="text-sm text-gray-400 block mb-1">Designation</label>
-
-                                <input type="text" value={proprietor.designation || ''} onChange={(e) => {
-
-                                  const newDetails = [...formData.proprietor_details];
-
-                                  newDetails[index].designation = e.target.value;
-
-                                  setFormData({ ...formData, proprietor_details: newDetails });
-
-                                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
-
-                              </div>
-
-                            </div>
-
-                          </div>
-
-
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                            <div>
-
-                              <label className="text-sm text-gray-400 block mb-1">Email</label>
-
-                              <input type="email" value={proprietor.email || ''} onChange={(e) => {
-
-                                const newDetails = [...formData.proprietor_details];
-
-                                newDetails[index].email = e.target.value;
-
-                                setFormData({ ...formData, proprietor_details: newDetails });
-
-                              }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_email`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="john@example.com" />
-
-                              {validationErrors[`proprietor_${index}_email`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_email`]}</p>}
-
-                            </div>
-
-                            <div>
-
-                              <label className="text-sm text-gray-400 block mb-1">Phone Number</label>
-
-                              <input type="tel" value={proprietor.phone || ''} onChange={(e) => {
-
-                                const newDetails = [...formData.proprietor_details];
-
-                                newDetails[index].phone = e.target.value;
-
-                                setFormData({ ...formData, proprietor_details: newDetails });
-
-                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
-
-                            </div>
-
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                            <div>
-
-                              <label className="text-sm text-gray-400 block mb-1">WhatsApp Number</label>
-
-                              <input type="tel" value={proprietor.whatsapp || ''} onChange={(e) => {
-
-                                const newDetails = [...formData.proprietor_details];
-
-                                newDetails[index].whatsapp = e.target.value;
-
-                                setFormData({ ...formData, proprietor_details: newDetails });
-
-                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
-
-                            </div>
-
-                            <div>
-
-                              <label className="text-sm text-gray-400 block mb-1">Date of Birth</label>
-
-                              <input type="date" value={proprietor.dob || ''} onChange={(e) => {
-
-                                const newDetails = [...formData.proprietor_details];
-
-                                newDetails[index].dob = e.target.value;
-
-                                setFormData({ ...formData, proprietor_details: newDetails });
-
-                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
-
-                            </div>
-
-                          </div>
-
-                        </div>
-
-                      ))}
-
-                      <button
-
-                        type="button"
-
-                        onClick={() => {
-
-                          setFormData({
-
-                            ...formData,
-
-                            proprietor_details: [...formData.proprietor_details, { name: '', designation: '', email: '', phone: '', whatsapp: '', dob: '', image: '' }]
-
-                          });
-
-                        }}
-
-                        className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl text-blue-400 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-
-                      >
-
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-
-                        Add Another Member
-
-                      </button>
-
-                    </motion.div>
-
-                  )}
-
-                </div>
-
+                </motion.div>
               )}
 
-
-
-              {/* Gallery Content */}
-
-              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
-
-                  <div>
-
-                    <h3 className="font-semibold text-white">Gallery Content</h3>
-
-                    <p className="text-sm text-gray-400">Add photos, videos, or graphics</p>
-
-                  </div>
-
-                  <label className="relative inline-flex items-center cursor-pointer">
-
-                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_gallery} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_gallery: e.target.checked } })} />
-
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-
-                  </label>
-
-                </div>
-
-                {formData.custom_branding.show_gallery && (
-
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
-
-                    <p className="text-sm text-gray-400 mb-2">Upload images to your gallery.</p>
-
-                    {/* Placeholder for actual file upload mapping. In real integration, upload to API and save URLs. */}
-
-                    <input type="file" multiple accept="image/*,video/*" onChange={async (e) => {
-
-                      if (!e.target.files) return;
-
-                      const files = Array.from(e.target.files);
-
-                      const newGallery = [...formData.gallery_content];
-
-                      for (const file of files) {
-
-                        const compressed = await compressGalleryImage(file);
-
-                        const formPayload = new FormData();
-
-                        formPayload.append('file', compressed);
-
-                        formPayload.append('type', 'image');
-
-                        try {
-
-                          const token = localStorage.getItem('card-setu-token');
-
-                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/upload`, {
-
-                            method: 'POST',
-
-                            headers: { 'Authorization': `Bearer ${token}` },
-
-                            body: formPayload
-
-                          });
-
-                          const data = await res.json();
-
-                          if (res.ok && data.url) {
-
-                            newGallery.push(data.url);
-
-                          }
-
-                        } catch (err) {
-
-                          console.error('Gallery upload failed', err);
-
-                        }
-
-                      }
-
-                      setFormData({ ...formData, gallery_content: newGallery });
-
-                    }} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
-
-                    <div className="flex flex-wrap gap-4 mt-4">
-
-                      {formData.gallery_content.map((url: string, idx: number) => (
-
-                        <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-white/10 group">
-
-                          <img src={url} alt="Gallery item" className="w-full h-full object-cover" />
-
-                          <button type="button" onClick={() => {
-
-                            const newGallery = [...formData.gallery_content];
-
-                            newGallery.splice(idx, 1);
-
-                            setFormData({ ...formData, gallery_content: newGallery });
-
-                          }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-
-                          </button>
-
-                        </div>
-
-                      ))}
-
-                    </div>
-
-                  </motion.div>
-
-                )}
-
-              </div>
-
-
-
-              {/* Operational Details */}
-
-              {formData.card_type !== 'personal' && (
+              {/* ADDRESS & HOURS TAB */}
+              {activeBusinessTab === 'address_hours' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  {/* Operational Details (Hours) */}
+                  {formData.card_type !== 'personal' && (
                 <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
 
                   <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
@@ -2839,8 +2787,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-3">
 
-                      {Object.entries(formData.opening_hours).map(([day, hours]: [string, any]) => (
-
+                      {Object.entries(formData.opening_hours).map(([dayStr, hours]: [string, any]) => {
+                        const day = dayStr as keyof typeof formData.opening_hours;
+                        return (
                         <div key={day} className="flex items-center justify-between gap-4 py-2 border-b border-white/5 last:border-0">
 
                           <div className="w-24 capitalize text-gray-300 text-sm font-medium">{day}</div>
@@ -2853,7 +2802,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                               const newHours = { ...formData.opening_hours, [day]: { ...hours, open: val } };
 
-                              Object.keys(newHours).forEach(d => {
+                              (Object.keys(newHours) as Array<keyof typeof formData.opening_hours>).forEach(d => {
 
                                 if (d !== day && !formData.opening_hours[d].open) {
 
@@ -2875,7 +2824,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                               const newHours = { ...formData.opening_hours, [day]: { ...hours, close: val } };
 
-                              Object.keys(newHours).forEach(d => {
+                              (Object.keys(newHours) as Array<keyof typeof formData.opening_hours>).forEach(d => {
 
                                 if (d !== day && !formData.opening_hours[d].close) {
 
@@ -2910,8 +2859,8 @@ export default function CardForm({ id }: CardFormProps) {
                           </label>
 
                         </div>
-
-                      ))}
+                        );
+                      })}
 
                     </motion.div>
 
@@ -2920,12 +2869,9 @@ export default function CardForm({ id }: CardFormProps) {
                 </div>
 
               )}
-
-
-
-              {/* Physical Address */}
-
-              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                  
+                  {/* Physical Address */}
+                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
 
                 <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
 
@@ -2951,7 +2897,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                       <div>
 
@@ -2975,7 +2921,7 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                       <div>
 
@@ -3028,8 +2974,9 @@ export default function CardForm({ id }: CardFormProps) {
 
 
               {/* Google Maps Location */}
-
-              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                  
+                  {/* Google Maps Location */}
+                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
 
                 <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
 
@@ -3124,7 +3071,9 @@ export default function CardForm({ id }: CardFormProps) {
               </div>
 
               {/* Appointment & Schedule Block (Professional Only) */}
-              {formData.card_type === 'professional' && (
+                  
+                  {/* Appointment Details */}
+                  {formData.card_type === 'professional' && (
                 <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden mt-6">
                   <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
                     <div>
@@ -3252,13 +3201,140 @@ export default function CardForm({ id }: CardFormProps) {
                   </AnimatePresence>
                 </div>
               )}
+                </motion.div>
+              )}
+
+              {/* GALLERY TAB */}
+              {activeBusinessTab === 'gallery' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  {/* Gallery Content */}
+                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+
+                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+
+                  <div>
+
+                    <h3 className="font-semibold text-white">Gallery Content</h3>
+
+                    <p className="text-sm text-gray-400">Add photos, videos, or graphics</p>
+
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer">
+
+                    <input type="checkbox" className="sr-only peer" checked={formData.custom_branding.show_gallery} onChange={(e) => setFormData({ ...formData, custom_branding: { ...formData.custom_branding, show_gallery: e.target.checked } })} />
+
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+
+                  </label>
+
+                </div>
+
+                {formData.custom_branding.show_gallery && (
+
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
+
+                    <p className="text-sm text-gray-400 mb-2">Upload images to your gallery.</p>
+
+                    {/* Placeholder for actual file upload mapping. In real integration, upload to API and save URLs. */}
+
+                    <input type="file" multiple accept="image/*,video/*" onChange={async (e) => {
+
+                      if (!e.target.files) return;
+
+                      const files = Array.from(e.target.files);
+
+                      const newGallery = [...formData.gallery_content];
+
+                      for (const file of files) {
+
+                        const compressed = await compressGalleryImage(file);
+
+                        const formPayload = new FormData();
+
+                        formPayload.append('file', compressed);
+
+                        formPayload.append('type', 'image');
+
+                        try {
+
+                          const token = localStorage.getItem('card-setu-token');
+
+                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/upload`, {
+
+                            method: 'POST',
+
+                            headers: { 'Authorization': `Bearer ${token}` },
+
+                            body: formPayload
+
+                          });
+
+                          const data = await res.json();
+
+                          if (res.ok && data.url) {
+
+                            newGallery.push(data.url);
+
+                          }
+
+                        } catch (err) {
+
+                          console.error('Gallery upload failed', err);
+
+                        }
+
+                      }
+
+                      setFormData({ ...formData, gallery_content: newGallery });
+
+                    }} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+
+                    <div className="flex flex-wrap gap-4 mt-4">
+
+                      {formData.gallery_content.map((url: string, idx: number) => (
+
+                        <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-white/10 group">
+
+                          <img src={url} alt="Gallery item" className="w-full h-full object-cover" />
+
+                          <button type="button" onClick={() => {
+
+                            const newGallery = [...formData.gallery_content];
+
+                            newGallery.splice(idx, 1);
+
+                            setFormData({ ...formData, gallery_content: newGallery });
+
+                          }} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+
+                          </button>
+
+                        </div>
+
+                      ))}
+
+                    </div>
+
+                  </motion.div>
+
+                )}
+
+              </div>
+
+
+
+              {/* Operational Details */}
+                </motion.div>
+              )}
             </div>
-
           </motion.div>
-
         );
 
-      case 5:
+
+            case 5:
 
         return (
 
@@ -3461,13 +3537,9 @@ export default function CardForm({ id }: CardFormProps) {
 
 
   return (
+    <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-[#030712]">
 
-    <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row overflow-hidden bg-[#030712]">
-
-
-
-      <div className="w-full md:w-1/2 lg:w-3/5 flex flex-col h-full border-r border-white/5 overflow-y-auto no-scrollbar">
-
+      <div className="w-full lg:w-3/5 flex flex-col h-full border-r border-white/5 overflow-y-auto no-scrollbar">
         <div className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
 
           <div className="mb-8">
@@ -3506,11 +3578,17 @@ export default function CardForm({ id }: CardFormProps) {
                   const isUpcoming = currentStep < stepNum;
 
                   return (
-                    <div key={index} className="flex flex-col items-center" style={{ width: '20%' }}>
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleStepClick(stepNum)}
+                      className="flex flex-col items-center cursor-pointer group focus:outline-none"
+                      style={{ width: '20%' }}
+                    >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-500 relative
-                        ${isCompleted ? 'bg-gradient-to-br from-green-400 to-emerald-600 text-white shadow-lg shadow-green-500/30 scale-100' : ''}
+                        ${isCompleted ? 'bg-gradient-to-br from-green-400 to-emerald-600 text-white shadow-lg shadow-green-500/30 scale-100 group-hover:scale-105 active:scale-95' : ''}
                         ${isActive ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/40 scale-110 ring-[3px] ring-blue-400/30' : ''}
-                        ${isUpcoming ? 'bg-white/[0.07] text-gray-500 border border-white/10' : ''}
+                        ${isUpcoming ? 'bg-white/[0.07] text-gray-500 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 active:scale-95' : ''}
                       `}>
                         {isCompleted ? (
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -3522,9 +3600,9 @@ export default function CardForm({ id }: CardFormProps) {
                         {isActive && <span className="absolute -inset-1 rounded-full bg-blue-500/20 animate-ping opacity-30" />}
                       </div>
                       <span className={`mt-2 text-[11px] font-medium transition-colors duration-300 text-center leading-tight
-                        ${isActive ? 'text-blue-400' : isCompleted ? 'text-green-400/80' : 'text-gray-600'}
+                        ${isActive ? 'text-blue-400' : isCompleted ? 'text-green-400/80 group-hover:text-green-300' : 'text-gray-600 group-hover:text-gray-400'}
                       `}>{step.label}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -3600,8 +3678,8 @@ export default function CardForm({ id }: CardFormProps) {
       </div>
 
       {/* RIGHT PANEL: Live Preview */}
-      <div className="hidden md:flex w-1/2 lg:w-2/5 bg-black/50 items-center justify-center p-8 overflow-hidden">
-        <div className="w-[320px] h-[650px] bg-black rounded-[48px] border-[3.5px] border-neutral-800/80 ring-1 ring-white/15 overflow-hidden shadow-2xl relative flex flex-col">
+      <div className="hidden lg:flex lg:w-2/5 bg-black/50 items-center justify-center p-4 lg:p-8 overflow-hidden">
+        <div className="w-[320px] h-[650px] bg-black rounded-[48px] border-[3.5px] border-neutral-800/80 ring-1 ring-white/15 overflow-hidden shadow-2xl relative flex flex-col scale-[0.85] lg:scale-100 origin-center">
           {/* Dynamic Island Notch */}
           <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-full z-40 flex items-center justify-center border border-neutral-800/50 shadow-inner">
             {/* Camera lens highlight */}
@@ -3988,21 +4066,6 @@ export default function CardForm({ id }: CardFormProps) {
                       </div>
                     </div>
 
-                    {/* ---- Simulated PROMINENT SHARE BUTTON ---- */}
-                    <div className="mt-3">
-                      <div
-                        className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl p-3 shadow-md"
-                        style={{ backgroundColor: primaryColor }}
-                      >
-                        <div className="absolute inset-0 bg-white/20 opacity-0" />
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white">
-                          <PreviewIcon.Share className="h-3 w-3" />
-                        </div>
-                        <span className="text-[10px] font-bold text-white tracking-wide">
-                          Share (AirDrop, Social, NFC)
-                        </span>
-                      </div>
-                    </div>
                     {/* ---- Simulated ABOUT ---- */}
                     {formData.personal_info?.bio && (
                       <RenderSection title="About">

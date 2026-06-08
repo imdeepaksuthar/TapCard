@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationBell from '../../components/NotificationBell';
 
@@ -18,6 +19,7 @@ export default function DashboardLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hideShopModules, setHideShopModules] = useState(true);
   const [isProfessional, setIsProfessional] = useState(false);
+  const [isCheckingCardType, setIsCheckingCardType] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -59,6 +61,8 @@ export default function DashboardLayout({
         }
       } catch (err) {
         console.error('Failed to fetch cards in layout', err);
+      } finally {
+        setIsCheckingCardType(false);
       }
     };
     checkCardType();
@@ -82,53 +86,57 @@ export default function DashboardLayout({
             animate={{ opacity: 0.5 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-black z-40 md:hidden"
+            className="fixed inset-0 bg-black z-40 lg:hidden"
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 w-64 bg-[#0B1528] border-r border-white/5 flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        className={`fixed lg:static inset-y-0 left-0 w-[var(--width-fluid-sidebar-mobile)] lg:w-[var(--width-fluid-sidebar)] bg-[#0B1528] border-r border-white/5 flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="p-6 flex justify-between items-center">
+        <div className="p-fluid-lg flex justify-between items-center">
           <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 w-auto" />
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="text-gray-400 hover:text-white md:hidden"
+            className="text-gray-400 hover:text-white lg:hidden"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
-        <nav className="flex-1 px-4 space-y-1">
-          <SidebarLink href="/dashboard" icon="dashboard" active={pathname === '/dashboard'}>Dashboard</SidebarLink>
-          <SidebarLink href="/dashboard/cards" icon="cards" active={pathname === '/dashboard/cards'}>My Cards</SidebarLink>
-          {!hideShopModules && (
+        <nav className="flex-1 px-fluid-md space-y-fluid-xs">
+          <SidebarLink href="/dashboard" icon="dashboard" active={pathname === '/dashboard'} onClick={() => setIsSidebarOpen(false)}>Dashboard</SidebarLink>
+          <SidebarLink href="/dashboard/cards" icon="cards" active={pathname === '/dashboard/cards'} onClick={() => setIsSidebarOpen(false)}>My Cards</SidebarLink>
+          {isCheckingCardType ? (
+            <div className="py-2 flex justify-center">
+              <div className="w-5 h-5 border-2 border-white/10 border-t-white/40 rounded-full animate-spin"></div>
+            </div>
+          ) : !hideShopModules && (
             <>
               {!isProfessional && (
                 <>
-                  <SidebarLink href="/dashboard/products" icon="products" active={pathname === '/dashboard/products'}>
+                  <SidebarLink href="/dashboard/products" icon="products" active={pathname === '/dashboard/products'} onClick={() => setIsSidebarOpen(false)}>
                     Products
                   </SidebarLink>
-                  <SidebarLink href="/dashboard/orders" icon="orders" active={pathname === '/dashboard/orders'}>Orders</SidebarLink>
+                  <SidebarLink href="/dashboard/orders" icon="orders" active={pathname === '/dashboard/orders'} onClick={() => setIsSidebarOpen(false)}>Orders</SidebarLink>
                 </>
               )}
               {isProfessional && (
-                <SidebarLink href="/dashboard/services" icon="products" active={pathname === '/dashboard/services'}>
+                <SidebarLink href="/dashboard/services" icon="products" active={pathname === '/dashboard/services'} onClick={() => setIsSidebarOpen(false)}>
                   Services
                 </SidebarLink>
               )}
             </>
           )}
-          <SidebarLink href="/dashboard/leads" icon="leads" active={pathname === '/dashboard/leads'}>Leads</SidebarLink>
-          <SidebarLink href="/dashboard/analytics" icon="analytics" active={pathname === '/dashboard/analytics'}>Analytics</SidebarLink>
-          <SidebarLink href="/dashboard/settings" icon="settings" active={pathname === '/dashboard/settings'}>Settings</SidebarLink>
+          <SidebarLink href="/dashboard/leads" icon="leads" active={pathname === '/dashboard/leads'} onClick={() => setIsSidebarOpen(false)}>Leads</SidebarLink>
+          <SidebarLink href="/dashboard/analytics" icon="analytics" active={pathname === '/dashboard/analytics'} onClick={() => setIsSidebarOpen(false)}>Analytics</SidebarLink>
+          <SidebarLink href="/dashboard/settings" icon="settings" active={pathname === '/dashboard/settings'} onClick={() => setIsSidebarOpen(false)}>Settings</SidebarLink>
         </nav>
-        <div className="p-4 border-t border-white/5">
+        <div className="p-fluid-md border-t border-white/5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center font-bold text-blue-500">
               {user.name.charAt(0).toUpperCase()}
@@ -153,17 +161,17 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="relative z-50 bg-[#0B1528]/50 backdrop-blur-xl border-b border-white/5 h-16 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
+        <header className="relative z-50 bg-[#0B1528]/50 backdrop-blur-xl border-b border-white/5 h-[clamp(3.5rem,8vw,4.5rem)] flex items-center justify-between px-fluid-lg">
+          <div className="flex items-center gap-fluid-sm">
             <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="text-gray-400 hover:text-white md:hidden"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="text-gray-400 hover:text-white lg:hidden"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
               </svg>
             </button>
-            <h2 className="text-xl font-bold">
+            <h2 className="text-fluid-xl font-bold">
               {pathname === '/dashboard' ? 'Dashboard' :
                pathname === '/dashboard/cards' ? 'My Cards' :
                pathname === '/dashboard/products' ? 'Products' :
@@ -198,13 +206,15 @@ interface SidebarLinkProps {
   icon: string;
   children: React.ReactNode;
   active?: boolean;
+  onClick?: () => void;
 }
 
-function SidebarLink({ href, icon, children, active }: SidebarLinkProps) {
+function SidebarLink({ href, icon, children, active, onClick }: SidebarLinkProps) {
   return (
-    <a
+    <Link
       href={href}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300 ${
+      onClick={onClick}
+      className={`flex items-center gap-fluid-sm px-fluid-md py-fluid-sm rounded-lg font-medium text-fluid-sm transition-all duration-300 ${
         active
           ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/10'
           : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -212,7 +222,7 @@ function SidebarLink({ href, icon, children, active }: SidebarLinkProps) {
     >
       <SidebarIcon name={icon} />
       {children}
-    </a>
+    </Link>
   );
 }
 

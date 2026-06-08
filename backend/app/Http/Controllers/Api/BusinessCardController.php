@@ -177,6 +177,24 @@ class BusinessCardController extends Controller
     }
 
     /**
+     * Toggle the status of a specific business card.
+     */
+    public function toggleStatus(string $id): JsonResponse
+    {
+        $card = BusinessCard::where('user_id', auth()->id())
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $card->status = $card->status === 'active' ? 'inactive' : 'active';
+        $card->save();
+
+        return response()->json([
+            'message' => 'Business card status updated successfully',
+            'status' => $card->status
+        ]);
+    }
+
+    /**
      * Display the specified business card publicly by slug.
      */
     public function showPublic(string $slug): JsonResponse

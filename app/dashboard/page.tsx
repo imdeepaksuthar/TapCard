@@ -23,14 +23,7 @@ export default function Dashboard() {
 
   // Modal & Action states
   const [isQrOpen, setIsQrOpen] = useState(false);
-  const [isScanOpen, setIsScanOpen] = useState(false);
   const [qrCopied, setQrCopied] = useState(false);
-
-  // Lead Simulator states
-  const [simulatorData, setSimulatorData] = useState({ name: '', email: '', phone: '', message: '' });
-  const [simulatorLoading, setSimulatorLoading] = useState(false);
-  const [simulatorSuccess, setSimulatorSuccess] = useState(false);
-  const [simulatorError, setSimulatorError] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -105,72 +98,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleSimulateLeadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSimulatorError('');
-    setSimulatorLoading(true);
-
-    if (!simulatorData.name.trim()) {
-      setSimulatorError('Please enter a name.');
-      setSimulatorLoading(false);
-      return;
-    }
-    if (!simulatorData.email.trim() && !simulatorData.phone.trim()) {
-      setSimulatorError('Please provide either an email or a phone number.');
-      setSimulatorLoading(false);
-      return;
-    }
-
-    try {
-      const firstCard = cards[0];
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/api/leads`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          name: simulatorData.name,
-          email: simulatorData.email,
-          phone: simulatorData.phone,
-          message: simulatorData.message || 'Simulated lead scan',
-          card_id: firstCard.id,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data?.message || 'Failed to submit simulated lead.');
-      }
-
-      setSimulatorSuccess(true);
-      setSimulatorData({ name: '', email: '', phone: '', message: '' });
-
-      // Refresh dashboard data instantly
-      const [cardsRes, leadsRes] = await Promise.all([
-        apiFetch<{ cards: any[] }>('/api/cards'),
-        apiFetch<{ leads: any[] }>('/api/leads')
-      ]);
-
-      const updatedCards = cardsRes.cards || [];
-      const updatedLeads = leadsRes.leads || [];
-
-      setStats({
-        totalCards: updatedCards.length,
-        activeCards: updatedCards.filter((c: any) => c.status === 'active').length,
-        profileViews: updatedCards.reduce((sum: number, c: any) => sum + (c.views_count || 0), 0),
-        totalLeads: updatedLeads.length,
-      });
-      setRecentLeads(updatedLeads.slice(0, 5));
-
-    } catch (err: any) {
-      setSimulatorError(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setSimulatorLoading(false);
-    }
-  };
-
   if (!user) return null; // Handled by layout/middleware
 
   if (isLoading) {
@@ -182,12 +109,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-fluid-lg space-y-fluid-lg">
       {/* Welcome Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-fluid-md">
         <div>
-          <h1 className="text-2xl font-bold">Welcome back, {user.name}!</h1>
-          <p className="text-gray-400 text-sm">Here is what's happening with your cards today.</p>
+          <h1 className="text-fluid-2xl font-bold">Welcome back, {user.name}!</h1>
+          <p className="text-gray-400 text-fluid-sm">Here is what's happening with your cards today.</p>
         </div>
         {stats.totalCards === 0 && (
           <button 
@@ -203,19 +130,18 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Cards" value={stats.totalCards} icon="cards" color="blue" />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(clamp(200px,30vw,300px),1fr))] gap-fluid-md">
         <StatCard title="Active Cards" value={stats.activeCards} icon="active" color="green" />
         <StatCard title="Total Leads" value={stats.totalLeads} icon="leads" color="indigo" />
         <StatCard title="Profile Views" value={stats.profileViews} icon="views" color="purple" />
       </div>
 
       {/* Grid Layout for Charts & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-fluid-lg">
         {/* Recent Leads (Large) */}
-        <div className="lg:col-span-2 bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold">Recent Leads</h3>
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-fluid-lg overflow-hidden">
+          <div className="flex justify-between items-center mb-fluid-md">
+            <h3 className="text-fluid-lg font-bold">Recent Leads</h3>
             <button className="text-sm text-blue-500 hover:text-blue-400 font-medium">View All</button>
           </div>
           <div className="overflow-x-auto">
@@ -262,9 +188,9 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Stats / Info (Small) */}
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6">
-          <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
-          <div className="space-y-3">
+        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-fluid-lg">
+          <h3 className="text-fluid-lg font-bold mb-fluid-md">Quick Actions</h3>
+          <div className="space-y-fluid-sm">
             <QuickActionButton 
               icon="qr" 
               title="Share QR Code" 
@@ -275,20 +201,6 @@ export default function Dashboard() {
                   return;
                 }
                 setIsQrOpen(true);
-              }}
-            />
-            <QuickActionButton 
-              icon="scan" 
-              title="Scan Card" 
-              description="Capture new lead" 
-              onClick={() => {
-                if (cards.length === 0) {
-                  alert('Please create a business card first!');
-                  return;
-                }
-                setIsScanOpen(true);
-                setSimulatorSuccess(false);
-                setSimulatorError('');
               }}
             />
             <QuickActionButton 
@@ -354,133 +266,6 @@ export default function Dashboard() {
           </motion.div>
         </div>
       )}
-
-      {/* Scan Card / Lead Simulator Modal */}
-      {isScanOpen && cards[0] && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative bg-[#090f1e] border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl"
-          >
-            <button 
-              onClick={() => setIsScanOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-white"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-            
-            <h3 className="text-xl font-bold mb-2">Scan Business Card</h3>
-            <p className="text-sm text-gray-400 mb-6">Simulate a high-tech NFC tap or QR scan to capture a lead instantly.</p>
-
-            {simulatorSuccess ? (
-              <div className="text-center py-6">
-                <div className="w-16 h-16 bg-green-500/20 border border-green-500/30 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                </div>
-                <h4 className="text-lg font-semibold text-green-400 mb-1">Lead Captured Successfully!</h4>
-                <p className="text-sm text-gray-400 mb-6">The simulated lead was added to your profile.</p>
-                <button 
-                  onClick={() => setSimulatorSuccess(false)}
-                  className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold py-2.5 px-5 rounded-xl transition-all w-full"
-                >
-                  Capture Another Lead
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSimulateLeadSubmit} className="space-y-4">
-                {/* High-tech scanner simulation visualization */}
-                <div className="relative h-28 bg-[#040812] border border-white/5 rounded-2xl overflow-hidden flex items-center justify-center mb-4">
-                  <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-500 shadow-[0_0_10px_#3b82f6] animate-[pulse_1.5s_infinite]" style={{ animationName: 'scanLine' }} />
-                  <style>{`
-                    @keyframes scanLine {
-                      0% { top: 0%; }
-                      50% { top: 100%; }
-                      100% { top: 0%; }
-                    }
-                  `}</style>
-                  <svg className="w-10 h-10 text-blue-500/40 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 4h3m-9-4h3m-3 4h3m-6-4h3m-3 4h3m-3 4h3m-3-12h3m-3 4h3m-3 4h3m-3-12h3m-3 4h3m-3 4h3"></path>
-                  </svg>
-                  <span className="absolute bottom-2 text-[10px] text-blue-500/60 font-semibold tracking-wider uppercase">READY FOR DEVICE TAP...</span>
-                </div>
-
-                {simulatorError && (
-                  <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-xl text-center">
-                    {simulatorError}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Full Name</label>
-                  <input 
-                    type="text" 
-                    required 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
-                    placeholder="Enter name"
-                    value={simulatorData.name}
-                    onChange={e => setSimulatorData({ ...simulatorData, name: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Email</label>
-                    <input 
-                      type="email" 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
-                      placeholder="Email Address"
-                      value={simulatorData.email}
-                      onChange={e => setSimulatorData({ ...simulatorData, email: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Phone</label>
-                    <input 
-                      type="tel" 
-                      required 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors"
-                      placeholder="Phone number"
-                      value={simulatorData.phone}
-                      onChange={e => setSimulatorData({ ...simulatorData, phone: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Message / Note</label>
-                  <textarea 
-                    rows={2} 
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500 transition-colors resize-none"
-                    placeholder="Simulated inquiry note..."
-                    value={simulatorData.message}
-                    onChange={e => setSimulatorData({ ...simulatorData, message: e.target.value })}
-                  />
-                </div>
-
-                <button 
-                  type="submit"
-                  disabled={simulatorLoading}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-3 px-5 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
-                >
-                  {simulatorLoading ? (
-                    <>
-                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                      Capturing...
-                    </>
-                  ) : (
-                    'Simulate Successful Scan'
-                  )}
-                </button>
-              </form>
-            )}
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 }
@@ -501,21 +286,15 @@ function StatCard({ title, value, icon, color }: StatCardProps) {
   };
 
   return (
-    <div className={`bg-gradient-to-br ${colorMap[color].split(' ')[0]} ${colorMap[color].split(' ')[1]} backdrop-blur-xl border border-white/5 rounded-2xl p-6`}>
-      <div className="flex justify-between items-start mb-4">
+    <div className={`bg-gradient-to-br ${colorMap[color].split(' ')[0]} ${colorMap[color].split(' ')[1]} backdrop-blur-xl border border-white/5 rounded-2xl p-fluid-md`}>
+      <div className="flex justify-between items-start mb-fluid-sm">
         <div>
-          <p className="text-gray-400 text-sm font-medium">{title}</p>
-          <p className="text-3xl font-bold mt-1">{value.toLocaleString()}</p>
+          <p className="text-gray-400 text-fluid-sm font-medium">{title}</p>
+          <p className="text-fluid-3xl font-bold mt-1">{value.toLocaleString()}</p>
         </div>
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorMap[color].split(' ')[3]}`}>
           <StatIcon name={icon} />
         </div>
-      </div>
-      <div className="flex items-center text-xs text-gray-500 gap-1">
-        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-        </svg>
-        <span className="text-green-500 font-medium">+12%</span> since last month
       </div>
     </div>
   );
@@ -585,12 +364,6 @@ function QuickActionIcon({ name }: { name: string }) {
   const baseClasses = "w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-all duration-300";
   switch (name) {
     case 'qr':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 4h3m-9-4h3m-3 4h3m-6-4h3m-3 4h3m-3 4h3m-3-12h3m-3 4h3m-3 4h3m-3-12h3m-3 4h3m-3 4h3"></path>
-        </svg>
-      );
-    case 'scan':
       return (
         <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 4h3m-9-4h3m-3 4h3m-6-4h3m-3 4h3m-3 4h3m-3-12h3m-3 4h3m-3 4h3m-3-12h3m-3 4h3m-3 4h3"></path>

@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // 1. Simple passive scroll listener for the header background
@@ -17,7 +18,7 @@ export default function Header() {
     handleScroll();
 
     // 2. Performant Intersection Observer for Scroll Spy
-    const sections = ['features', 'how-it-works', 'pricing', 'faq'];
+    const sections = ['home', 'features', 'how-it-works', 'pricing', 'faq'];
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -59,16 +60,17 @@ export default function Header() {
         {/* Navigation Links */}
         <nav className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1 backdrop-blur-md">
           {[
-            { id: 'features', label: 'Features' },
-            { id: 'how-it-works', label: 'How it Works' },
-            { id: 'pricing', label: 'Pricing' },
-            { id: 'faq', label: 'FAQ' },
+            { id: 'home', label: 'Home', href: '#home' },
+            { id: 'features', label: 'Features', href: '#features' },
+            { id: 'how-it-works', label: 'How it Works', href: '#how-it-works' },
+            { id: 'pricing', label: 'Pricing', href: '#pricing' },
+            { id: 'faq', label: 'FAQ', href: '#faq' },
           ].map((item) => (
             <Link 
               key={item.id} 
-              href={`#${item.id}`} 
+              href={item.href} 
               className={`text-sm font-medium transition-all duration-300 px-4 py-1.5 rounded-full ${
-                activeSection === item.id 
+                activeSection === item.id || (item.id === 'home' && activeSection === '')
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
@@ -113,7 +115,43 @@ export default function Header() {
             </div>
           )}
         </div>
+
+        {/* Mobile Menu Toggle */}
+        <button 
+          className="md:hidden p-2 ml-2 text-gray-300 hover:text-white pointer-events-auto"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </header>
+
+      {/* Mobile Menu Dropdown */}
+      <div 
+        className={`absolute top-[calc(100%+10px)] left-4 right-4 bg-slate-900/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex flex-col md:hidden pointer-events-auto transition-all duration-300 overflow-hidden ${
+          mobileMenuOpen ? 'max-h-[400px] opacity-100 p-3' : 'max-h-0 opacity-0 p-0 border-transparent'
+        }`}
+      >
+        {[
+          { id: 'home', label: 'Home', href: '#home' },
+          { id: 'features', label: 'Features', href: '#features' },
+          { id: 'how-it-works', label: 'How it Works', href: '#how-it-works' },
+          { id: 'pricing', label: 'Pricing', href: '#pricing' },
+          { id: 'faq', label: 'FAQ', href: '#faq' },
+        ].map((item) => (
+          <Link 
+            key={item.id} 
+            href={item.href} 
+            onClick={() => setMobileMenuOpen(false)}
+            className={`text-base font-medium px-4 py-3.5 rounded-xl transition-colors ${
+              activeSection === item.id || (item.id === 'home' && activeSection === '')
+                ? 'bg-blue-600/20 text-blue-400' 
+                : 'text-gray-300 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
