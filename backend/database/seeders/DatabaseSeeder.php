@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'devstudiodzone@gmail.com'],
             [
                 'name' => 'Deepak Suthar',
-                'password' => bcrypt('Admin@2909'),
+                'password' => bcrypt('password'),
                 'role' => 'super_admin',
                 'status' => 'active',
             ]
@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
         // Call Category Seeder
         $this->call(CategorySeeder::class);
         $this->call(PlanSeeder::class);
+        $this->call(DesignationSeeder::class);
 
     }
 }

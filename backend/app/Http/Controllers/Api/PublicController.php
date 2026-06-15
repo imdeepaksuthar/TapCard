@@ -107,4 +107,16 @@ class PublicController extends Controller
 
         return response()->json($plans);
     }
+
+    /**
+     * Get all active designations.
+     */
+    public function designations(): JsonResponse
+    {
+        $designations = Cache::remember('public_designations', 3600, function () {
+            return \App\Models\Designation::where('status', 'active')->orderBy('name')->get(['id', 'name'])->toArray();
+        });
+
+        return response()->json(['designations' => $designations]);
+    }
 }

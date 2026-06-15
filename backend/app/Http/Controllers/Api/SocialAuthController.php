@@ -75,10 +75,10 @@ class SocialAuthController extends Controller
         // Generate Sanctum token
         $token = $user->createToken('card-setu-token')->plainTextToken;
 
-        // Redirect to the frontend dashboard with cookie
+        // Redirect to the frontend callback page to save the token
         $frontendUrl = env('FRONTEND_URL', 'http://127.0.0.1:3000');
         
-        return redirect()->away($frontendUrl . '/dashboard?token=' . $token)
+        return redirect()->away($frontendUrl . '/auth/callback?token=' . $token)
             ->cookie('auth_token', $token, 60 * 24 * 30, '/', null, false, false, false, 'Lax');
     }
 }

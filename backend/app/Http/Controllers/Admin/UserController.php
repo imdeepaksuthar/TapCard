@@ -20,17 +20,17 @@ class UserController extends Controller
         // Handle Search
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
         // Handle Sorting
         $sortField = $request->input('sort', 'created_at');
         $sortDirection = $request->input('direction', 'desc');
-        
+
         $allowedSorts = ['name', 'email', 'role', 'status', 'created_at'];
         if (in_array($sortField, $allowedSorts)) {
             $query->orderBy($sortField, $sortDirection === 'asc' ? 'asc' : 'desc');
@@ -99,12 +99,26 @@ class UserController extends Controller
     {
         // For admin dashboard, impersonating usually means generating a token and redirecting to Next.js
         $token = $user->createToken('admin-impersonation-token')->plainTextToken;
-        
+
         $frontendUrl = env('FRONTEND_URL', 'http://127.0.0.1:3000');
-        
+
         // Use secure=false and httpOnly=false so it works reliably on local HTTP without dropping cookies.
         // Also pass token in URL parameters just in case the frontend uses a URL token capture strategy.
         return redirect()->away($frontendUrl . '/dashboard?token=' . $token)
             ->cookie('auth_token', $token, 60 * 24, '/', null, false, false, false, 'Lax');
+    }
+
+    /**
+     * Send email verification notification to the user.
+     */
+    public function sendVerification(User $user)
+    {
+        if ($user->hasVerifiedEmail()) {
+            return back()->with('error', 'User is already verified.');
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return back()->with('success', 'Verification email sent successfully to ' . $user->email);
     }
 }

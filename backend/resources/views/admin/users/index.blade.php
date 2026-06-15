@@ -145,10 +145,19 @@
                                         Verified
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1.5 text-sm font-medium text-[#EB5757]">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        Unverified
-                                    </span>
+                                    <div class="flex flex-col gap-2 items-start">
+                                        <span class="inline-flex items-center gap-1.5 text-sm font-medium text-[#EB5757]">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Unverified
+                                        </span>
+                                        <form action="{{ route('admin.users.send-verification', $user) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="mt-1 inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 dark:bg-primary/20 dark:text-white dark:hover:bg-primary/30" title="Send Verification Email">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                                Send Link
+                                            </button>
+                                        </form>
+                                    </div>
                                 @endif
                             </td>
                             <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
@@ -184,13 +193,13 @@
                                     <label for="toggle-{{ $user->id }}" class="flex cursor-pointer select-none items-center">
                                         <div class="relative">
                                             <input type="checkbox" id="toggle-{{ $user->id }}" class="sr-only" onchange="this.form.submit()" {{ $user->status === 'active' ? 'checked' : '' }} {{ ($user->isSuperAdmin() && auth()->id() === $user->id) ? 'disabled' : '' }} />
-                                            <div class="block h-8 w-14 rounded-full {{ $user->status === 'active' ? 'bg-[#219653]' : 'bg-[#EB5757]' }}"></div>
-                                            <div class="dot absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white transition {{ $user->status === 'active' ? 'translate-x-6' : '' }}">
+                                            <div class="block h-8 w-14 rounded-full transition-colors {{ $user->status === 'active' ? 'bg-[#219653]' : 'bg-[#EB5757]' }}"></div>
+                                            <div class="dot absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 transition-transform duration-300 {{ $user->status === 'active' ? 'translate-x-6' : '' }}">
                                                 <span class="{{ $user->status === 'active' ? 'hidden' : '' }}">
-                                                    <svg class="h-4 w-4 stroke-current" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <svg class="h-4 w-4 stroke-[#EB5757]" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                                 </span>
                                                 <span class="{{ $user->status === 'active' ? '' : 'hidden' }}">
-                                                    <svg class="h-4 w-4 stroke-current" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    <svg class="h-4 w-4 stroke-[#219653]" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                                 </span>
                                             </div>
                                         </div>
