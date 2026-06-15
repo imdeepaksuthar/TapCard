@@ -249,13 +249,20 @@ export default function ServicesPage() {
     });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8">
+    <div className="relative max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8">
       {/* Header & Controls */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
           <div>
             <h1 className="text-3xl font-bold text-white tracking-tight">Services</h1>
-            <p className="text-gray-400 mt-2">Manage and organize your service catalog.</p>
+            <p className="text-gray-400 mt-2 flex items-center gap-2">
+              Manage and organize your service catalog.
+              {services.length > 0 && (
+                <span className="inline-flex items-center justify-center bg-blue-500/15 text-blue-400 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-500/20">
+                  {services.length} {services.length === 1 ? 'service' : 'services'}
+                </span>
+              )}
+            </p>
           </div>
           {isAdmin && (
             <button
@@ -325,9 +332,78 @@ export default function ServicesPage() {
         <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-sm">{error}</div>
       )}
       {!isLoading && !error && services.length === 0 && (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-16 text-center shadow-xl">
-          <p className="text-gray-400">No services available yet. Check back soon!</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden bg-gradient-to-br from-[#0B1528] via-[#0F1C35] to-[#0B1528] border border-white/10 rounded-3xl shadow-2xl"
+        >
+          {/* Decorative glowing blobs */}
+          <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl" />
+
+          <div className="relative z-10 flex flex-col items-center py-16 px-6 text-center">
+            {/* Icon */}
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/20 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/10">
+              <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 tracking-tight">
+              Showcase Your Services
+            </h2>
+            <p className="text-gray-400 text-base max-w-md mb-10 leading-relaxed">
+              Add the services you offer and let customers discover and inquire about them directly from your digital card.
+            </p>
+
+            {/* Primary CTA */}
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold py-3.5 px-8 rounded-2xl transition-all duration-300 shadow-lg shadow-blue-500/30 active:scale-95 text-base mb-12"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Your First Service
+            </button>
+
+            {/* Feature highlights */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
+              {[
+                {
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  ),
+                  title: 'Add Photos',
+                  desc: 'Upload up to 10 images per service',
+                },
+                {
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  ),
+                  title: 'Set Pricing',
+                  desc: 'Fixed price or "Price on Request"',
+                },
+                {
+                  icon: (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24z" /></svg>
+                  ),
+                  title: 'WhatsApp Inquiry',
+                  desc: 'Customers can inquire instantly',
+                },
+              ].map((f, i) => (
+                <div key={i} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                  <span className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/10">
+                    {f.icon}
+                  </span>
+                  <p className="text-sm font-bold text-white">{f.title}</p>
+                  <p className="text-xs text-gray-500 text-center">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       )}
 
       {/* Service Grid */}
@@ -461,6 +537,22 @@ export default function ServicesPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Floating Action Button — always reachable while scrolling */}
+      {!isLoading && services.length > 0 && isAdmin && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.3, type: 'spring', stiffness: 260, damping: 20 }}
+          onClick={openAddModal}
+          title="Add Service"
+          className="fixed bottom-6 right-6 z-40 w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-2xl shadow-blue-500/40 hover:shadow-blue-500/60 hover:scale-110 active:scale-95 transition-all duration-200 border border-white/10"
+        >
+          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+          </svg>
+        </motion.button>
       )}
 
       {/* Add / Edit Service Modal */}

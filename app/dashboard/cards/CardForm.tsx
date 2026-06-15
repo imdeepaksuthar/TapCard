@@ -71,6 +71,7 @@ export default function CardForm({ id }: CardFormProps) {
 
 
   const [categories, setCategories] = useState<any[]>([]);
+  const [designations, setDesignations] = useState<any[]>([]);
 
 
 
@@ -361,26 +362,29 @@ export default function CardForm({ id }: CardFormProps) {
   useEffect(() => {
 
     const fetchCategories = async () => {
-
       try {
-
         const res = await apiFetch<{ categories: any[] }>('/api/categories');
-
         if (res.categories) {
-
           setCategories(res.categories);
-
         }
-
       } catch (err) {
-
         console.error('Failed to fetch categories:', err);
-
       }
+    };
 
+    const fetchDesignations = async () => {
+      try {
+        const res = await apiFetch<{ designations: any[] }>('/api/designations');
+        if (res.designations) {
+          setDesignations(res.designations);
+        }
+      } catch (err) {
+        console.error('Failed to fetch designations:', err);
+      }
     };
 
     fetchCategories();
+    fetchDesignations();
 
   }, []);
 
@@ -1268,7 +1272,6 @@ export default function CardForm({ id }: CardFormProps) {
                         setProfileImagePreviewUrl('');
                         setFormData({
                           ...formData,
-                          profile_image: '',
                           personal_info: { ...formData.personal_info, profile_image: '' }
                         });
                         const fileInput = document.getElementById('profile-upload') as HTMLInputElement;
@@ -1485,7 +1488,12 @@ export default function CardForm({ id }: CardFormProps) {
 
                 <label className="text-sm text-gray-400 block mb-1">Designation / Title</label>
 
-                <input type="text" value={formData.personal_info?.designation || ''} onChange={(e) => setFormData({ ...formData, personal_info: { ...(formData.personal_info || {}), designation: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. CEO, Software Engineer" />
+                <input list="designation-options" type="text" value={formData.personal_info?.designation || ''} onChange={(e) => setFormData({ ...formData, personal_info: { ...(formData.personal_info || {}), designation: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. CEO, Software Engineer" />
+                <datalist id="designation-options">
+                  {designations.map((d) => (
+                    <option key={d.id} value={d.name} />
+                  ))}
+                </datalist>
 
               </div>
 
@@ -2228,15 +2236,16 @@ export default function CardForm({ id }: CardFormProps) {
 
                                 <label className="text-sm text-gray-400 block mb-1">Designation</label>
 
-                                <input type="text" value={proprietor.designation || ''} onChange={(e) => {
-
+                                <input list="designation-options" type="text" value={proprietor.designation || ''} onChange={(e) => {
                                   const newDetails = [...formData.proprietor_details];
-
                                   newDetails[index].designation = e.target.value;
-
                                   setFormData({ ...formData, proprietor_details: newDetails });
-
                                 }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
+                                <datalist id="designation-options">
+                                  {designations.map((d) => (
+                                    <option key={d.id} value={d.name} />
+                                  ))}
+                                </datalist>
 
                               </div>
 

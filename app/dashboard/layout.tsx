@@ -115,20 +115,20 @@ export default function DashboardLayout({
             <div className="py-2 flex justify-center">
               <div className="w-5 h-5 border-2 border-white/10 border-t-white/40 rounded-full animate-spin"></div>
             </div>
-          ) : !hideShopModules && (
+          ) : (
             <>
-              {!isProfessional && (
+              {/* Services — always visible for all users */}
+              <SidebarLink href="/dashboard/services" icon="services" active={pathname === '/dashboard/services'} onClick={() => setIsSidebarOpen(false)}>
+                Services
+              </SidebarLink>
+              {/* Products & Orders — only for non-personal, non-professional cards */}
+              {!hideShopModules && !isProfessional && (
                 <>
                   <SidebarLink href="/dashboard/products" icon="products" active={pathname === '/dashboard/products'} onClick={() => setIsSidebarOpen(false)}>
                     Products
                   </SidebarLink>
                   <SidebarLink href="/dashboard/orders" icon="orders" active={pathname === '/dashboard/orders'} onClick={() => setIsSidebarOpen(false)}>Orders</SidebarLink>
                 </>
-              )}
-              {isProfessional && (
-                <SidebarLink href="/dashboard/services" icon="products" active={pathname === '/dashboard/services'} onClick={() => setIsSidebarOpen(false)}>
-                  Services
-                </SidebarLink>
               )}
             </>
           )}
@@ -239,6 +239,12 @@ function SidebarIcon({ name }: { name: string }) {
       return (
         <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+        </svg>
+      );
+    case 'services':
+      return (
+        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
         </svg>
       );
     case 'products':

@@ -852,11 +852,22 @@ export default function ProductsPage() {
                 {/* Images */}
                 {productToView.images && productToView.images.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {productToView.images.map((img, i) => (
+                    {productToView.images.map((img, i) => {
+                      const imgSrc = img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:'))
+                        ? img
+                        : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                      return (
                       <div key={i} className="aspect-square rounded-xl overflow-hidden bg-black/50 border border-white/5">
-                        <img src={img} alt={`${productToView.name} ${i+1}`} className="w-full h-full object-cover" />
+                        <img 
+                          src={imgSrc} 
+                          alt={`${productToView.name} ${i+1}`} 
+                          className="w-full h-full object-cover" 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                          }}
+                        />
                       </div>
-                    ))}
+                    )})}
                   </div>
                 ) : (
                   <div className="w-full h-40 bg-black/20 rounded-xl flex items-center justify-center border border-white/5">

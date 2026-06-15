@@ -273,145 +273,171 @@ export default function MyCards() {
               return (
                 <motion.div
                   key={card.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="w-full relative aspect-[1.586/1] rounded-[24px] p-[1.5px] overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
-                  style={{ boxShadow: `0 25px 50px -12px ${primaryColor}30` }}
+                  className="w-full max-w-md flex flex-col group"
                 >
-                  {/* Glowing gradient border effect */}
-                  <div className="absolute inset-0 opacity-60 group-hover:opacity-100 transition-opacity duration-700" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }} />
-                  
-                  {/* Inner debit card container */}
-                  <div className="relative h-full w-full bg-gradient-to-br from-[#121A2F] to-[#0A0F1C] rounded-[22.5px] p-6 flex flex-col justify-between overflow-hidden shadow-inner">
+                  {/* The NFC Card Face */}
+                  <div
+                    className="w-full relative aspect-[1.586/1] rounded-[24px] p-[1.5px] overflow-hidden transition-all duration-500 group-hover:-translate-y-1.5 group-hover:shadow-2xl shadow-lg border border-white/5"
+                    style={{ boxShadow: `0 20px 40px -15px ${primaryColor}40` }}
+                  >
+                    {/* Glowing gradient border effect */}
+                    <div className="absolute inset-0 opacity-40 group-hover:opacity-90 transition-opacity duration-500" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }} />
                     
-                    {/* Decorative abstract background elements */}
-                    <div className="absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-110" style={{ background: primaryColor, opacity: 0.15 }} />
-                    <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full blur-2xl -ml-10 -mb-10 transition-transform duration-700 group-hover:scale-110" style={{ background: secondaryColor, opacity: 0.1 }} />
-                    {/* Subtle noise texture overlay */}
-                    <div className="absolute inset-0 opacity-10 mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
-
-                    {/* Live Profile QR Code */}
-                    {origin && (
-                      <div className="absolute right-6 top-[45%] -translate-y-1/2 p-1.5 bg-white rounded-md shadow-[0_5px_15px_rgba(0,0,0,0.5)] z-20 group-hover:scale-110 transition-transform duration-500 opacity-90 group-hover:opacity-100">
-                        <QRCodeSVG 
-                          value={`${origin}/${card.slug}`} 
-                          size={54} 
-                          fgColor="#000000" 
-                          bgColor="#ffffff" 
-                          level="M" 
-                          marginSize={0}
-                        />
-                      </div>
-                    )}
-
-                    {/* Top Row: Status + Contactless */}
-                    <div className="flex justify-between items-start relative z-10">
-                      <button
-                        onClick={() => handleToggleStatus(card.id, card.status)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md border backdrop-blur-md transition-all ${card.status === 'active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' : 'bg-gray-500/10 border-gray-500/20 text-gray-400 hover:bg-gray-500/20'}`}
-                      >
-                        <div className={`w-1.5 h-1.5 rounded-full ${card.status === 'active' ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-gray-500'}`} />
-                        <span className="text-[9px] font-bold tracking-widest uppercase">{card.status}</span>
-                      </button>
-
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 text-[10px] text-white/50 bg-white/5 px-2.5 py-1 rounded-md border border-white/5">
-                          <svg className="w-3 h-3 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          {card.views_count}
-                        </div>
-                        {/* Contactless Wave */}
-                        <svg className="w-5 h-5 text-white/40 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                          <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                          <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    {/* Middle Row: EMV Chip + Logo */}
-                    <div className="flex items-center gap-5 relative z-10 -mt-2">
-                      {/* EMV Chip */}
-                      <div className="w-12 h-9 rounded-md bg-gradient-to-br from-yellow-100 via-yellow-400 to-yellow-600 opacity-90 flex items-center justify-center overflow-hidden border border-yellow-700/50 shadow-sm relative">
-                        {/* Chip lines */}
-                        <div className="absolute inset-0 opacity-30 mix-blend-multiply">
-                          <div className="w-full h-[1px] bg-black absolute top-[30%]"></div>
-                          <div className="w-full h-[1px] bg-black absolute top-[70%]"></div>
-                          <div className="h-full w-[1px] bg-black absolute left-[30%]"></div>
-                          <div className="h-full w-[1px] bg-black absolute left-[70%]"></div>
-                          <div className="w-[1px] h-[30%] bg-black absolute top-0 left-[50%]"></div>
-                          <div className="w-[1px] h-[30%] bg-black absolute bottom-0 left-[50%]"></div>
-                        </div>
-                      </div>
+                    {/* Inner debit card container */}
+                    <div className="relative h-full w-full bg-gradient-to-br from-[#121A2F] via-[#0A0F1C] to-[#05080F] rounded-[22.5px] p-6 flex flex-col justify-between overflow-hidden shadow-inner border border-white/5">
                       
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full border border-white/20 overflow-hidden bg-[#0A0F1C] shadow-lg">
-                          {profileImage ? (
-                            <img src={profileImage} alt={card.personal_info?.name || 'Profile'} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center text-lg font-bold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}>
-                              {(card.personal_info?.name || 'U').trim().charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-0.5">Company</p>
-                          <p className="text-sm font-semibold text-white/90 truncate max-w-[120px] leading-tight">{companyName}</p>
+                      {/* Decorative radial gradients */}
+                      <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full blur-3xl transition-transform duration-700 group-hover:scale-125" style={{ background: primaryColor, opacity: 0.2 }} />
+                      <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full blur-2xl transition-transform duration-700 group-hover:scale-125" style={{ background: secondaryColor, opacity: 0.15 }} />
+                      {/* Mesh/noise texture overlay */}
+                      <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
+
+                      {/* Top Row: Brand & Contactless Icon */}
+                      <div className="flex justify-between items-center relative z-10">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50 font-mono">TAPCARD NFC</span>
+                        
+                        {/* Contactless waves icon */}
+                        <div className="text-white/40 flex items-center justify-center">
+                          <svg className="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                          </svg>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Bottom Row: Embossed Name + Actions */}
-                    <div className="flex justify-between items-end relative z-10">
-                      <div className="flex-1 min-w-0 pr-4">
-                        <h4 className="font-mono text-[17px] sm:text-xl text-white/90 uppercase tracking-widest truncate shadow-black drop-shadow-md">
+                      {/* Middle Row: EMV Chip & Company Info */}
+                      <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                          {/* High-fidelity SVG EMV Chip */}
+                          <svg className="w-11 h-8 rounded-md shadow-md opacity-95 shrink-0" viewBox="0 0 48 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="48" height="36" rx="6" fill="url(#chip-gold)" />
+                            <rect x="0.5" y="0.5" width="47" height="35" rx="5.5" stroke="#D97706" strokeOpacity="0.4" />
+                            <path d="M14 0V36M34 0V36M0 12H48M0 24H48" stroke="#78350F" strokeWidth="0.5" strokeOpacity="0.3" />
+                            <path d="M14 12C14 18.6 18.4 24 24 24C29.6 24 34 18.6 34 12" stroke="#78350F" strokeWidth="0.5" strokeOpacity="0.3" fill="none" />
+                            <rect x="19" y="10" width="10" height="16" rx="2" fill="none" stroke="#78350F" strokeWidth="0.5" strokeOpacity="0.3" />
+                            <defs>
+                              <linearGradient id="chip-gold" x1="0" y1="0" x2="48" y2="36" gradientUnits="userSpaceOnUse">
+                                <stop stopColor="#FDE68A" />
+                                <stop offset="0.5" stopColor="#F59E0B" />
+                                <stop offset="1" stopColor="#B45309" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+
+                          {/* Profile & Company info */}
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-10 w-10 rounded-full border border-white/20 overflow-hidden bg-[#0A0F1C] shadow-lg relative shrink-0">
+                              {profileImage ? (
+                                <img src={profileImage} alt={card.personal_info?.name || 'Profile'} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center text-base font-bold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}>
+                                  {(card.personal_info?.name || 'U').trim().charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[7px] font-bold text-white/30 uppercase tracking-[0.15em] leading-none mb-0.5">Company</p>
+                              <p className="text-xs font-semibold text-white/80 truncate max-w-[110px] leading-tight">{companyName}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* QR Code housing */}
+                        {origin && (
+                          <div className="p-1.5 bg-white rounded-xl shadow-xl shrink-0 group-hover:scale-105 transition-transform duration-500 opacity-95 group-hover:opacity-100">
+                            <QRCodeSVG 
+                              value={`${origin}/${card.slug}`} 
+                              size={64} 
+                              fgColor="#000000" 
+                              bgColor="#ffffff" 
+                              level="M" 
+                              marginSize={0}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom Row: Embossed Name + Designation */}
+                      <div className="relative z-10 flex flex-col justify-end">
+                        <h4 className="font-sans text-base sm:text-lg text-white/95 font-bold uppercase tracking-wider truncate shadow-black drop-shadow">
                           {card.personal_info?.name || 'Untitled Card'}
                         </h4>
-                        <p className="font-mono text-[9px] uppercase tracking-widest mt-1 truncate" style={{ color: primaryColor, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+                        <p className="text-[10px] font-medium uppercase tracking-[0.15em] mt-0.5 truncate" style={{ color: primaryColor, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
                           {card.personal_info?.designation || 'No Designation'}
                         </p>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex gap-3 shrink-0 items-center">
-                        <a
-                          href={`/${card.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-bold shadow-lg shadow-blue-500/30 transition-all group/btn"
-                          title="View Live Profile"
-                        >
-                          <span className="text-[10px] tracking-wider uppercase">Live Link</span>
-                          <svg className="w-3.5 h-3.5 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                        <div className="flex gap-1.5 bg-black/20 p-1.5 rounded-xl backdrop-blur-sm border border-white/5">
+                    </div>
+                  </div>
+
+                  {/* Actions Tray / Control & Info Panel */}
+                  <div className="w-full mt-3 bg-[#0D1426]/90 backdrop-blur-md rounded-2xl p-4 border border-white/5 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-lg">
+                    {/* Left: Status Toggle & View Count */}
+                    <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-4">
+                      {/* Status switch */}
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => { router.push(`/dashboard/cards/edit/${card.id}`); }}
-                          className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/30 border border-transparent hover:border-blue-500/30 text-blue-400 hover:text-white transition-all group/btn"
-                          title="Edit Card"
+                          onClick={() => handleToggleStatus(card.id, card.status)}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${card.status === 'active' ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-white/10 border-white/15'}`}
                         >
-                          <svg className="w-4 h-4 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${card.status === 'active' ? 'translate-x-5 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'translate-x-0 bg-gray-400'}`}
+                          />
                         </button>
-                        <button
-                          onClick={() => { setDeleteTargetId(card.id); }}
-                          className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/30 border border-transparent hover:border-rose-500/30 text-rose-400 hover:text-white transition-all group/btn"
-                          title="Delete Card"
-                        >
-                          <svg className="w-4 h-4 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                        </div>
+                        <span className={`text-[10px] font-bold tracking-widest uppercase ${card.status === 'active' ? 'text-emerald-400' : 'text-gray-400'}`}>
+                          {card.status}
+                        </span>
+                      </div>
+
+                      {/* Views count */}
+                      <div className="flex items-center gap-1.5 text-xs text-white/60 bg-white/[0.03] px-2.5 py-1 rounded-lg border border-white/5 shadow-inner">
+                        <svg className="w-3.5 h-3.5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span>{card.views_count}</span>
                       </div>
                     </div>
 
+                    {/* Right: Quick Action Buttons */}
+                    <div className="flex items-center justify-end w-full sm:w-auto gap-2">
+                      <a
+                        href={`/${card.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white text-[11px] font-bold tracking-wide uppercase transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-600/35 active:scale-95 group/btn"
+                        title="View Live Profile"
+                      >
+                        <span>Live Link</span>
+                        <svg className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+
+                      <button
+                        onClick={() => { router.push(`/dashboard/cards/edit/${card.id}`); }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/20 text-gray-300 hover:text-blue-400 transition-all duration-300"
+                        title="Edit Card"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+
+                      <button
+                        onClick={() => { setDeleteTargetId(card.id); }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/20 text-gray-300 hover:text-rose-400 transition-all duration-300"
+                        title="Delete Card"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );
