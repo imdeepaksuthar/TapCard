@@ -77,3 +77,18 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* GSAP Hover-safe transitions to avoid conflicts with entrance animations */
+.gsap-hover-safe-social {
+  transition: background-color 300ms, box-shadow 300ms, ring-color 300ms, border-color 300ms;
+}
+.gsap-hover-safe-social:hover {
+  transition: transform 300ms, background-color 300ms, box-shadow 300ms, ring-color 300ms, border-color 300ms;
+}
+
+.gsap-hover-safe-action {
+  transition: background-color 150ms, box-shadow 150ms, ring-color 150ms, border-color 150ms;
+}
+.gsap-hover-safe-action:hover {
+  transition: transform 150ms, background-color 150ms, box-shadow 150ms, ring-color 150ms, border-color 150ms;
+}

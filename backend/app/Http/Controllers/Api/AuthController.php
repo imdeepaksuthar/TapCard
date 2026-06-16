@@ -82,6 +82,7 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'status' => $user->status,
                 'email_verified_at' => $user->email_verified_at,
+                'avatar' => $user->avatar,
             ],
         ])->cookie('auth_token', $token, 60 * 24 * 30, '/', null, $isSecure, true, false, 'Lax');
     }
@@ -114,6 +115,7 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'status' => $user->status,
                 'email_verified_at' => $user->email_verified_at,
+                'avatar' => $user->avatar,
             ]
         ]);
     }
@@ -142,6 +144,7 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'status' => $user->status,
                 'email_verified_at' => $user->email_verified_at,
+                'avatar' => $user->avatar,
             ]
         ]);
     }

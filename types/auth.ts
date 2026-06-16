@@ -6,6 +6,7 @@ export interface User {
   role: 'super_admin' | 'admin' | 'user';
   status: 'active' | 'inactive' | 'banned';
   email_verified_at: string | null;
+  avatar: string | null;
 }
 
 export interface RegisterPayload {

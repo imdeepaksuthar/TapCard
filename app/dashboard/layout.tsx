@@ -20,6 +20,7 @@ export default function DashboardLayout({
   const [hideShopModules, setHideShopModules] = useState(true);
   const [isProfessional, setIsProfessional] = useState(false);
   const [isCheckingCardType, setIsCheckingCardType] = useState(true);
+  const [hasCard, setHasCard] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -44,7 +45,9 @@ export default function DashboardLayout({
           if (cards.length === 0) {
             setHideShopModules(true);
             setIsProfessional(false);
+            setHasCard(false);
           } else {
+            setHasCard(true);
             const activeCard = cards[0];
             const type = activeCard ? (activeCard.card_type || activeCard.template_id || '') : '';
             if (type === 'personal') {
@@ -117,10 +120,12 @@ export default function DashboardLayout({
             </div>
           ) : (
             <>
-              {/* Services — always visible for all users */}
-              <SidebarLink href="/dashboard/services" icon="services" active={pathname === '/dashboard/services'} onClick={() => setIsSidebarOpen(false)}>
-                Services
-              </SidebarLink>
+              {/* Services — only visible for professional cards */}
+              {isProfessional && (
+                <SidebarLink href="/dashboard/services" icon="services" active={pathname === '/dashboard/services'} onClick={() => setIsSidebarOpen(false)}>
+                  Services
+                </SidebarLink>
+              )}
               {/* Products & Orders — only for non-personal, non-professional cards */}
               {!hideShopModules && !isProfessional && (
                 <>
@@ -130,17 +135,30 @@ export default function DashboardLayout({
                   <SidebarLink href="/dashboard/orders" icon="orders" active={pathname === '/dashboard/orders'} onClick={() => setIsSidebarOpen(false)}>Orders</SidebarLink>
                 </>
               )}
+              {/* Leads & Analytics — only shown if the user has created a card */}
+              {hasCard && (
+                <>
+                  <SidebarLink href="/dashboard/leads" icon="leads" active={pathname === '/dashboard/leads'} onClick={() => setIsSidebarOpen(false)}>Leads</SidebarLink>
+                  <SidebarLink href="/dashboard/analytics" icon="analytics" active={pathname === '/dashboard/analytics'} onClick={() => setIsSidebarOpen(false)}>Analytics</SidebarLink>
+                </>
+              )}
             </>
           )}
-          <SidebarLink href="/dashboard/leads" icon="leads" active={pathname === '/dashboard/leads'} onClick={() => setIsSidebarOpen(false)}>Leads</SidebarLink>
-          <SidebarLink href="/dashboard/analytics" icon="analytics" active={pathname === '/dashboard/analytics'} onClick={() => setIsSidebarOpen(false)}>Analytics</SidebarLink>
           <SidebarLink href="/dashboard/settings" icon="settings" active={pathname === '/dashboard/settings'} onClick={() => setIsSidebarOpen(false)}>Settings</SidebarLink>
         </nav>
         <div className="p-fluid-md border-t border-white/5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center font-bold text-blue-500">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            {user.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="w-10 h-10 rounded-full object-cover border border-white/10"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center font-bold text-blue-500">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="overflow-hidden">
               <p className="font-medium truncate">{user.name}</p>
               <p className="text-xs text-gray-500 truncate">{user.email}</p>
@@ -184,9 +202,17 @@ export default function DashboardLayout({
           <div className="flex items-center gap-4">
             <NotificationBell />
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center font-bold text-indigo-500">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-8 h-8 rounded-full object-cover border border-white/10"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center font-bold text-indigo-500">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              )}
               <span className="font-medium hidden sm:inline">{user.name}</span>
             </div>
           </div>

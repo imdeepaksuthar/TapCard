@@ -1,10 +1,15 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MeshGradient from '@/app/components/MeshGradient';
 import { derivePalette } from '@/lib/colorUtils';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
 import LeadForm from '../../components/LeadForm';
+
+gsap.registerPlugin(ScrollTrigger);
 
 type AnyObj = Record<string, any>;
 
@@ -317,18 +322,110 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   const [saving, setSaving] = useState(false);
   const [shareOk, setShareOk] = useState(false);
 
-  // Sync theme with system preference on mount
+  // Sync theme with system preference ONCE on mount only (not as a live listener,
+  // so that the manual toggle button is never overridden by the OS preference).
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       setIsDark(mediaQuery.matches);
-
-      const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
-      mediaQuery.addEventListener('change', handler);
-
-      return () => mediaQuery.removeEventListener('change', handler);
     }
   }, []);
+
+  const mainRef = useRef<HTMLElement>(null);
+
+  // GSAP entrance animations — useEffect with [] so this runs EXACTLY ONCE on mount.
+  // Using plain useEffect avoids the @gsap/react useGSAP automatic revert-on-re-render
+  // behaviour which was resetting opacity/scale to 0 every time isDark state changed.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const ctx = gsap.context(() => {
+      // Entrance animations for top elements
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+      tl.from('.gsap-hero', {
+        opacity: 0,
+        scaleY: 0.8,
+        transformOrigin: 'top center',
+        duration: 0.8,
+      })
+      .from('.gsap-profile-avatar', {
+        opacity: 0,
+        scale: 0.6,
+        y: 30,
+        duration: 0.8,
+        ease: 'back.out(1.5)',
+      }, '-=0.4')
+      .from('.gsap-profile-badge', {
+        opacity: 0,
+        scale: 0,
+        rotation: -60,
+        duration: 0.4,
+        ease: 'back.out(2)',
+      }, '-=0.2')
+      .from('.gsap-profile-name', {
+        opacity: 0,
+        y: 20,
+        duration: 0.6,
+      }, '-=0.4')
+      .from('.gsap-profile-title', {
+        opacity: 0,
+        y: 15,
+        duration: 0.5,
+      }, '-=0.4')
+      .from('.gsap-profile-tags > *', {
+        opacity: 0,
+        scale: 0.8,
+        y: 10,
+        stagger: 0.08,
+        duration: 0.5,
+      }, '-=0.3')
+      .from('.gsap-connect-header', {
+        opacity: 0,
+        y: 10,
+        duration: 0.4,
+      }, '-=0.2')
+      .from('.gsap-connect-socials > *', {
+        opacity: 0,
+        scale: 0,
+        rotation: 20,
+        stagger: 0.05,
+        duration: 0.5,
+        ease: 'back.out(1.8)',
+      }, '-=0.3')
+      .from('.gsap-quick-actions > *', {
+        opacity: 0,
+        y: 20,
+        stagger: 0.06,
+        duration: 0.6,
+      }, '-=0.3')
+      .from('.gsap-sticky-bar', {
+        opacity: 0,
+        y: 80,
+        duration: 0.8,
+        ease: 'power4.out',
+      }, '-=0.5');
+
+      // ScrollTrigger for sections
+      const sections = gsap.utils.toArray<HTMLElement>('.gsap-section');
+      sections.forEach((section) => {
+        gsap.from(section, {
+          scrollTrigger: {
+            trigger: section,
+            start: 'top 90%',
+            toggleActions: 'play none none none',
+          },
+          opacity: 0,
+          y: 40,
+          duration: 0.7,
+          ease: 'power2.out',
+        });
+      });
+    }, mainRef);
+
+    return () => ctx.revert();
+  }, []); // ← empty deps: run once on mount only
+
 
   // Cart State
   const [cart, setCart] = useState<any[]>([]);
@@ -417,6 +514,59 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       setCurrentUrl(window.location.href);
     }
   }, []);
+
+  const lenisRef = useRef<Lenis | null>(null);
+
+  // Initialize Lenis smooth scroll and sync with GSAP ticker & ScrollTrigger
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.5,
+    });
+
+    lenisRef.current = lenis;
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    const update = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+
+    gsap.ticker.add(update);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      lenis.destroy();
+      gsap.ticker.remove(update);
+      lenisRef.current = null;
+    };
+  }, []);
+
+  // Pause Lenis scrolling when any modal is open to prevent background scrolling
+  useEffect(() => {
+    const lenis = lenisRef.current;
+    if (!lenis) return;
+
+    const isModalOpen = !!(
+      isCartOpen ||
+      productToView ||
+      showGstModal ||
+      activePaymentModal ||
+      lightboxIndex !== null ||
+      showAppointmentModal
+    );
+
+    if (isModalOpen) {
+      lenis.stop();
+    } else {
+      lenis.start();
+    }
+  }, [isCartOpen, productToView, showGstModal, activePaymentModal, lightboxIndex, showAppointmentModal]);
 
   const productCategories = useMemo(() => {
     if (!items) return ['All'];
@@ -789,8 +939,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     }
   };
 
-  // Tailwind class helpers
-  const surface = isDark ? 'bg-[#0f0f13]' : 'bg-white';
+  // Tailwind class helpers — still used for fine-grained element states
   const surfaceSoft = isDark ? 'bg-white/[0.04]' : 'bg-slate-50';
   const borderSoft = isDark ? 'border-white/10' : 'border-slate-200';
   const ringSoft = isDark ? 'ring-white/10' : 'ring-slate-200';
@@ -801,7 +950,19 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   const textMain = isDark ? 'text-slate-100' : 'text-slate-900';
   const textMuted = isDark ? 'text-slate-400' : 'text-slate-500';
   const textSubtle = isDark ? 'text-slate-300' : 'text-slate-600';
-  const pageBg = isDark ? 'bg-[#08080C]' : 'bg-slate-100';
+
+  // Inline style values for the two main structural elements.
+  // Using inline styles (not Tailwind classes) here so the theme change is
+  // guaranteed to take effect immediately — bypasses any Tailwind class-scan issues.
+  const pageStyle: React.CSSProperties = {
+    backgroundColor: isDark ? '#08080C' : '#f1f5f9',
+    color: isDark ? '#f1f5f9' : '#0f172a',
+    transition: 'background-color 300ms ease, color 300ms ease',
+  };
+  const cardSurfaceStyle: React.CSSProperties = {
+    backgroundColor: isDark ? '#0f0f13' : '#ffffff',
+    transition: 'background-color 300ms ease',
+  };
 
   const sectionVariants: any = {
     hidden: { opacity: 0, y: 12 },
@@ -809,7 +970,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   };
 
   return (
-    <main className={`relative min-h-screen w-full ${pageBg} ${textMain} font-sans transition-colors duration-300`}>
+    <main
+      ref={mainRef}
+      className={`relative min-h-screen w-full font-sans ${textMain}`}
+      style={pageStyle}
+    >
       {/* Animated mesh gradient backdrop — derived from brand color */}
       <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
         <MeshGradient color={primaryColor} isDark={isDark} intensity={0.4} />
@@ -817,15 +982,17 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
       <div className="relative z-10 mx-auto flex w-full max-w-[clamp(400px,90vw,800px)] flex-col px-1.5 pt-1.5 pb-24 sm:px-[clamp(1rem,3vw,3rem)] sm:pt-[clamp(1rem,5vh,4rem)] sm:pb-[clamp(5rem,10vh,10rem)]">
         {/* ============ CARD ============ */}
-        <div className={`relative overflow-hidden rounded-3xl border ${borderSoft} ${surface} shadow-2xl shadow-black/10 backdrop-blur`}>
+        <div
+          className={`relative overflow-hidden rounded-3xl border ${borderSoft} shadow-2xl shadow-black/10 backdrop-blur`}
+          style={cardSurfaceStyle}
+        >
           <div className={showAllProducts ? 'hidden' : ''}>
             {/* ---- HERO ---- */}
-            <div className="relative h-[clamp(10rem,25vh,16rem)] w-full overflow-hidden">
-              {/* Lightweight CSS gradient hero — no WebGL */}
+            <div className="gsap-hero relative h-[clamp(5rem,12vh,8rem)] w-full overflow-hidden">
               <div
                 className="absolute inset-0"
                 style={{
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, ${palette.complement} 100%)`,
+                  backgroundColor: primaryColor,
                 }}
               />
               <div
@@ -845,14 +1012,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={handleShare}
-                    aria-label="Share card"
-                    className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/25"
-                  >
-                    {shareOk ? <Icon.Check className="h-4 w-4" /> : <Icon.Share className="h-4 w-4" />}
-                  </button>
-                  <button
-                    onClick={() => setIsDark((v) => !v)}
+                    onClick={() => setIsDark(prev => !prev)}
                     aria-label="Toggle theme"
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/25"
                   >
@@ -868,7 +1028,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           <div className="relative px-[clamp(1.25rem,4vw,2.5rem)] pb-[clamp(0.5rem,2vw,1rem)]">
             <div className={showAllProducts ? 'hidden' : ''}>
               <div className="-mt-[clamp(3.5rem,10vw,5rem)] flex flex-col items-center text-center">
-                <div className="relative h-[clamp(7rem,18vw,10rem)] w-[clamp(7rem,18vw,10rem)]">
+                <div className="gsap-profile-avatar relative h-[clamp(7rem,18vw,10rem)] w-[clamp(7rem,18vw,10rem)]">
                   <div
                     className="absolute -inset-1 rounded-full opacity-60 blur-lg"
                     style={{ background: `conic-gradient(from 0deg, ${primaryColor}, ${palette.accent}, ${palette.complement}, ${primaryColor})` }}
@@ -883,19 +1043,19 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </div>
                     )}
                   </div>
-                  <div className={`absolute bottom-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
+                  <div className={`gsap-profile-badge absolute bottom-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
                     <Icon.Check className="h-3.5 w-3.5 text-white" />
                   </div>
                 </div>
 
                 {personalInfo.name && (
-                  <h1 className="mt-4 text-[clamp(1.5rem,4vw+0.5rem,2.5rem)] font-bold tracking-tight">{personalInfo.name}</h1>
+                  <h1 className="gsap-profile-name mt-4 text-[clamp(1.5rem,4vw+0.5rem,2.5rem)] font-bold tracking-tight">{personalInfo.name}</h1>
                 )}
                 {personalInfo.designation && (
-                  <p className={`mt-1 text-[clamp(0.875rem,2vw,1.125rem)] ${textSubtle}`}>{personalInfo.designation}</p>
+                  <p className={`gsap-profile-title mt-1 text-[clamp(0.875rem,2vw,1.125rem)] ${textSubtle}`}>{personalInfo.designation}</p>
                 )}
 
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                <div className="gsap-profile-tags mt-3 flex flex-wrap items-center justify-center gap-2">
                   {card.category && (
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${surfaceSoft} ${textSubtle} ring-1 ${borderSoft}`}>
                       <Icon.Tag className="h-3 w-3" />
@@ -914,14 +1074,9 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
               {/* ---- SOCIAL LINKS (SMALL) ---- */}
               {showSocial && filteredSocials.length > 0 && (
-                <motion.div
-                  initial="hidden"
-                  animate="show"
-                  variants={sectionVariants}
-                  className="mt-5 mb-2 flex flex-col items-center gap-2"
-                >
-                  <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Connect</p>
-                  <div className="flex flex-wrap items-center justify-center gap-3">
+                <div className="mt-5 mb-2 flex flex-col items-center gap-2">
+                  <p className={`gsap-connect-header text-[10px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Connect</p>
+                  <div className="gsap-connect-socials flex flex-wrap items-center justify-center gap-3">
                     {filteredSocials.map(([platform, url]) => {
                       const meta = SOCIAL_META[platform.toLowerCase()];
                       const resolvedHref = meta ? meta.href(String(url)) : String(url);
@@ -932,7 +1087,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                           target="_blank"
                           rel="noreferrer"
                           title={meta?.label || platform}
-                          className="flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:-translate-y-1 shadow-sm ring-2 ring-white/10"
+                          className="flex h-10 w-10 items-center justify-center rounded-full text-white gsap-hover-safe-social hover:-translate-y-1 hover:shadow-lg hover:shadow-black/25 active:scale-95 shadow-sm ring-1 ring-white/10 hover:ring-white/20 will-change-transform"
                           style={{ backgroundColor: meta?.color || primaryColor }}
                         >
                           {meta ? <meta.Icon className="h-4 w-4" /> : <Icon.Globe className="h-4 w-4" />}
@@ -940,16 +1095,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       );
                     })}
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {/* ---- QUICK ACTIONS ---- */}
-              <motion.div
-                initial="hidden"
-                animate="show"
-                variants={sectionVariants}
-                className="mt-6 grid grid-cols-4 gap-[clamp(0.5rem,2vw,1rem)]"
-              >
+              <div className="gsap-quick-actions mt-6 grid grid-cols-4 gap-[clamp(0.5rem,2vw,1rem)]">
                 <QuickAction
                   disabled={!cleanedPhone}
                   href={cleanedPhone ? `tel:${cleanedPhone}` : undefined}
@@ -982,7 +1132,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   isDark={isDark}
                   icon={<Icon.Save className="h-5 w-5" />}
                 />
-              </motion.div>
+              </div>
 
 
 
@@ -1777,15 +1927,16 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       </div>
 
       {/* ---- STICKY ACTION BAR ---- */}
-      <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-4 sm:pb-5">
+      <div className="gsap-sticky-bar fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-4 sm:pb-5">
         <div
           className={`flex w-full max-w-md gap-2 rounded-full p-2 shadow-2xl ring-1 backdrop-blur-xl sm:max-w-xl md:max-w-2xl ${isDark ? 'bg-black/70 ring-white/10' : 'bg-white/90 ring-slate-200'
             }`}
+          style={{ backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
         >
           <button
             onClick={handleSaveContact}
             disabled={saving}
-            className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-semibold transition disabled:opacity-70 ${isDark ? 'bg-white text-slate-900 hover:bg-slate-100' : 'bg-slate-900 text-white hover:bg-slate-800'
+            className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all duration-300 disabled:opacity-70 active:scale-95 ${isDark ? 'bg-white text-slate-900 hover:bg-slate-100' : 'bg-slate-900 text-white hover:bg-slate-800'
               }`}
           >
             <Icon.Save className="h-4 w-4" />
@@ -1793,7 +1944,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           </button>
           <button
             onClick={handleShare}
-            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white shadow-md transition hover:opacity-90"
+            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-semibold text-white shadow-md transition-all duration-300 active:scale-95 hover:opacity-90"
             style={{ backgroundColor: primaryColor, boxShadow: `0 8px 24px ${hexToRgba(primaryColor, 0.3)}` }}
           >
             {shareOk ? <Icon.Check className="h-4 w-4" /> : <Icon.Share className="h-4 w-4" />}
@@ -1816,7 +1967,8 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className={`w-full sm:max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl ${surface} shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[92vh] sm:max-h-[85vh]`}
+            className={`w-full sm:max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[92vh] sm:max-h-[85vh]`}
+            style={{ backgroundColor: isDark ? '#0f0f13' : '#ffffff' }}
           >
             {/* Header */}
             <div className={`flex items-center justify-between border-b ${borderSoft} px-5 py-4 shrink-0`}>
@@ -2208,7 +2360,8 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className={`relative w-full max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl ${surface} shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[90vh]`}
+              className={`relative w-full max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[90vh]`}
+              style={{ backgroundColor: isDark ? '#0f0f13' : '#ffffff' }}
             >
               <div className="flex flex-col items-center p-6">
                 <div className="mb-4 h-1.5 w-12 rounded-full bg-slate-200 dark:bg-white/20" />
@@ -2628,20 +2781,14 @@ function Section({
   dividerColor?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="mt-6"
-    >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="flex-1 h-px" style={{ background: dividerColor ? `linear-gradient(to right, transparent, ${hexToRgba(dividerColor, 0.25)})` : undefined }} />
-        <h3 className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>{title}</h3>
-        <div className="flex-1 h-px" style={{ background: dividerColor ? `linear-gradient(to left, transparent, ${hexToRgba(dividerColor, 0.25)})` : undefined }} />
+    <div className="gsap-section mt-6">
+      <div className="flex items-center gap-3 mb-3 select-none">
+        <div className="flex-1 h-px opacity-30" style={{ background: dividerColor ? `linear-gradient(to right, transparent, ${dividerColor})` : undefined }} />
+        <h3 className={`text-[10px] font-bold uppercase tracking-[0.2em] ${textMuted}`}>{title}</h3>
+        <div className="flex-1 h-px opacity-30" style={{ background: dividerColor ? `linear-gradient(to left, transparent, ${dividerColor})` : undefined }} />
       </div>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -2664,7 +2811,7 @@ function QuickAction({
   isDark: boolean;
   disabled?: boolean;
 }) {
-  const base = `group relative flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 ring-1 transition ${isDark ? 'bg-white/[0.04] ring-white/10 hover:bg-white/[0.07]' : 'bg-white ring-slate-200 hover:shadow-md'
+  const base = `group relative flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 ring-1 gsap-hover-safe-action ${isDark ? 'bg-white/[0.04] ring-white/10 hover:bg-white/[0.07]' : 'bg-white ring-slate-200 hover:shadow-md'
     } ${disabled ? 'cursor-not-allowed opacity-40' : 'hover:-translate-y-0.5'}`;
 
   const inner = (

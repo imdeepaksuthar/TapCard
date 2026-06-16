@@ -7,6 +7,8 @@ use App\Models\BusinessCard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\CardCreated;
 
 class BusinessCardController extends Controller
 {
@@ -86,6 +88,9 @@ class BusinessCardController extends Controller
             'seo_metadata' => $validated['seo_metadata'] ?? [],
             'views_count' => 0,
         ]);
+
+        // Send welcome email
+        Mail::to(auth()->user()->email)->queue(new CardCreated($card, auth()->user()));
 
         return response()->json([
             'message' => 'Business card created successfully',

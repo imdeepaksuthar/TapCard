@@ -608,6 +608,12 @@ export default function CardForm({ id }: CardFormProps) {
           if (proprietor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proprietor.email)) {
             newErrors[`proprietor_${index}_email`] = 'Please enter a valid email address.';
           }
+          if (proprietor.phone && !/^\+?[0-9\s\-()]{10,15}$/.test(proprietor.phone)) {
+            newErrors[`proprietor_${index}_phone`] = 'Please enter a valid Phone Number (10-15 digits).';
+          }
+          if (proprietor.whatsapp && !/^\+?[0-9\s\-()]{10,15}$/.test(proprietor.whatsapp)) {
+            newErrors[`proprietor_${index}_whatsapp`] = 'Please enter a valid WhatsApp Number (10-15 digits).';
+          }
         });
       }
 
@@ -634,12 +640,124 @@ export default function CardForm({ id }: CardFormProps) {
     return newErrors;
   };
 
+  const validateSubTab = (tabId: string): Record<string, string> => {
+    const tabErrors: Record<string, string> = {};
+    if (tabId === 'company' && formData.card_type !== 'personal') {
+      if (formData.custom_branding.show_company) {
+        if (!formData.company_details?.company_name?.trim()) {
+          tabErrors.company_name = 'Company Name is required.';
+        }
+        const website = formData.company_details?.website?.trim();
+        if (website && !/^(https?:\/\/|www\.)[^\s$.?#][^\s]*$/i.test(website)) {
+          tabErrors.website = 'Please enter a valid URL (e.g. https://example.com or www.example.com)';
+        }
+        const gst = formData.company_details?.gst?.trim();
+        if (gst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gst)) {
+          tabErrors.gst = 'Please enter a valid 15-character GST number.';
+        }
+      }
+      if (formData.custom_branding.show_proprietor) {
+        formData.proprietor_details.forEach((proprietor, index) => {
+          if (proprietor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proprietor.email)) {
+            tabErrors[`proprietor_${index}_email`] = 'Please enter a valid email address.';
+          }
+          if (proprietor.phone && !/^\+?[0-9\s\-()]{10,15}$/.test(proprietor.phone)) {
+            tabErrors[`proprietor_${index}_phone`] = 'Please enter a valid Phone Number (10-15 digits).';
+          }
+          if (proprietor.whatsapp && !/^\+?[0-9\s\-()]{10,15}$/.test(proprietor.whatsapp)) {
+            tabErrors[`proprietor_${index}_whatsapp`] = 'Please enter a valid WhatsApp Number (10-15 digits).';
+          }
+        });
+      }
+    } else if (tabId === 'payments' && formData.card_type !== 'personal') {
+      if (formData.custom_branding.show_payment) {
+        const upi_id = formData.payment_info?.upi_id?.trim();
+        if (upi_id && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi_id)) {
+          tabErrors.upi_id = 'Please enter a valid UPI ID.';
+        }
+        const ifsc_code = formData.payment_info?.ifsc_code?.trim();
+        if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifsc_code)) {
+          tabErrors.ifsc_code = 'Please enter a valid 11-digit IFSC code.';
+        }
+        const account_number = formData.payment_info?.account_number?.trim();
+        if (account_number && !/^[0-9]{9,18}$/.test(account_number)) {
+          tabErrors.account_number = 'Please enter a valid Bank Account Number (9-18 digits).';
+        }
+        const phonepe = formData.payment_info?.phonepe?.trim();
+        if (phonepe && !/^\+?[0-9\s\-()]{10,15}$/.test(phonepe)) {
+          tabErrors.phonepe = 'Please enter a valid PhonePe Number (10-15 digits).';
+        }
+      }
+    }
+    return tabErrors;
+  };
+
   const handleNext = () => {
+    if (currentStep === 4) {
+      const availableTabs = formData.card_type === 'personal'
+        ? ['address_hours', 'gallery']
+        : ['company', 'payments', 'address_hours', 'gallery'];
+      
+      const currentTabIdx = availableTabs.indexOf(activeBusinessTab);
+      
+      // 1. Validate the current active sub-tab
+      const tabErrors = validateSubTab(activeBusinessTab);
+      if (Object.keys(tabErrors).length > 0) {
+        setValidationErrors(prev => ({
+          ...prev,
+          ...tabErrors
+        }));
+        setError('');
+        return;
+      } else {
+        // Clear errors related to the current tab
+        setValidationErrors(prev => {
+          const copy = { ...prev };
+          if (activeBusinessTab === 'company') {
+            delete copy.company_name;
+            delete copy.gst;
+            delete copy.website;
+            Object.keys(copy).forEach(k => {
+              if (k.startsWith('proprietor_')) delete copy[k];
+            });
+          } else if (activeBusinessTab === 'payments') {
+            delete copy.account_number;
+            delete copy.ifsc_code;
+            delete copy.upi_id;
+            delete copy.phonepe;
+          }
+          return copy;
+        });
+      }
+
+      // 2. If not the last sub-tab, move to the next sub-tab
+      if (currentTabIdx < availableTabs.length - 1) {
+        const nextTab = availableTabs[currentTabIdx + 1];
+        setActiveBusinessTab(nextTab as any);
+        setError('');
+        return;
+      }
+    }
+
+    // 3. Overall step navigation check
     const newErrors = getStepErrors(currentStep);
     setValidationErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
       setError('');
+      if (currentStep === 4) {
+        const tabs = formData.card_type === 'personal'
+          ? ['address_hours', 'gallery']
+          : ['company', 'payments', 'address_hours', 'gallery'];
+        for (const t of tabs) {
+          const hasErr = (t === 'company' && (newErrors.company_name || newErrors.gst || newErrors.website || Object.keys(newErrors).some(k => k.startsWith('proprietor_'))))
+                      || (t === 'payments' && (newErrors.account_number || newErrors.ifsc_code || newErrors.upi_id || newErrors.phonepe));
+          if (hasErr) {
+            setActiveBusinessTab(t as any);
+            break;
+          }
+        }
+      }
       return;
     }
 
@@ -657,13 +775,25 @@ export default function CardForm({ id }: CardFormProps) {
       return;
     }
 
-    // Validate all steps between currentStep and targetStep - 1
     for (let s = currentStep; s < targetStep; s++) {
       const stepErrors = getStepErrors(s);
       if (Object.keys(stepErrors).length > 0) {
         setValidationErrors(stepErrors);
         setError(`Please fix the errors in Step ${s} before proceeding.`);
         setCurrentStep(s);
+        if (s === 4) {
+          const tabs = formData.card_type === 'personal'
+            ? ['address_hours', 'gallery']
+            : ['company', 'payments', 'address_hours', 'gallery'];
+          for (const t of tabs) {
+            const hasErr = (t === 'company' && (stepErrors.company_name || stepErrors.gst || stepErrors.website || Object.keys(stepErrors).some(k => k.startsWith('proprietor_'))))
+                        || (t === 'payments' && (stepErrors.account_number || stepErrors.ifsc_code || stepErrors.upi_id || stepErrors.phonepe));
+            if (hasErr) {
+              setActiveBusinessTab(t as any);
+              break;
+            }
+          }
+        }
         return;
       }
     }
@@ -999,17 +1129,17 @@ export default function CardForm({ id }: CardFormProps) {
       }
 
       if (formData.custom_branding.show_proprietor) {
-
         formData.proprietor_details.forEach((proprietor, index) => {
-
           if (proprietor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proprietor.email)) {
-
             newErrors[`proprietor_${index}_email`] = 'Please enter a valid email address.';
-
           }
-
+          if (proprietor.phone && !/^\+?[0-9\s\-()]{10,15}$/.test(proprietor.phone)) {
+            newErrors[`proprietor_${index}_phone`] = 'Please enter a valid Phone Number (10-15 digits).';
+          }
+          if (proprietor.whatsapp && !/^\+?[0-9\s\-()]{10,15}$/.test(proprietor.whatsapp)) {
+            newErrors[`proprietor_${index}_whatsapp`] = 'Please enter a valid WhatsApp Number (10-15 digits).';
+          }
         });
-
       }
 
       if (formData.custom_branding.show_payment) {
@@ -1304,7 +1434,9 @@ export default function CardForm({ id }: CardFormProps) {
 
               <div>
 
-                <label className="text-sm text-gray-400 block mb-1">Full Name <span className="text-red-500">*</span></label>
+                <label className="text-sm text-gray-400 block mb-1">
+                  {formData.card_type === 'business' ? 'Business Full Name' : 'Full Name'} <span className="text-red-500">*</span>
+                </label>
 
                 <input
 
@@ -2163,7 +2295,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                             >
 
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
 
                             </button>
 
@@ -2287,7 +2419,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                                 setFormData({ ...formData, proprietor_details: newDetails });
 
-                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
+                              }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_phone`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="+1234567890" />
+
+                              {validationErrors[`proprietor_${index}_phone`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_phone`]}</p>}
 
                             </div>
 
@@ -2307,7 +2441,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                                 setFormData({ ...formData, proprietor_details: newDetails });
 
-                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="+1234567890" />
+                              }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_whatsapp`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="+1234567890" />
+
+                              {validationErrors[`proprietor_${index}_whatsapp`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_whatsapp`]}</p>}
 
                             </div>
 
