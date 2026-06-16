@@ -72,8 +72,10 @@
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" style="text-align:right;">Grand Total</td>
-          <td style="text-align:right;">₹{{ number_format($grandTotal, 2) }}</td>
+          <td style="text-align:right;">Grand Total</td>
+          <td style="text-align:right;">&nbsp;</td>
+          <td style="text-align:right;">&nbsp;</td>
+          <td style="text-align:right;">&#8377;{{ number_format($grandTotal, 2) }}</td>
         </tr>
       </tfoot>
     </table>

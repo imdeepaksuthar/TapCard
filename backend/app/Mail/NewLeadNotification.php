@@ -41,7 +41,7 @@ class NewLeadNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.leads.new',
+            view: 'emails.leads.new',
             with: [
                 'lead' => $this->lead,
             ],
