@@ -8,6 +8,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import LeadForm from '../../components/LeadForm';
+import { QRCodeCanvas } from 'qrcode.react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -145,6 +146,34 @@ const Icon = {
   ChevronRight: (p: AnyObj) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <polyline points="9 18 15 12 9 6" />
+    </svg>
+  ),
+  QrCode: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect width="5" height="5" x="3" y="3" rx="1"/>
+      <rect width="5" height="5" x="16" y="3" rx="1"/>
+      <rect width="5" height="5" x="3" y="16" rx="1"/>
+      <path d="M21 16h-3a2 2 0 0 0-2 2v3"/>
+      <path d="M21 21v.01"/>
+      <path d="M12 7v3a2 2 0 0 1-2 2H7"/>
+      <path d="M3 12h.01"/>
+      <path d="M12 3h.01"/>
+      <path d="M12 16v.01"/>
+      <path d="M16 12h1"/>
+      <path d="M21 12v.01"/>
+      <path d="M12 21v-1"/>
+    </svg>
+  ),
+  X: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  ),
+  Download: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   ),
   // Social brand glyphs (monochrome)
@@ -320,6 +349,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   const [isDark, setIsDark] = useState<boolean>(true); // Default SSR
   const [copied, setCopied] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [shareOk, setShareOk] = useState(false);
 
   // Sync theme with system preference ONCE on mount only (not as a live listener,
@@ -558,7 +588,8 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       showGstModal ||
       activePaymentModal ||
       lightboxIndex !== null ||
-      showAppointmentModal
+      showAppointmentModal ||
+      showQrModal
     );
 
     if (isModalOpen) {
@@ -566,7 +597,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     } else {
       lenis.start();
     }
-  }, [isCartOpen, productToView, showGstModal, activePaymentModal, lightboxIndex, showAppointmentModal]);
+  }, [isCartOpen, productToView, showGstModal, activePaymentModal, lightboxIndex, showAppointmentModal, showQrModal]);
 
   const productCategories = useMemo(() => {
     if (!items) return ['All'];
@@ -939,6 +970,24 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     }
   };
 
+  const handleDownloadQr = () => {
+    try {
+      const canvas = document.getElementById('qr-code-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(personalInfo.name || 'qr_code').replace(/\s+/g, '_')}_card.png`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        a.remove();
+      }, 100);
+    } catch (error) {
+      console.error('Failed to download QR code:', error);
+    }
+  };
+
   // Tailwind class helpers — still used for fine-grained element states
   const surfaceSoft = isDark ? 'bg-white/[0.04]' : 'bg-slate-50';
   const borderSoft = isDark ? 'border-white/10' : 'border-slate-200';
@@ -1012,6 +1061,13 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => setShowQrModal(true)}
+                    aria-label="Share via QR Code"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/25"
+                  >
+                    <Icon.QrCode className="h-4 w-4" />
+                  </button>
+                  <button
                     onClick={() => setIsDark(prev => !prev)}
                     aria-label="Toggle theme"
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/25"
@@ -1027,8 +1083,8 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           {/* ---- PROFILE ---- */}
           <div className="relative px-[clamp(1.25rem,4vw,2.5rem)] pb-[clamp(0.5rem,2vw,1rem)]">
             <div className={showAllProducts ? 'hidden' : ''}>
-              <div className="-mt-[clamp(3.5rem,10vw,5rem)] flex flex-col items-center text-center">
-                <div className="gsap-profile-avatar relative h-[clamp(7rem,18vw,10rem)] w-[clamp(7rem,18vw,10rem)]">
+              <div className="-mt-[clamp(3.5rem,10vw,5rem)] flex flex-col items-center text-center pointer-events-none">
+                <div className="gsap-profile-avatar relative h-[clamp(7rem,18vw,10rem)] w-[clamp(7rem,18vw,10rem)] pointer-events-auto">
                   <div
                     className="absolute -inset-1 rounded-full opacity-60 blur-lg"
                     style={{ background: `conic-gradient(from 0deg, ${primaryColor}, ${palette.accent}, ${palette.complement}, ${primaryColor})` }}
@@ -1049,13 +1105,13 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 </div>
 
                 {personalInfo.name && (
-                  <h1 className="gsap-profile-name mt-4 text-[clamp(1.5rem,4vw+0.5rem,2.5rem)] font-bold tracking-tight">{personalInfo.name}</h1>
+                  <h1 className="gsap-profile-name mt-4 text-[clamp(1.5rem,4vw+0.5rem,2.5rem)] font-bold tracking-tight pointer-events-auto">{personalInfo.name}</h1>
                 )}
                 {personalInfo.designation && (
-                  <p className={`gsap-profile-title mt-1 text-[clamp(0.875rem,2vw,1.125rem)] ${textSubtle}`}>{personalInfo.designation}</p>
+                  <p className={`gsap-profile-title mt-1 text-[clamp(0.875rem,2vw,1.125rem)] ${textSubtle} pointer-events-auto`}>{personalInfo.designation}</p>
                 )}
 
-                <div className="gsap-profile-tags mt-3 flex flex-wrap items-center justify-center gap-2">
+                <div className="gsap-profile-tags mt-3 flex flex-wrap items-center justify-center gap-2 pointer-events-auto">
                   {card.category && (
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${surfaceSoft} ${textSubtle} ring-1 ${borderSoft}`}>
                       <Icon.Tag className="h-3 w-3" />
@@ -1925,6 +1981,71 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           </div>
         </div>
       </div>
+
+      {/* ============ QR CODE MODAL ============ */}
+      <AnimatePresence>
+        {showQrModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowQrModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`relative w-full max-w-sm overflow-hidden rounded-3xl p-8 text-center shadow-2xl ${isDark ? 'bg-[#12121A] text-white ring-1 ring-white/10' : 'bg-white text-slate-900 ring-1 ring-slate-200'}`}
+            >
+              <button
+                onClick={() => setShowQrModal(false)}
+                className={`absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isDark ? 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'}`}
+              >
+                <Icon.X className="h-4 w-4" />
+              </button>
+              
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br" style={{ backgroundImage: `linear-gradient(to bottom right, ${primaryColor}, ${palette.accent})` }}>
+                <Icon.QrCode className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="mb-1 text-xl font-bold tracking-tight">Share this Card</h3>
+              <p className={`mb-8 text-sm ${textMuted}`}>Scan this QR code with any smartphone camera to view {personalInfo.name || 'this profile'}.</p>
+              
+              <div className={`mx-auto mb-6 flex items-center justify-center overflow-hidden rounded-2xl p-4 ${isDark ? 'bg-white' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
+                <QRCodeCanvas 
+                  id="qr-code-canvas"
+                  value={currentUrl} 
+                  size={192} 
+                  level="H"
+                  includeMargin={false}
+                />
+              </div>
+
+              <div className="flex gap-3 mt-2">
+                <button
+                  onClick={handleDownloadQr}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95 ${isDark ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}
+                >
+                  <Icon.Download className="h-4 w-4" />
+                  Download
+                </button>
+                <button
+                  onClick={() => {
+                    handleShare();
+                    setShowQrModal(false);
+                  }}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  <Icon.Copy className="h-4 w-4" />
+                  Copy Link
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ---- STICKY ACTION BAR ---- */}
       <div className="gsap-sticky-bar fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-4 sm:pb-5">

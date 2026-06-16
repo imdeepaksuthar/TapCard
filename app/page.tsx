@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Header from './components/Header';
-import { ArrowRight, Smartphone, Zap, Shield, Globe, Users, QrCode, CheckCircle2, ChevronDown, Star, CreditCard, BarChart3, Palette, Search, Eye, X } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { ArrowRight, Smartphone, Zap, Shield, Users, QrCode, CheckCircle2, ChevronDown, CreditCard, Palette } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../lib/api';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -16,8 +16,8 @@ const Scene3D = dynamic(() => import('./components/Scene3D'), { ssr: false });
 
 const bentoFeatures = [
   {
-    title: "Tap to Share",
-    desc: "Instantly transfer your contact details using NFC technology. No app required.",
+    title: "Instant Sharing",
+    desc: "Share your digital business card via link, QR code, or embed it anywhere. No app required.",
     icon: <Smartphone className="w-6 h-6" />,
     colSpan: "md:col-span-2",
   },
@@ -44,14 +44,14 @@ const bentoFeatures = [
 const steps = [
   { num: "01", title: "Create Your Profile", desc: "Sign up and build your digital identity in minutes. Add links, socials, and payment methods.", icon: <CreditCard className="w-7 h-7" /> },
   { num: "02", title: "Customize Design", desc: "Choose from premium templates. Add your logo, colors, and completely own the look.", icon: <Palette className="w-7 h-7" /> },
-  { num: "03", title: "Share Instantly", desc: "Tap your NFC card or share your unique link. Connections are saved immediately.", icon: <Zap className="w-7 h-7" /> },
+  { num: "03", title: "Share Instantly", desc: "Share your unique link or QR code anywhere. Connections are saved immediately.", icon: <Zap className="w-7 h-7" /> },
 ];
 
 const faqs = [
-  { q: 'How does the NFC card work?', a: 'Our NFC cards contain a tiny microchip that sends your digital profile link to any modern smartphone when tapped against it. No app is required by the receiver.' },
-  { q: 'Can I update my info after sharing?', a: 'Yes! Your card links to your digital profile. Any updates you make in your dashboard are instantly reflected for anyone who has your link or taps your card.' },
+  { q: 'How does the digital business card work?', a: 'You create a personalized profile with all your contact info, social links, and portfolio. Share it via a unique URL or QR code — anyone can view it instantly on any device, no app needed.' },
+  { q: 'Can I update my info after sharing?', a: 'Yes! Your card links to your live digital profile. Any updates you make in your dashboard are instantly reflected for everyone who has your link.' },
   { q: 'Is there a monthly fee?', a: 'The basic digital profile is 100% free forever. We offer a Pro plan for $5/month that includes advanced analytics, custom colors, and lead capture features.' },
-  { q: "What if they don't have NFC?", a: 'Every digital profile comes with a dynamic QR code. You can have them scan the QR code from your phone screen or print it on physical marketing materials.' },
+  { q: 'Can I use my card offline?', a: 'Your digital profile comes with a dynamic QR code that you can save or print. Anyone can scan it from your phone screen or printed materials, even without internet on your end.' },
 ];
 
 export default function Home() {
@@ -61,31 +61,9 @@ export default function Home() {
   const sceneWrapRef = useRef<HTMLDivElement>(null);
   const scrollProgressRef = useRef({ value: 0 });
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [recentCards, setRecentCards] = useState<any[]>([]);
-  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   const [plans, setPlans] = useState<any[]>([]);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    if (query.length < 2) { setSearchResults([]); return; }
-    setIsSearching(true);
-    searchTimeoutRef.current = setTimeout(async () => {
-      try {
-        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const res = await fetch(`${API}/api/cards/search?q=${encodeURIComponent(query)}`);
-        if (res.ok) setSearchResults(await res.json());
-      } catch { /* ignore */ }
-      finally { setIsSearching(false); }
-    }, 300);
-  }, []);
+
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -98,16 +76,7 @@ export default function Home() {
     };
     fetchStats();
 
-    // Fetch recently added cards
-    const fetchRecent = async () => {
-      try {
-        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const res = await fetch(`${API}/api/cards/recent`);
-        if (res.ok) setRecentCards(await res.json());
-      } catch { /* ignore */ }
-      finally { setIsLoadingRecent(false); }
-    };
-    fetchRecent();
+
 
     // Fetch pricing plans
     const fetchPlans = async () => {
@@ -126,17 +95,10 @@ export default function Home() {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
 
-    // Close search dropdown on outside click
-    const handleClickOutside = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setSearchFocused(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
+
 
     return () => {
       window.removeEventListener('scroll', onScroll);
-      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -151,19 +113,9 @@ export default function Home() {
       .from('.hero-title', { opacity: 0, y: 60, duration: 1 }, '-=0.4')
       .from('.hero-subtitle', { opacity: 0, y: 40, duration: 0.8 }, '-=0.6')
       .from('.hero-cta', { opacity: 0, y: 30, duration: 0.7 }, '-=0.5')
-      .from('.hero-scroll-cue', { opacity: 0, duration: 0.8 }, '-=0.3')
-      .from('.hero-search', { opacity: 0, y: 20, duration: 0.7 }, '-=0.5');
+      .from('.hero-scroll-cue', { opacity: 0, duration: 0.8 }, '-=0.3');
 
-    // Recent cards grid
-    gsap.from('.recent-cards-grid > *', {
-      scrollTrigger: { trigger: '.recent-cards-grid', start: 'top 85%', toggleActions: 'play none none none' },
-      opacity: 0,
-      y: 30,
-      scale: 0.95,
-      duration: 0.5,
-      stagger: 0.08,
-      ease: 'power2.out',
-    });
+
 
     // 3D scene — fade out as user scrolls past hero
     if (sceneWrapRef.current) {
@@ -288,7 +240,7 @@ export default function Home() {
             </h1>
 
             <p className="hero-subtitle text-[clamp(1rem,1vw+0.75rem,1.25rem)] text-zinc-300 font-medium max-w-lg mb-[clamp(2rem,4vh,2.5rem)] leading-relaxed">
-              The premium digital business card for modern professionals. Share your identity with a single tap, backed by enterprise-grade security and analytics.
+              The premium digital business card for modern professionals. Share your identity instantly, backed by enterprise-grade security and analytics.
             </p>
 
             <div className="hero-cta flex flex-col sm:flex-row gap-[clamp(0.75rem,2vw,1rem)] w-full sm:w-auto">
@@ -307,68 +259,7 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* ── Search Bar ── */}
-            <div ref={searchRef} className="hero-search relative mt-8 w-full max-w-lg">
-              <div className={`relative flex items-center rounded-2xl border transition-all duration-200 ${searchFocused ? 'border-blue-500/50 bg-zinc-900/90 ring-1 ring-blue-500/20' : 'border-zinc-800 bg-zinc-900/60'} backdrop-blur-xl`}>
-                <Search size={18} className="absolute left-4 text-zinc-500 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Search business cards..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-3.5 pl-11 pr-10 outline-none rounded-2xl"
-                />
-                {searchQuery && (
-                  <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="absolute right-4 text-zinc-500 hover:text-white transition-colors">
-                    <X size={16} />
-                  </button>
-                )}
-                {isSearching && (
-                  <div className="absolute right-4">
-                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-              </div>
 
-              {/* Search Results Dropdown */}
-              {searchFocused && searchQuery.length >= 2 && (
-                <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl border border-zinc-800 bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden z-50 max-h-[360px] overflow-y-auto">
-                  {searchResults.length > 0 ? (
-                    searchResults.map((card: any) => (
-                      <Link
-                        key={card.slug}
-                        href={`/${card.slug}`}
-                        onClick={() => setSearchFocused(false)}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-zinc-800/50 last:border-b-0"
-                      >
-                        {card.image ? (
-                          <img src={card.image} alt="" className="w-10 h-10 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center shrink-0 ring-1 ring-white/10">
-                            <span className="text-sm font-bold text-white/70">{(card.name || '?')[0]}</span>
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-white truncate">{card.name}</p>
-                          <p className="text-xs text-zinc-500 truncate">
-                            {[card.designation, card.company].filter(Boolean).join(' · ') || card.slug}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 text-zinc-600 shrink-0">
-                          <Eye size={12} />
-                          <span className="text-[10px] font-medium">{card.views?.toLocaleString()}</span>
-                        </div>
-                      </Link>
-                    ))
-                  ) : !isSearching ? (
-                    <div className="px-4 py-8 text-center text-zinc-500 text-sm">
-                      No cards found for "{searchQuery}"
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Right spacer — 3D scene renders in the fixed layer behind */}
@@ -384,110 +275,43 @@ export default function Home() {
 
       <div className="relative z-10 bg-black w-full">
 
-      {/* ─── Trusted By ─── */}
-      <section className="relative z-10 py-12 border-t border-b border-white/5 bg-zinc-950/80 overflow-hidden flex flex-col items-center justify-center">
-        <p className="text-[10px] font-bold tracking-[0.3em] text-zinc-500 uppercase mb-8 text-center">Trusted by forward-thinking teams globally</p>
-        <div className="flex flex-wrap justify-center gap-10 sm:gap-20 items-center max-w-5xl mx-auto px-6 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-          {['ACME Corp', 'GLOBAL', 'NEXUS', 'PINNACLE', 'LUMIÈRE', 'QUANTUM'].map((brand, i) => (
-            <span key={i} className="text-xl sm:text-2xl font-black text-zinc-400 tracking-tighter hover:text-white transition-colors cursor-default">{brand}</span>
-          ))}
-        </div>
-      </section>
 
-      {/* ─── Recently Added Cards ─── */}
-      {(recentCards.length > 0 || isLoadingRecent) && (
-        <section className="relative z-10 py-[clamp(4rem,8vh,6rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900/50 min-h-[400px]">
-          <div className="max-w-[1440px] mx-auto">
-            <div className="gsap-section-title flex items-center justify-between mb-10">
-              <div>
-                <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold tracking-widest uppercase">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
-                  </span>
-                  Discover Network
-                </div>
-                <h2 className="text-[clamp(1.75rem,3vw+0.5rem,2.5rem)] font-bold tracking-tight text-white">Recently Joined</h2>
-              </div>
-            </div>
-
-            {isLoadingRecent ? (
-              <div className="recent-cards-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="animate-pulse rounded-3xl border border-white/5 bg-white/[0.03] p-5 flex flex-col items-center h-[260px]">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 mb-5" />
-                    <div className="w-3/4 h-4 bg-white/10 rounded mb-2" />
-                    <div className="w-1/2 h-3 bg-white/10 rounded mt-2" />
-                    <div className="w-16 h-6 bg-white/10 rounded-full mt-auto" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="recent-cards-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
-                {recentCards.map((card: any) => (
-                <Link
-                  key={card.slug}
-                  href={`/${card.slug}`}
-                  className="group relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.03] p-5 flex flex-col items-center text-center hover:bg-white/[0.08] hover:border-white/10 transition-all duration-500 backdrop-blur-md hover:-translate-y-1 shadow-2xl hover:shadow-blue-500/10"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-blue-500/0 via-blue-500/0 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
-                  <div className="relative mb-5 z-10">
-                    <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    {card.image ? (
-                      <img src={card.image} alt={card.name} className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-4 ring-zinc-900 group-hover:ring-blue-500/30 shadow-xl transition-all duration-500 group-hover:scale-105" loading="lazy" />
-                    ) : (
-                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-4 ring-zinc-900 group-hover:ring-blue-500/30 shadow-xl transition-all duration-500 group-hover:scale-105">
-                        <span className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-zinc-300 to-zinc-600">{(card.name || '?')[0]}</span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-0 right-0 bg-zinc-900 rounded-full p-1.5 border border-zinc-800 shadow-lg z-20">
-                      <div className="bg-emerald-500 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    </div>
-                  </div>
-                  
-                  <div className="relative z-10 w-full flex flex-col items-center">
-                    <h3 className="text-base sm:text-lg font-bold text-white truncate w-full mb-1 group-hover:text-blue-400 transition-colors">{card.name}</h3>
-                    
-                    {card.designation && (
-                      <p className="text-[11px] sm:text-xs font-medium text-zinc-400 truncate w-full">{card.designation}</p>
-                    )}
-                    {card.company && (
-                      <p className="text-[10px] sm:text-[11px] text-zinc-500 truncate w-full mt-1.5 uppercase tracking-wider">{card.company}</p>
-                    )}
-                    
-                    <div className="mt-5 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/5 text-zinc-400 w-fit transition-colors group-hover:bg-blue-500/10 group-hover:border-blue-500/20 group-hover:text-blue-400">
-                      <Eye size={12} className="opacity-70" />
-                      <span className="text-[10px] font-bold tracking-wide">{card.views?.toLocaleString() || 0}</span>
-                    </div>
-                  </div>
-                </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* ─── Scale / Metrics ─── */}
       <section className="relative z-10 py-[clamp(6rem,12vh,10rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900 bg-black overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)] pointer-events-none" />
         <div className="max-w-[1440px] mx-auto text-center relative z-10">
-          <h2 className="text-[clamp(2.5rem,5vw+1rem,4.5rem)] font-black tracking-tighter mb-4 text-white">Scale with confidence.</h2>
-          <p className="text-[clamp(1rem,2vw,1.25rem)] text-zinc-400 mb-16 max-w-2xl mx-auto">Enterprise-grade infrastructure powering millions of connections worldwide.</p>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12 divide-y sm:divide-y-0 sm:divide-x divide-zinc-800/60">
-            <div className="flex flex-col items-center justify-center pt-8 sm:pt-0 group">
-              <div className="text-[clamp(3.5rem,6vw,5.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">99.9%</div>
-              <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Uptime SLA</div>
+          <div className="gsap-section-title">
+            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">By the numbers</p>
+            <h2 className="text-[clamp(2.5rem,5vw+1rem,4.5rem)] font-black tracking-tighter mb-4 text-white">Scale with confidence.</h2>
+            <p className="text-[clamp(1rem,2vw,1.25rem)] text-zinc-400 mb-16 max-w-2xl mx-auto">Enterprise-grade infrastructure powering real connections worldwide.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12">
+            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl border border-zinc-800/40 bg-zinc-900/30 hover:bg-zinc-900/60 hover:border-blue-500/20 transition-all duration-500">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10">
+                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">
+                  {stats.users > 0 ? `${(stats.users / 1000).toFixed(stats.users >= 1000 ? 0 : 1)}k+` : '15k+'}
+                </div>
+                <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Registered Users</div>
+              </div>
             </div>
-            <div className="flex flex-col items-center justify-center pt-8 sm:pt-0 group">
-              <div className="text-[clamp(3.5rem,6vw,5.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-emerald-400 to-emerald-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">2M+</div>
-              <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Card Taps</div>
+            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl border border-zinc-800/40 bg-zinc-900/30 hover:bg-zinc-900/60 hover:border-emerald-500/20 transition-all duration-500">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10">
+                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-emerald-400 to-emerald-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">
+                  {stats.cards > 0 ? `${(stats.cards / 1000).toFixed(stats.cards >= 1000 ? 0 : 1)}k+` : '52k+'}
+                </div>
+                <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Cards Created</div>
+              </div>
             </div>
-            <div className="flex flex-col items-center justify-center pt-8 sm:pt-0 group">
-              <div className="text-[clamp(3.5rem,6vw,5.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-400 to-purple-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">50k+</div>
-              <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Active Professionals</div>
+            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl border border-zinc-800/40 bg-zinc-900/30 hover:bg-zinc-900/60 hover:border-purple-500/20 transition-all duration-500">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10">
+                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-400 to-purple-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">99.9%</div>
+                <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Uptime SLA</div>
+              </div>
             </div>
           </div>
         </div>
@@ -668,7 +492,7 @@ export default function Home() {
           <div className="col-span-2">
             <img src="/logo-dark.png" alt="Card Setu" className="h-7 sm:h-8 mb-5" />
             <p className="text-zinc-500 text-sm max-w-sm leading-relaxed">
-              The premium digital business card for modern professionals. Networking reimagined with a single tap.
+              The premium digital business card for modern professionals. Networking reimagined for the digital age.
             </p>
           </div>
           <div>

@@ -27,44 +27,99 @@ class PublicController extends Controller
     }
 
     /**
-     * Search active business cards by name, designation, or company.
+     * Search active business cards by name, designation, company, and location.
      */
     public function searchCards(Request $request): JsonResponse
     {
         $q = trim($request->query('q', ''));
+        $location = trim($request->query('location', ''));
+        $designation = trim($request->query('designation', ''));
+        $company = trim($request->query('company', ''));
+        $isPaginated = $request->boolean('paginate', false);
 
-        if (strlen($q) < 2) {
+        // If it's a basic search from the header and query is too short, return empty
+        if (!$isPaginated && strlen($q) < 2 && empty($location) && empty($designation) && empty($company)) {
             return response()->json([]);
         }
 
-        $cards = BusinessCard::where('status', 'active')
-            ->where(function ($query) use ($q) {
-                $query->where('personal_info->name', 'like', "%{$q}%")
-                      ->orWhere('personal_info->designation', 'like', "%{$q}%")
-                      ->orWhere('personal_info->company_name', 'like', "%{$q}%")
-                      ->orWhere('company_details->company_name', 'like', "%{$q}%")
-                      ->orWhere('slug', 'like', "%{$q}%");
-            })
-            ->orderBy('views_count', 'desc')
-            ->limit(8)
-            ->get(['id', 'slug', 'personal_info', 'company_details', 'profile_image', 'views_count', 'template_id']);
+        $query = BusinessCard::where('status', 'active');
 
-        $results = $cards->map(function ($card) {
-            $info = is_array($card->personal_info) ? $card->personal_info : [];
-            $company = is_array($card->company_details) ? $card->company_details : [];
+        // Main search query (q) across multiple fields
+        if (!empty($q)) {
+            $query->where(function ($qBuilder) use ($q) {
+                $qBuilder->where('personal_info->name', 'like', "%{$q}%")
+                         ->orWhere('personal_info->designation', 'like', "%{$q}%")
+                         ->orWhere('personal_info->company_name', 'like', "%{$q}%")
+                         ->orWhere('company_details->company_name', 'like', "%{$q}%")
+                         ->orWhere('slug', 'like', "%{$q}%");
+            });
+        }
 
-            return [
-                'slug' => $card->slug,
-                'name' => $info['name'] ?? 'Untitled',
-                'designation' => $info['designation'] ?? null,
-                'company' => $company['company_name'] ?? $info['company_name'] ?? null,
-                'image' => $card->profile_image ?? $info['profile_image'] ?? null,
-                'views' => $card->views_count,
-                'type' => $card->template_id ?? 'personal',
-            ];
-        });
+        // Location filter
+        if (!empty($location)) {
+            $query->where(function ($qBuilder) use ($location) {
+                $qBuilder->where('location_info->city', 'like', "%{$location}%")
+                         ->orWhere('location_info->state', 'like', "%{$location}%")
+                         ->orWhere('location_info->address', 'like', "%{$location}%")
+                         ->orWhere('location_info->pincode', 'like', "%{$location}%");
+            });
+        }
 
-        return response()->json($results);
+        // Designation filter
+        if (!empty($designation)) {
+            $query->where('personal_info->designation', 'like', "%{$designation}%");
+        }
+
+        // Company filter
+        if (!empty($company)) {
+            $query->where(function ($qBuilder) use ($company) {
+                $qBuilder->where('company_details->company_name', 'like', "%{$company}%")
+                         ->orWhere('personal_info->company_name', 'like', "%{$company}%");
+            });
+        }
+
+        $query->orderBy('views_count', 'desc');
+
+        if ($isPaginated) {
+            $cards = $query->paginate(12, ['id', 'slug', 'personal_info', 'company_details', 'profile_image', 'views_count', 'template_id']);
+            
+            // Transform the items inside the paginator
+            $cards->getCollection()->transform(function ($card) {
+                $info = is_array($card->personal_info) ? $card->personal_info : [];
+                $companyDetails = is_array($card->company_details) ? $card->company_details : [];
+
+                return [
+                    'slug' => $card->slug,
+                    'name' => $info['name'] ?? 'Untitled',
+                    'designation' => $info['designation'] ?? null,
+                    'company' => $companyDetails['company_name'] ?? $info['company_name'] ?? null,
+                    'image' => $card->profile_image ?? $info['profile_image'] ?? null,
+                    'views' => $card->views_count,
+                    'type' => $card->template_id ?? 'personal',
+                ];
+            });
+
+            return response()->json($cards);
+        } else {
+            $cards = $query->limit(8)->get(['id', 'slug', 'personal_info', 'company_details', 'profile_image', 'views_count', 'template_id']);
+            
+            $results = $cards->map(function ($card) {
+                $info = is_array($card->personal_info) ? $card->personal_info : [];
+                $companyDetails = is_array($card->company_details) ? $card->company_details : [];
+
+                return [
+                    'slug' => $card->slug,
+                    'name' => $info['name'] ?? 'Untitled',
+                    'designation' => $info['designation'] ?? null,
+                    'company' => $companyDetails['company_name'] ?? $info['company_name'] ?? null,
+                    'image' => $card->profile_image ?? $info['profile_image'] ?? null,
+                    'views' => $card->views_count,
+                    'type' => $card->template_id ?? 'personal',
+                ];
+            });
+
+            return response()->json($results);
+        }
     }
 
     /**
