@@ -139,10 +139,11 @@ export default function Dashboard() {
       {/* Grid Layout for Charts & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-fluid-lg">
         {/* Recent Leads (Large) */}
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-fluid-lg overflow-hidden">
+        <div className="ag-glass-card rounded-2xl p-fluid-lg overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           <div className="flex justify-between items-center mb-fluid-md">
             <h3 className="text-fluid-lg font-bold">Recent Leads</h3>
-            <button className="text-sm text-blue-500 hover:text-blue-400 font-medium">View All</button>
+            <button className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">View All</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -188,7 +189,8 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Stats / Info (Small) */}
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl p-fluid-lg">
+        <div className="ag-glass-card rounded-2xl p-fluid-lg relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           <h3 className="text-fluid-lg font-bold mb-fluid-md">Quick Actions</h3>
           <div className="space-y-fluid-sm">
             <QuickActionButton 
@@ -278,21 +280,31 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, icon, color }: StatCardProps) {
-  const colorMap = {
-    blue: 'from-blue-500/20 to-blue-600/5 text-blue-500 bg-blue-500/10',
-    green: 'from-green-500/20 to-green-600/5 text-green-500 bg-green-500/10',
-    indigo: 'from-indigo-500/20 to-indigo-600/5 text-indigo-500 bg-indigo-500/10',
-    purple: 'from-purple-500/20 to-purple-600/5 text-purple-500 bg-purple-500/10',
+  const colorConfig = {
+    blue: { bg: 'from-blue-500/15 via-blue-600/5 to-transparent', icon: 'bg-blue-500/15 text-blue-400 border-blue-500/20', glow: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.15)' },
+    green: { bg: 'from-emerald-500/15 via-emerald-600/5 to-transparent', icon: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20', glow: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.15)' },
+    indigo: { bg: 'from-indigo-500/15 via-indigo-600/5 to-transparent', icon: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/20', glow: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.15)' },
+    purple: { bg: 'from-purple-500/15 via-purple-600/5 to-transparent', icon: 'bg-purple-500/15 text-purple-400 border-purple-500/20', glow: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.15)' },
   };
+  const cfg = colorConfig[color];
 
   return (
-    <div className={`bg-gradient-to-br ${colorMap[color].split(' ')[0]} ${colorMap[color].split(' ')[1]} backdrop-blur-xl border border-white/5 rounded-2xl p-fluid-md`}>
-      <div className="flex justify-between items-start mb-fluid-sm">
+    <div
+      className={`relative overflow-hidden rounded-2xl p-fluid-md ag-float-card`}
+      style={{ borderColor: cfg.border }}
+    >
+      {/* Gradient bg */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${cfg.bg} opacity-60`} />
+      {/* Glow orb */}
+      <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full blur-2xl" style={{ background: cfg.glow }} />
+      {/* Top shimmer */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div className="relative z-10 flex justify-between items-start mb-fluid-sm">
         <div>
-          <p className="text-gray-400 text-fluid-sm font-medium">{title}</p>
-          <p className="text-fluid-3xl font-bold mt-1">{value.toLocaleString()}</p>
+          <p className="text-zinc-400 text-fluid-sm font-medium">{title}</p>
+          <p className="text-fluid-3xl font-bold mt-1 text-white">{value.toLocaleString()}</p>
         </div>
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorMap[color].split(' ')[3]}`}>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${cfg.icon}`}>
           <StatIcon name={icon} />
         </div>
       </div>
@@ -342,19 +354,19 @@ interface QuickActionButtonProps {
 
 function QuickActionButton({ icon, title, description, onClick }: QuickActionButtonProps) {
   return (
-    <button 
+    <button
       onClick={onClick}
-      className="w-full bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-4 flex items-center gap-4 transition-all duration-300 group"
+      className="w-full ag-float-card rounded-xl p-4 flex items-center gap-4 group min-h-[60px]"
     >
-      <div className="w-10 h-10 bg-white/5 group-hover:bg-blue-500/20 rounded-lg flex items-center justify-center transition-all duration-300">
+      <div className="w-10 h-10 bg-white/[0.05] group-hover:bg-blue-500/15 border border-white/[0.08] group-hover:border-blue-500/20 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0">
         <QuickActionIcon name={icon} />
       </div>
-      <div className="text-left">
-        <p className="font-medium group-hover:text-white transition-all duration-300">{title}</p>
-        <p className="text-xs text-gray-500">{description}</p>
+      <div className="text-left flex-1">
+        <p className="font-semibold text-sm group-hover:text-white transition-colors duration-300">{title}</p>
+        <p className="text-xs text-zinc-500">{description}</p>
       </div>
-      <svg className="w-5 h-5 text-gray-500 ml-auto group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+      <svg className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
       </svg>
     </button>
   );

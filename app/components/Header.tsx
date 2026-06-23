@@ -78,19 +78,24 @@ export default function Header() {
       <header
         className={`flex justify-between items-center w-full pointer-events-auto transition-all duration-500 ease-in-out ${
           isScrolled
-            ? 'max-w-4xl bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full py-3 px-6 mt-4 shadow-2xl shadow-blue-500/10'
+            ? 'max-w-4xl bg-black/60 backdrop-blur-2xl border border-white/[0.08] rounded-full py-2.5 px-5 mt-3 shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.04)_inset] ring-1 ring-blue-500/5'
             : 'max-w-5xl bg-transparent border border-transparent rounded-none py-6 px-0 mt-0'
         }`}
+        style={isScrolled ? {
+          backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.03), transparent)',
+        } : {}}
       >
-        <Link
-          href="/"
-          className="flex items-center"
-        >
-          <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 sm:h-10 w-auto" />
+        {/* Top shimmer line when scrolled */}
+        {isScrolled && (
+          <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-full pointer-events-none" />
+        )}
+
+        <Link href="/" className="flex items-center group">
+          <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 sm:h-9 w-auto group-hover:opacity-90 transition-opacity duration-200" />
         </Link>
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1 backdrop-blur-md">
+        <nav className="hidden md:flex items-center gap-0.5 bg-white/[0.04] border border-white/[0.08] rounded-full p-1 backdrop-blur-xl">
           {[
             { id: 'home', label: 'Home', href: '/#home' },
             { id: 'features', label: 'Features', href: '/#features' },
@@ -98,13 +103,13 @@ export default function Header() {
             { id: 'pricing', label: 'Pricing', href: '/#pricing' },
             { id: 'faq', label: 'FAQ', href: '/#faq' },
           ].map((item) => (
-            <Link 
-              key={item.id} 
-              href={item.href} 
+            <Link
+              key={item.id}
+              href={item.href}
               className={`text-sm font-medium transition-all duration-300 px-4 py-1.5 rounded-full ${
                 activeSection === item.id || (item.id === 'home' && activeSection === '')
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
               }`}
             >
               {item.label}
@@ -112,7 +117,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-2 items-center">
           {/* Search Toggle Button */}
           <div ref={searchRef} className="relative">
             <button
@@ -120,7 +125,7 @@ export default function Header() {
               className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 ${
                 searchOpen
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/10 border border-transparent'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.08] border border-transparent'
               }`}
               aria-label="Search"
             >
@@ -129,33 +134,33 @@ export default function Header() {
           </div>
 
           {user ? (
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white transition-colors whitespace-nowrap"
+                className="flex items-center gap-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors whitespace-nowrap px-3 py-2 rounded-full hover:bg-white/[0.06]"
               >
-                <User size={16} />
+                <User size={15} />
                 <span className="hidden sm:inline">Dashboard</span>
               </Link>
               <button
                 onClick={logout}
-                className="flex items-center gap-2 text-sm font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/20 rounded-full py-2 px-4 transition-colors whitespace-nowrap"
+                className="flex items-center gap-2 text-sm font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/20 rounded-full py-2 px-3 transition-all duration-300 whitespace-nowrap"
               >
-                <LogOut size={16} />
+                <LogOut size={15} />
                 <span className="hidden sm:inline">Log Out</span>
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 href="/login"
-                className="text-sm font-medium text-gray-300 hover:text-white transition-colors whitespace-nowrap"
+                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap px-3 py-2"
               >
                 Sign In
               </Link>
               <Link
                 href="/register"
-                className="text-sm font-medium bg-white/5 hover:bg-white/10 border border-white/10 rounded-full py-2 px-4 sm:px-5 transition-colors backdrop-blur-sm whitespace-nowrap"
+                className="text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-full py-2 px-4 sm:px-5 transition-all duration-300 whitespace-nowrap shadow-lg shadow-blue-500/25 hover:-translate-y-px hover:shadow-blue-500/40"
               >
                 Sign Up
               </Link>
@@ -164,17 +169,17 @@ export default function Header() {
         </div>
 
         {/* Mobile Menu Toggle */}
-        <button 
-          className="md:hidden p-2 ml-2 text-gray-300 hover:text-white pointer-events-auto"
+        <button
+          className="md:hidden p-2 ml-1 text-zinc-400 hover:text-white pointer-events-auto rounded-full hover:bg-white/[0.06] transition-colors"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </header>
 
       {/* Mobile Menu Dropdown */}
       <div 
-        className={`absolute top-[calc(100%+10px)] left-4 right-4 bg-slate-900/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex flex-col md:hidden pointer-events-auto transition-all duration-300 overflow-hidden ${
+        className={`absolute top-[calc(100%+10px)] left-4 right-4 bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex flex-col md:hidden pointer-events-auto transition-all duration-300 overflow-hidden ${
           mobileMenuOpen ? 'max-h-[400px] opacity-100 p-3' : 'max-h-0 opacity-0 p-0 border-transparent'
         }`}
       >

@@ -246,14 +246,19 @@ export default function Home() {
             <div className="hero-cta flex flex-col sm:flex-row gap-[clamp(0.75rem,2vw,1rem)] w-full sm:w-auto">
               <Link
                 href="/register"
-                className="group relative overflow-hidden bg-white text-black px-8 py-4 rounded-full font-semibold transition-transform hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.15)]"
+                className="group ag-glow-btn relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 bg-[size:200%_100%] text-white px-8 py-4 rounded-full font-semibold flex items-center justify-center gap-2 shadow-[0_4px_32px_rgba(59,130,246,0.45),0_0_60px_rgba(99,102,241,0.15)] hover:shadow-[0_8px_48px_rgba(59,130,246,0.6),0_0_80px_rgba(99,102,241,0.25)] transition-all duration-300"
+                style={{ backgroundPosition: 'left center', transition: 'background-position 0.5s ease, box-shadow 0.3s ease, transform 0.3s ease' }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundPosition = 'right center')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundPosition = 'left center')}
               >
-                Get Started Free
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                <span className="relative z-10 flex items-center gap-2">
+                  Get Started Free
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-300" />
+                </span>
               </Link>
               <Link
                 href="#features"
-                className="px-8 py-4 rounded-full font-semibold border border-zinc-800 text-zinc-300 hover:bg-zinc-900 transition-colors flex items-center justify-center gap-2"
+                className="group px-8 py-4 rounded-full font-semibold ag-glass-card text-zinc-200 hover:text-white flex items-center justify-center gap-2"
               >
                 Learn More
               </Link>
@@ -287,30 +292,40 @@ export default function Home() {
             <p className="text-[clamp(1rem,2vw,1.25rem)] text-zinc-400 mb-16 max-w-2xl mx-auto">Enterprise-grade infrastructure powering real connections worldwide.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12">
-            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl border border-zinc-800/40 bg-zinc-900/30 hover:bg-zinc-900/60 hover:border-blue-500/20 transition-all duration-500">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10">
-                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+            {/* Metric — Users */}
+            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl ag-float-card overflow-hidden">
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.10)_0%,transparent_70%)]" />
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
+              {/* Glow orb behind number */}
+              <div className="absolute w-32 h-32 rounded-full bg-blue-500/10 blur-2xl group-hover:bg-blue-500/20 transition-all duration-700" />
+              <div className="relative z-10 text-center">
+                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-300 to-blue-600 mb-2 leading-none group-hover:scale-105 transition-transform duration-500">
                   {stats.users > 0 ? `${(stats.users / 1000).toFixed(stats.users >= 1000 ? 0 : 1)}k+` : '15k+'}
                 </div>
-                <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Registered Users</div>
+                <div className="text-zinc-400 font-semibold tracking-[0.15em] uppercase text-xs">Registered Users</div>
               </div>
             </div>
-            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl border border-zinc-800/40 bg-zinc-900/30 hover:bg-zinc-900/60 hover:border-emerald-500/20 transition-all duration-500">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10">
-                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-emerald-400 to-emerald-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">
+            {/* Metric — Cards */}
+            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl ag-float-card overflow-hidden">
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.10)_0%,transparent_70%)]" />
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
+              <div className="absolute w-32 h-32 rounded-full bg-emerald-500/10 blur-2xl group-hover:bg-emerald-500/20 transition-all duration-700" />
+              <div className="relative z-10 text-center">
+                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-emerald-300 to-emerald-600 mb-2 leading-none group-hover:scale-105 transition-transform duration-500">
                   {stats.cards > 0 ? `${(stats.cards / 1000).toFixed(stats.cards >= 1000 ? 0 : 1)}k+` : '52k+'}
                 </div>
-                <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Cards Created</div>
+                <div className="text-zinc-400 font-semibold tracking-[0.15em] uppercase text-xs">Cards Created</div>
               </div>
             </div>
-            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl border border-zinc-800/40 bg-zinc-900/30 hover:bg-zinc-900/60 hover:border-purple-500/20 transition-all duration-500">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10">
-                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-400 to-purple-700 mb-2 drop-shadow-lg group-hover:scale-105 transition-transform duration-500">99.9%</div>
-                <div className="text-zinc-500 font-bold tracking-[0.2em] uppercase text-xs">Uptime SLA</div>
+            {/* Metric — Uptime */}
+            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl ag-float-card overflow-hidden">
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.10)_0%,transparent_70%)]" />
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-400/40 to-transparent" />
+              <div className="absolute w-32 h-32 rounded-full bg-purple-500/10 blur-2xl group-hover:bg-purple-500/20 transition-all duration-700" />
+              <div className="relative z-10 text-center">
+                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-300 to-purple-600 mb-2 leading-none group-hover:scale-105 transition-transform duration-500">99.9%</div>
+                <div className="text-zinc-400 font-semibold tracking-[0.15em] uppercase text-xs">Uptime SLA</div>
               </div>
             </div>
           </div>
@@ -331,11 +346,14 @@ export default function Home() {
             {bentoFeatures.map((f, i) => (
               <div
                 key={i}
-                className={`bento-card group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-zinc-800/60 p-7 sm:p-9 ${f.colSpan} bg-zinc-900/40 hover:bg-zinc-900/70 transition-colors duration-300`}
+                className={`bento-card group relative overflow-hidden rounded-2xl sm:rounded-3xl p-7 sm:p-9 ${f.colSpan} ag-float-card`}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                {/* Top highlight */}
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
+                {/* Hover glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/8 via-indigo-500/4 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl sm:rounded-3xl" />
                 <div className="relative z-10 flex flex-col h-full">
-                  <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mb-8 text-blue-400 group-hover:bg-blue-500/15 transition-colors">
+                  <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mb-8 text-blue-400 group-hover:bg-blue-500/20 group-hover:border-blue-400/40 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all duration-300">
                     {f.icon}
                   </div>
                   <h3 className="text-xl font-bold mb-2 tracking-tight">{f.title}</h3>
@@ -360,17 +378,21 @@ export default function Home() {
           <div className="steps-container grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {steps.map((step, i) => (
               <div key={i} className="step-card relative group">
-                <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-7 sm:p-8 hover:bg-zinc-900/70 transition-colors duration-300 h-full flex flex-col">
-                  {/* Step number */}
-                  <div className="absolute top-6 right-6 text-[4rem] font-black text-zinc-800/50 leading-none select-none">{step.num}</div>
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/15 to-indigo-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6 group-hover:from-blue-500/25 group-hover:to-indigo-500/25 transition-colors">
+                <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl ag-float-card p-7 sm:p-8 h-full flex flex-col">
+                  {/* Top shimmer line */}
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/30 to-transparent" />
+                  {/* Step watermark number */}
+                  <div className="absolute top-4 right-5 text-[5rem] font-black leading-none select-none text-transparent bg-clip-text bg-gradient-to-b from-zinc-700/60 to-transparent">{step.num}</div>
+                  {/* Hover glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/6 to-indigo-500/4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl sm:rounded-3xl" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/15 to-indigo-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6 group-hover:from-blue-500/25 group-hover:to-indigo-500/25 group-hover:shadow-[0_0_24px_rgba(59,130,246,0.25)] transition-all duration-300 relative z-10">
                     {step.icon}
                   </div>
-                  <h3 className="text-xl font-bold tracking-tight mb-3">{step.title}</h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed flex-1">{step.desc}</p>
+                  <h3 className="text-xl font-bold tracking-tight mb-3 relative z-10">{step.title}</h3>
+                  <p className="text-zinc-400 text-sm leading-relaxed flex-1 relative z-10">{step.desc}</p>
                   {/* Connector line */}
                   {i < steps.length - 1 && (
-                    <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-px bg-gradient-to-r from-zinc-700 to-transparent z-20" />
+                    <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-[1px] bg-gradient-to-r from-indigo-500/40 to-transparent z-20" />
                   )}
                 </div>
               </div>
@@ -400,17 +422,24 @@ export default function Home() {
 
               if (isPopular) {
                 return (
-                  <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl border border-blue-500/30 bg-gradient-to-b from-blue-950/40 to-zinc-900/60 p-7 sm:p-8 flex flex-col relative overflow-hidden ring-1 ring-blue-500/10">
-                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-wider">POPULAR</div>
-                    <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-                    <p className="text-zinc-500 text-sm mb-6">For active professionals.</p>
-                    <div className="text-4xl font-extrabold mb-8">{formatPrice(plan.price)}<span className="text-lg text-zinc-500 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
-                    <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
+                  <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl ag-glass-premium p-7 sm:p-8 flex flex-col relative overflow-hidden transition-all duration-500 hover:-translate-y-2">
+                    {/* Top shimmer */}
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
+                    {/* Glow orb */}
+                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-32 bg-blue-500/12 blur-3xl rounded-full" />
+                    {/* Popular badge */}
+                    <div className="absolute top-3.5 right-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-wider shadow-lg shadow-blue-500/30">POPULAR</div>
+                    <h3 className="text-lg font-bold mb-1 relative z-10">{plan.name}</h3>
+                    <p className="text-zinc-400 text-sm mb-6 relative z-10">For active professionals.</p>
+                    <div className="text-4xl font-extrabold mb-8 relative z-10 text-white">{formatPrice(plan.price)}<span className="text-lg text-zinc-400 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
+                    <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm relative z-10">
                       {plan.features?.map((f: string, i: number) => (
-                        <li key={i} className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> {f}</li>
+                        <li key={i} className="flex gap-2.5 items-center">
+                          <CheckCircle2 size={16} className="text-blue-400 shrink-0" /> {f}
+                        </li>
                       ))}
                     </ul>
-                    <Link href="/register" className="block text-center w-full py-3.5 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors font-semibold text-sm shadow-lg shadow-blue-600/20">
+                    <Link href="/register" className="ag-glow-btn block text-center w-full py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-blue-600/30 relative z-10">
                       Upgrade to {plan.name.replace(' Plan', '')}
                     </Link>
                   </div>
@@ -418,16 +447,19 @@ export default function Home() {
               }
 
               return (
-                <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-7 sm:p-8 flex flex-col hover:border-zinc-700 transition-colors">
+                <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl ag-float-card p-7 sm:p-8 flex flex-col relative overflow-hidden">
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-600/40 to-transparent" />
                   <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
                   <p className="text-zinc-500 text-sm mb-6">{index === 0 ? 'Perfect for individuals.' : 'For teams and companies.'}</p>
                   <div className="text-4xl font-extrabold mb-8">{formatPrice(plan.price)}<span className="text-lg text-zinc-500 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
                   <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
                     {plan.features?.map((f: string, i: number) => (
-                      <li key={i} className="flex gap-2.5 items-center"><CheckCircle2 size={16} className="text-blue-500 shrink-0" /> {f}</li>
+                      <li key={i} className="flex gap-2.5 items-center">
+                        <CheckCircle2 size={16} className="text-blue-500/80 shrink-0" /> {f}
+                      </li>
                     ))}
                   </ul>
-                  <Link href="/register" className="block text-center w-full py-3.5 rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors font-semibold text-sm">
+                  <Link href="/register" className="block text-center w-full py-3.5 rounded-full ag-glass-card border border-white/10 hover:border-white/20 text-zinc-200 hover:text-white font-semibold text-sm transition-all duration-300">
                     {index === 0 ? 'Get Started' : 'Contact Sales'}
                   </Link>
                 </div>
@@ -448,18 +480,28 @@ export default function Home() {
 
           <div className="faq-list space-y-3">
             {faqs.map((faq, i) => (
-              <div key={i} className="faq-item rounded-2xl border border-zinc-800/60 bg-zinc-900/40 overflow-hidden transition-colors hover:border-zinc-700">
+              <div key={i} className={`faq-item rounded-2xl overflow-hidden transition-all duration-400 ${
+                openFaq === i
+                  ? 'ag-glass-card border-indigo-500/20 shadow-[0_0_30px_rgba(99,102,241,0.08)]'
+                  : 'ag-float-card hover:border-zinc-600/50'
+              }`}>
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full text-left px-6 py-5 font-medium flex justify-between items-center focus:outline-none gap-4"
+                  className="w-full text-left px-6 py-5 font-medium flex justify-between items-center focus:outline-none gap-4 min-h-[52px]"
                 >
-                  <span className="text-sm sm:text-base">{faq.q}</span>
-                  <ChevronDown className={`shrink-0 transform transition-transform duration-300 text-zinc-500 ${openFaq === i ? 'rotate-180' : ''}`} size={18} />
+                  <span className={`text-sm sm:text-base transition-colors duration-300 ${openFaq === i ? 'text-white' : 'text-zinc-200'}`}>{faq.q}</span>
+                  <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    openFaq === i
+                      ? 'bg-indigo-500/20 border border-indigo-500/30 rotate-180'
+                      : 'bg-zinc-800/60 border border-zinc-700/50'
+                  }`}>
+                    <ChevronDown className={`text-zinc-400 transition-colors ${openFaq === i ? 'text-indigo-300' : ''}`} size={14} />
+                  </div>
                 </button>
                 <div
-                  className={`overflow-hidden transition-all duration-300 ease-in-out ${openFaq === i ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}
+                  className={`overflow-hidden transition-all duration-400 ease-in-out ${openFaq === i ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}
                 >
-                  <div className="px-6 pb-5 text-zinc-400 text-sm leading-relaxed">{faq.a}</div>
+                  <div className="px-6 pb-5 text-zinc-400 text-sm leading-relaxed border-t border-white/5 pt-3">{faq.a}</div>
                 </div>
               </div>
             ))}
@@ -469,65 +511,96 @@ export default function Home() {
 
       {/* ─── CTA ─── */}
       <section className="cta-section relative z-10 py-[clamp(6rem,12vh,10rem)] px-[clamp(1.25rem,3vw,3rem)] text-center overflow-hidden border-t border-zinc-900">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(300px,50vw,700px)] h-[clamp(200px,30vw,400px)] bg-blue-600/8 blur-[100px] rounded-full pointer-events-none" />
+        {/* Multi-layer glow orbs */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(400px,60vw,900px)] h-[clamp(300px,40vw,500px)] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(200px,30vw,500px)] h-[clamp(150px,20vw,300px)] bg-indigo-500/8 blur-[80px] rounded-full pointer-events-none" />
+        {/* Ring decoration */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-white/[0.03] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border border-white/[0.04] pointer-events-none" />
         <div className="cta-content max-w-3xl mx-auto relative z-10">
-          <h2 className="text-[clamp(2.5rem,5vw+1rem,4rem)] font-bold tracking-tight mb-6 leading-tight">Elevate your brand.</h2>
+          <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-5">Start for free</p>
+          <h2 className="text-[clamp(2.5rem,5vw+1rem,4rem)] font-black tracking-tight mb-6 leading-tight">Elevate your brand.<br /><span className="ag-shimmer-text">Start today.</span></h2>
           <p className="text-[clamp(1rem,1.5vw+0.5rem,1.25rem)] text-zinc-400 mb-[clamp(2rem,4vh,2.5rem)] max-w-xl mx-auto leading-relaxed">
             Join {stats.users.toLocaleString()}+ professionals already using Card Setu to make lasting impressions.
           </p>
           <Link
             href="/register"
-            className="group inline-flex items-center gap-3 bg-white text-black px-10 py-4 sm:px-12 sm:py-5 rounded-full font-bold text-base sm:text-lg transition-transform hover:scale-[1.03] active:scale-95"
+            className="group ag-glow-btn inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-10 py-4 sm:px-12 sm:py-5 rounded-full font-bold text-base sm:text-lg shadow-[0_4px_32px_rgba(59,130,246,0.4)] hover:shadow-[0_8px_48px_rgba(59,130,246,0.55)]"
           >
             Create Your Card Now
-            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
           </Link>
         </div>
       </section>
       </div>
 
       {/* ─── Footer ─── */}
-      <footer className="border-t border-zinc-900 bg-black pt-[clamp(4rem,8vh,6rem)] pb-[clamp(2rem,4vh,3rem)] px-[clamp(1.25rem,3vw,3rem)]">
-        <div className="max-w-[1440px] mx-auto grid grid-cols-2 md:grid-cols-5 gap-[clamp(2rem,4vw,3rem)] mb-[clamp(3rem,6vh,4rem)]">
+      <footer className="border-t border-zinc-900/60 bg-black pt-[clamp(4rem,8vh,6rem)] pb-[clamp(2rem,4vh,3rem)] px-[clamp(1.25rem,3vw,3rem)] relative overflow-hidden">
+        {/* Subtle footer glow */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-blue-600/5 blur-[80px] rounded-full pointer-events-none" />
+        <div className="max-w-[1440px] mx-auto grid grid-cols-2 md:grid-cols-5 gap-[clamp(2rem,4vw,3rem)] mb-[clamp(3rem,6vh,4rem)] relative z-10">
           <div className="col-span-2">
-            <img src="/logo-dark.png" alt="Card Setu" className="h-7 sm:h-8 mb-5" />
-            <p className="text-zinc-500 text-sm max-w-sm leading-relaxed">
+            <img src="/logo-dark.png" alt="Card Setu" className="h-7 sm:h-8 mb-5 opacity-90 hover:opacity-100 transition-opacity" />
+            <p className="text-zinc-500 text-sm max-w-sm leading-relaxed mb-6">
               The premium digital business card for modern professionals. Networking reimagined for the digital age.
             </p>
+            {/* Social icons */}
+            <div className="flex gap-3">
+              {['Twitter', 'LinkedIn', 'Instagram'].map((s) => (
+                <Link key={s} href="#"
+                  className="w-9 h-9 rounded-xl ag-glass-card flex items-center justify-center text-zinc-500 hover:text-white transition-colors text-xs font-semibold"
+                  aria-label={s}
+                >
+                  {s[0]}
+                </Link>
+              ))}
+            </div>
           </div>
           <div>
-            <h4 className="text-white font-semibold text-sm mb-5">Product</h4>
+            <h4 className="text-zinc-300 font-semibold text-sm mb-5 uppercase tracking-wider text-xs">Product</h4>
             <ul className="space-y-3 text-sm text-zinc-500">
-              <li><Link href="#features" className="hover:text-white transition-colors">Features</Link></li>
-              <li><Link href="#how-it-works" className="hover:text-white transition-colors">How it Works</Link></li>
-              <li><Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link></li>
-              <li><Link href="#faq" className="hover:text-white transition-colors">FAQ</Link></li>
+              {[{label:'Features',href:'#features'},{label:'How it Works',href:'#how-it-works'},{label:'Pricing',href:'#pricing'},{label:'FAQ',href:'#faq'}].map(l => (
+                <li key={l.label}>
+                  <Link href={l.href} className="hover:text-zinc-200 transition-colors duration-200 relative group">
+                    {l.label}
+                    <span className="absolute -bottom-px left-0 w-0 h-px bg-blue-400/50 group-hover:w-full transition-all duration-300" />
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-semibold text-sm mb-5">Company</h4>
+            <h4 className="text-zinc-300 font-semibold text-sm mb-5 uppercase tracking-wider text-xs">Company</h4>
             <ul className="space-y-3 text-sm text-zinc-500">
-              <li><Link href="#" className="hover:text-white transition-colors">About Us</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Contact</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Blog</Link></li>
+              {['About Us','Careers','Contact','Blog'].map(l => (
+                <li key={l}>
+                  <Link href="#" className="hover:text-zinc-200 transition-colors duration-200 relative group">
+                    {l}
+                    <span className="absolute -bottom-px left-0 w-0 h-px bg-blue-400/50 group-hover:w-full transition-all duration-300" />
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-semibold text-sm mb-5">Legal</h4>
+            <h4 className="text-zinc-300 font-semibold text-sm mb-5 uppercase tracking-wider text-xs">Legal</h4>
             <ul className="space-y-3 text-sm text-zinc-500">
-              <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Refund Policy</Link></li>
+              {['Privacy Policy','Terms of Service','Refund Policy'].map(l => (
+                <li key={l}>
+                  <Link href="#" className="hover:text-zinc-200 transition-colors duration-200 relative group">
+                    {l}
+                    <span className="absolute -bottom-px left-0 w-0 h-px bg-blue-400/50 group-hover:w-full transition-all duration-300" />
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto border-t border-zinc-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-zinc-600 text-sm">
-          <p>&copy; {new Date().getFullYear()} Card Setu. All rights reserved.</p>
-          <div className="flex gap-5">
-            <Link href="#" className="hover:text-zinc-400 transition-colors">Twitter</Link>
-            <Link href="#" className="hover:text-zinc-400 transition-colors">LinkedIn</Link>
-            <Link href="#" className="hover:text-zinc-400 transition-colors">Instagram</Link>
+        <div className="max-w-[1440px] mx-auto border-t border-zinc-900/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-zinc-600 text-sm relative z-10">
+          <p className="text-zinc-600">&copy; {new Date().getFullYear()} Card Setu. All rights reserved.</p>
+          <div className="flex items-center gap-2 text-xs text-zinc-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60 inline-block" />
+            All systems operational
           </div>
         </div>
       </footer>

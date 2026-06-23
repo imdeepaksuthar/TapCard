@@ -32,11 +32,9 @@ export default function Login() {
       const err = params.get('error');
       const registered = params.get('registered');
       const emailParam = params.get('email');
-      
-      if (emailParam) {
-        setEmail(decodeURIComponent(emailParam));
-      }
-      
+
+      if (emailParam) setEmail(decodeURIComponent(emailParam));
+
       if (registered === 'true') {
         setSuccessMessage("Registration successful! We've sent a verification email to your address. Please check your inbox and click the link to activate your account.");
         setNeedsVerification(true);
@@ -53,27 +51,19 @@ export default function Login() {
     }
   }, [resendCountdown]);
 
-  // Focus first OTP field on send
   useEffect(() => {
     if (otpSent) {
-      setTimeout(() => {
-        otpRefs.current[0]?.focus();
-      }, 100);
+      setTimeout(() => { otpRefs.current[0]?.focus(); }, 100);
     }
   }, [otpSent]);
 
   const handleOtpChange = (val: string, index: number) => {
     const cleanVal = val.replace(/\D/g, '');
     const newOtp = [...otpArray];
-    
     if (cleanVal.length > 0) {
-      const lastChar = cleanVal.slice(-1);
-      newOtp[index] = lastChar;
+      newOtp[index] = cleanVal.slice(-1);
       setOtpArray(newOtp);
-      
-      if (index < 5) {
-        otpRefs.current[index + 1]?.focus();
-      }
+      if (index < 5) otpRefs.current[index + 1]?.focus();
     } else {
       newOtp[index] = '';
       setOtpArray(newOtp);
@@ -103,12 +93,9 @@ export default function Login() {
       const pasteDigits = pasteData.split('');
       const newOtp = [...otpArray];
       for (let i = 0; i < 6; i++) {
-        if (pasteDigits[i]) {
-          newOtp[i] = pasteDigits[i];
-        }
+        if (pasteDigits[i]) newOtp[i] = pasteDigits[i];
       }
       setOtpArray(newOtp);
-      
       const nextFocusIndex = Math.min(pasteDigits.length, 5);
       otpRefs.current[nextFocusIndex]?.focus();
     }
@@ -133,10 +120,7 @@ export default function Login() {
   };
 
   const handleSendOTP = async () => {
-    if (!email) {
-      setError('Please enter your email address.');
-      return;
-    }
+    if (!email) { setError('Please enter your email address.'); return; }
     setError('');
     setSuccessMessage('');
     setOtpLoading(true);
@@ -178,16 +162,13 @@ export default function Login() {
           method: 'POST',
           body: JSON.stringify({ email, code: otpCode }),
         });
-        
         localStorage.setItem('card-setu-token', data.token);
         document.cookie = `card-setu-token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
-        
         window.location.href = '/dashboard';
       }
     } catch (err: any) {
-      const isVerificationPending = err.data?.needs_verification || 
+      const isVerificationPending = err.data?.needs_verification ||
                                     err.message?.toLowerCase().includes('verify');
-      
       if (isVerificationPending) {
         setError(err.message || 'Please verify your email address to log in.');
         setNeedsVerification(true);
@@ -204,407 +185,255 @@ export default function Login() {
     window.location.href = `${apiUrl}/api/auth/google/redirect`;
   };
 
-  return (
-    <>
-      <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .auth-card {
-          animation: fadeUp 0.45s ease-out both;
-        }
-        .auth-input {
-          width: 100%;
-          box-sizing: border-box;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.18);
-          border-radius: 12px;
-          padding: 12px 16px;
-          color: #ffffff;
-          font-size: 14px;
-          outline: none;
-          transition: border-color 0.2s;
-        }
-        .auth-input:focus { border-color: #3b82f6; }
-        .auth-input::placeholder { color: #6b7280; }
-        .auth-btn {
-          width: 100%;
-          padding: 13px;
-          background: linear-gradient(135deg, #2563eb, #4f46e5);
-          border: none;
-          border-radius: 12px;
-          color: #ffffff;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          box-shadow: 0 4px 20px rgba(59,130,246,0.4);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: opacity 0.2s, transform 0.2s;
-        }
-        .auth-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
-        .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .social-btn {
-          padding: 11px;
-          border-radius: 12px;
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(255,255,255,0.15);
-          color: #e5e7eb;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-        .social-btn:hover { background: rgba(255,255,255,0.14); }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-      `}</style>
+  const SpinnerSVG = () => (
+    <svg className="w-[18px] h-[18px] shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
 
-      <main style={{
-        background: '#060d1f',
-        minHeight: '100vh',
-        color: '#ffffff',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '48px 16px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Gradient blobs */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', top: '-15%', left: '-5%', width: '50%', height: '50%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)' }} />
-          <div style={{ position: 'absolute', bottom: '-15%', right: '-5%', width: '50%', height: '50%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)' }} />
+  return (
+    <main className="relative min-h-screen bg-[#060d1f] text-white flex flex-col justify-center items-center px-4 py-12 overflow-hidden">
+
+      {/* Animated background orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-15%] left-[-5%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.16)_0%,transparent_70%)]" />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.14)_0%,transparent_70%)]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-indigo-900/10 blur-[80px] rounded-full" />
+        {/* Dot grid */}
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_40%,transparent_100%)]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-[420px]">
+
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex justify-center mb-3">
+            <img src="/logo-dark.png" alt="Card Setu Logo" className="h-11 w-auto hover:opacity-90 transition-opacity" />
+          </Link>
+          <p className="text-zinc-400 text-sm">Welcome back — sign in to your account.</p>
         </div>
 
-        <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '420px' }}>
-          {/* Brand */}
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <Link href="/" style={{ display: 'flex', justifyContent: 'center' }}>
-              <img src="/logo-dark.png" alt="Card Setu Logo" style={{ height: '48px', width: 'auto' }} />
-            </Link>
-            <p style={{ color: '#9ca3af', marginTop: '8px', fontSize: '14px' }}>Welcome back! Sign in to your account.</p>
-          </div>
+        {/* Card */}
+        <div
+          className="ag-glass-card rounded-2xl p-8 relative overflow-hidden"
+          style={{ animation: 'ag-entrance-up 0.45s ease-out both' }}
+        >
+          {/* Top shimmer */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
-          {/* Card */}
-          <div className="auth-card" style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '20px',
-            padding: '36px',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-          }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, textAlign: 'center', marginBottom: '28px', color: '#ffffff' }}>Sign In</h2>
+          <h2 className="text-lg font-bold text-center mb-7 text-white">Sign In</h2>
 
-            {successMessage && (
-              <div style={{ marginBottom: '20px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', color: '#a7f3d0', fontSize: '13px', textAlign: 'center' }}>
-                <div>{successMessage}</div>
-                {needsVerification && (
-                  <button
-                    type="button"
-                    onClick={handleResendVerification}
-                    disabled={isLoading}
-                    style={{
-                      marginTop: '12px',
-                      background: 'linear-gradient(135deg, #10b981, #059669)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      padding: '8px 16px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      width: '100%',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                    }}
-                  >
-                    {isLoading ? 'Resending...' : 'Resend Verification Email'}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {error && (
-              <div style={{ marginBottom: '20px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#fca5a5', fontSize: '13px', textAlign: 'center' }}>
-                <div>{error}</div>
-                {needsVerification && (
-                  <button
-                    type="button"
-                    onClick={handleResendVerification}
-                    disabled={isLoading}
-                    style={{
-                      marginTop: '12px',
-                      background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      padding: '8px 16px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      width: '100%',
-                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-                    }}
-                  >
-                    {isLoading ? 'Resending...' : 'Resend Verification Email'}
-                  </button>
-                )}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Toggle switch between Password and Email OTP */}
-              <div style={{
-                display: 'flex',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                padding: '4px',
-                borderRadius: '14px',
-                marginBottom: '8px'
-              }}>
+          {/* Success banner */}
+          {successMessage && (
+            <div className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm text-center">
+              <div>{successMessage}</div>
+              {needsVerification && (
                 <button
                   type="button"
-                  onClick={() => { setLoginMethod('password'); setError(''); }}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    background: loginMethod === 'password' ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    color: loginMethod === 'password' ? '#ffffff' : '#9ca3af',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: loginMethod === 'password' ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
-                  }}
+                  onClick={handleResendVerification}
+                  disabled={isLoading}
+                  className="mt-3 w-full py-2 px-4 rounded-lg bg-emerald-600/70 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors"
                 >
-                  Password
+                  {isLoading ? 'Resending…' : 'Resend Verification Email'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => { setLoginMethod('otp'); setError(''); }}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    background: loginMethod === 'otp' ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    color: loginMethod === 'otp' ? '#ffffff' : '#9ca3af',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: loginMethod === 'otp' ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
-                  }}
-                >
-                  Email OTP
-                </button>
-              </div>
-
-              {/* Email Address (Always visible) */}
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#d1d5db', marginBottom: '8px' }}>Email Address</label>
-                <input
-                  type="email"
-                  className="auth-input"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  disabled={loginMethod === 'otp' && otpSent}
-                  style={loginMethod === 'otp' && otpSent ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
-                />
-              </div>
-
-              {/* PASSWORD FLOW */}
-              {loginMethod === 'password' && (
-                <>
-                  {/* Password */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <label style={{ fontSize: '13px', fontWeight: 500, color: '#d1d5db' }}>Password</label>
-                      <Link href="/forgot-password" style={{ fontSize: '13px', color: '#60a5fa', textDecoration: 'none' }}>Forgot password?</Link>
-                    </div>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        className="auth-input"
-                        style={{ paddingRight: '44px' }}
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required={loginMethod === 'password'}
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        style={{ position: 'absolute', right: '13px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px', display: 'flex' }}>
-                        {showPassword
-                          ? <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                          : <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        }
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Remember me */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input type="checkbox" id="remember-password" style={{ width: '16px', height: '16px', accentColor: '#3b82f6', cursor: 'pointer' }} />
-                    <label htmlFor="remember-password" style={{ fontSize: '13px', color: '#9ca3af', cursor: 'pointer' }}>Remember me for 30 days</label>
-                  </div>
-
-                  {/* Submit */}
-                  <button type="submit" disabled={isLoading} className="auth-btn">
-                    {isLoading
-                      ? <><svg style={{ animation: 'spin 1s linear infinite', width: '18px', height: '18px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Signing in...</>
-                      : 'Sign In'
-                    }
-                  </button>
-                </>
               )}
+            </div>
+          )}
 
-              {/* EMAIL OTP FLOW */}
-              {loginMethod === 'otp' && (
-                <>
-                  {otpSent && (
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: 500, color: '#d1d5db' }}>Verification Code</label>
-                        <button
-                          type="button"
-                          onClick={() => { setOtpSent(false); setOtpArray(Array(6).fill('')); }}
-                          style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '13px', cursor: 'pointer', padding: 0 }}
-                        >
-                          Change Email
-                        </button>
-                      </div>
-                      
-                      {/* 6 separate inputs for verification code */}
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', margin: '16px 0' }}>
-                        {otpArray.map((digit, idx) => (
-                          <input
-                            key={idx}
-                            ref={el => { otpRefs.current[idx] = el; }}
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            maxLength={1}
-                            value={digit}
-                            onChange={e => handleOtpChange(e.target.value, idx)}
-                            onKeyDown={e => handleOtpKeyDown(e, idx)}
-                            onPaste={handleOtpPaste}
-                            style={{
-                              width: '46px',
-                              height: '52px',
-                              textAlign: 'center',
-                              fontSize: '20px',
-                              fontWeight: '700',
-                              background: 'rgba(255, 255, 255, 0.08)',
-                              border: '1px solid rgba(255, 255, 255, 0.18)',
-                              borderRadius: '12px',
-                              color: '#ffffff',
-                              outline: 'none',
-                              transition: 'all 0.2s',
-                              borderColor: digit ? '#3b82f6' : 'rgba(255, 255, 255, 0.18)',
-                              boxShadow: digit ? '0 0 10px rgba(59, 130, 246, 0.2)' : 'none'
-                            }}
-                            onFocus={e => {
-                              e.target.style.borderColor = '#3b82f6';
-                              e.target.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.3)';
-                            }}
-                            onBlur={e => {
-                              e.target.style.borderColor = digit ? '#3b82f6' : 'rgba(255, 255, 255, 0.18)';
-                              e.target.style.boxShadow = digit ? '0 0 10px rgba(59, 130, 246, 0.2)' : 'none';
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>
-                          {resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : 'Didn\'t receive code?'}
-                        </span>
-                        {resendCountdown === 0 && (
-                          <button
-                            type="button"
-                            onClick={handleSendOTP}
-                            disabled={otpLoading}
-                            style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '12px', cursor: 'pointer', fontWeight: 600, padding: 0 }}
-                          >
-                            {otpLoading ? 'Sending...' : 'Resend OTP'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
+          {/* Error banner */}
+          {error && (
+            <div className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-sm text-center">
+              <div>{error}</div>
+              {needsVerification && (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={isLoading}
+                  className="mt-3 w-full py-2 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold transition-all hover:-translate-y-px"
+                >
+                  {isLoading ? 'Resending…' : 'Resend Verification Email'}
+                </button>
+              )}
+            </div>
+          )}
 
-                  {/* Send OTP button or Verify & Submit button */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', marginTop: '4px' }}>
-                    <input type="checkbox" id="remember-otp" style={{ width: '16px', height: '16px', accentColor: '#3b82f6', cursor: 'pointer' }} />
-                    <label htmlFor="remember-otp" style={{ fontSize: '13px', color: '#9ca3af', cursor: 'pointer' }}>Remember me for 30 days</label>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+
+            {/* Login Method Toggle */}
+            <div className="flex bg-white/[0.04] border border-white/[0.08] p-1 rounded-xl">
+              {(['password', 'otp'] as const).map((method) => (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => { setLoginMethod(method); setError(''); }}
+                  className={`flex-1 py-2.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                    loginMethod === method
+                      ? 'bg-white/10 text-white shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {method === 'password' ? 'Password' : 'Email OTP'}
+                </button>
+              ))}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-[13px] font-medium text-zinc-300 mb-2">Email Address</label>
+              <input
+                type="email"
+                className="auth-input"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                disabled={loginMethod === 'otp' && otpSent}
+              />
+            </div>
+
+            {/* PASSWORD FLOW */}
+            {loginMethod === 'password' && (
+              <>
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <label className="text-[13px] font-medium text-zinc-300">Password</label>
+                    <Link href="/forgot-password" className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors">
+                      Forgot password?
+                    </Link>
                   </div>
-                  {!otpSent ? (
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="auth-input pr-11"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required={loginMethod === 'password'}
+                    />
                     <button
                       type="button"
-                      onClick={handleSendOTP}
-                      disabled={otpLoading}
-                      className="auth-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors p-1"
                     >
-                      {otpLoading
-                        ? <><svg style={{ animation: 'spin 1s linear infinite', width: '18px', height: '18px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Sending Code...</>
-                        : 'Send Verification Code'
+                      {showPassword
+                        ? <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        : <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       }
                     </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="auth-btn"
-                    >
-                      {isLoading
-                        ? <><svg style={{ animation: 'spin 1s linear infinite', width: '18px', height: '18px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Verifying...</>
-                        : 'Sign In with OTP'
-                      }
-                    </button>
-                  )}
-                </>
-              )}
-            </form>
+                  </div>
+                </div>
 
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0' }}>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-              <div style={{ padding: '0 16px', color: '#6b7280', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', whiteSpace: 'nowrap' }}>
-                Or continue with
-              </div>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-            </div>
+                <div className="flex items-center gap-2.5">
+                  <input type="checkbox" id="remember-password" className="w-4 h-4 accent-blue-500 cursor-pointer rounded" />
+                  <label htmlFor="remember-password" className="text-[13px] text-zinc-500 cursor-pointer">Remember me for 30 days</label>
+                </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button type="button" onClick={handleGoogleLogin} className="social-btn">
-                <svg viewBox="0 0 24 24" width="18" height="18" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Continue with Google
-              </button>
-            </div>
+                <button type="submit" disabled={isLoading} className="auth-btn">
+                  {isLoading ? <><SpinnerSVG /> Signing in…</> : 'Sign In'}
+                </button>
+              </>
+            )}
+
+            {/* OTP FLOW */}
+            {loginMethod === 'otp' && (
+              <>
+                {otpSent && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <label className="text-[13px] font-medium text-zinc-300">Verification Code</label>
+                      <button
+                        type="button"
+                        onClick={() => { setOtpSent(false); setOtpArray(Array(6).fill('')); }}
+                        className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        Change Email
+                      </button>
+                    </div>
+
+                    {/* OTP boxes */}
+                    <div className="flex gap-2 justify-center my-4">
+                      {otpArray.map((digit, idx) => (
+                        <input
+                          key={idx}
+                          ref={el => { otpRefs.current[idx] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={1}
+                          value={digit}
+                          onChange={e => handleOtpChange(e.target.value, idx)}
+                          onKeyDown={e => handleOtpKeyDown(e, idx)}
+                          onPaste={handleOtpPaste}
+                          className={`w-11 h-13 text-center text-xl font-bold bg-white/[0.07] border rounded-xl text-white outline-none transition-all duration-200 ${
+                            digit
+                              ? 'border-blue-500/60 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
+                              : 'border-white/[0.12] focus:border-blue-500/50 focus:shadow-[0_0_12px_rgba(59,130,246,0.15)]'
+                          }`}
+                          style={{ height: '52px' }}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-zinc-500">
+                        {resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : "Didn't receive code?"}
+                      </span>
+                      {resendCountdown === 0 && (
+                        <button
+                          type="button"
+                          onClick={handleSendOTP}
+                          disabled={otpLoading}
+                          className="text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                        >
+                          {otpLoading ? 'Sending…' : 'Resend OTP'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2.5">
+                  <input type="checkbox" id="remember-otp" className="w-4 h-4 accent-blue-500 cursor-pointer rounded" />
+                  <label htmlFor="remember-otp" className="text-[13px] text-zinc-500 cursor-pointer">Remember me for 30 days</label>
+                </div>
+
+                {!otpSent ? (
+                  <button type="button" onClick={handleSendOTP} disabled={otpLoading} className="auth-btn">
+                    {otpLoading ? <><SpinnerSVG /> Sending Code…</> : 'Send Verification Code'}
+                  </button>
+                ) : (
+                  <button type="submit" disabled={isLoading} className="auth-btn">
+                    {isLoading ? <><SpinnerSVG /> Verifying…</> : 'Sign In with OTP'}
+                  </button>
+                )}
+              </>
+            )}
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center my-6">
+            <div className="flex-1 h-px bg-white/[0.08]" />
+            <span className="px-4 text-[11px] text-zinc-600 uppercase tracking-widest whitespace-nowrap">Or continue with</span>
+            <div className="flex-1 h-px bg-white/[0.08]" />
           </div>
 
-          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#9ca3af' }}>
-            Don't have an account?{' '}
-            <Link href="/register" style={{ color: '#60a5fa', fontWeight: 600, textDecoration: 'none' }}>Sign up</Link>
-          </p>
+          <button type="button" onClick={handleGoogleLogin} className="social-btn">
+            <svg viewBox="0 0 24 24" width="17" height="17">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Continue with Google
+          </button>
         </div>
-      </main>
-    </>
+
+        <p className="text-center mt-6 text-sm text-zinc-500">
+          Don&apos;t have an account?{' '}
+          <Link href="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">Sign up</Link>
+        </p>
+      </div>
+    </main>
   );
 }

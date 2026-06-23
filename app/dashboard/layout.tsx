@@ -74,7 +74,13 @@ export default function DashboardLayout({
   if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-[#030712] text-white flex justify-center items-center">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
+            <div className="absolute inset-0 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+          </div>
+          <p className="text-zinc-500 text-sm">Loading your workspace…</p>
+        </div>
       </div>
     );
   }
@@ -96,18 +102,21 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 w-[var(--width-fluid-sidebar-mobile)] lg:w-[var(--width-fluid-sidebar)] bg-[#0B1528] border-r border-white/5 flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed lg:static inset-y-0 left-0 w-[var(--width-fluid-sidebar-mobile)] lg:w-[var(--width-fluid-sidebar)] bg-black/60 backdrop-blur-2xl border-r border-white/[0.06] flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
+        style={{ backgroundImage: 'linear-gradient(160deg, rgba(30,40,80,0.5) 0%, rgba(5,8,20,0.7) 100%)' }}
       >
+        {/* Sidebar top shimmer */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/20 to-transparent" />
         <div className="p-fluid-lg flex justify-between items-center">
-          <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 w-auto" />
+          <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 w-auto opacity-90" />
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="text-gray-400 hover:text-white lg:hidden"
+            className="text-zinc-500 hover:text-white transition-colors lg:hidden w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -146,30 +155,28 @@ export default function DashboardLayout({
           )}
           <SidebarLink href="/dashboard/settings" icon="settings" active={pathname === '/dashboard/settings'} onClick={() => setIsSidebarOpen(false)}>Settings</SidebarLink>
         </nav>
-        <div className="p-fluid-md border-t border-white/5">
+        <div className="p-fluid-md border-t border-white/[0.05] relative">
+          {/* Bottom glow */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
           <div className="flex items-center gap-3 mb-4">
             {user.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-10 h-10 rounded-full object-cover border border-white/10"
-              />
+              <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-white/10 ring-1 ring-blue-500/10" />
             ) : (
-              <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center font-bold text-blue-500">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex items-center justify-center font-bold text-blue-400 text-sm border border-blue-500/15">
                 {user.name.charAt(0).toUpperCase()}
               </div>
             )}
             <div className="overflow-hidden">
-              <p className="font-medium truncate">{user.name}</p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              <p className="font-semibold text-sm truncate text-zinc-100">{user.name}</p>
+              <p className="text-xs text-zinc-500 truncate">{user.email}</p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="w-full bg-white/5 hover:bg-red-500/10 hover:text-red-500 border border-white/10 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
+            className="w-full bg-white/[0.04] hover:bg-red-500/10 hover:text-red-400 border border-white/[0.08] hover:border-red-500/20 py-2.5 rounded-xl font-medium text-sm text-zinc-400 transition-all duration-300 flex items-center justify-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             Logout
           </button>
@@ -179,14 +186,15 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="relative z-50 bg-[#0B1528]/50 backdrop-blur-xl border-b border-white/5 h-[clamp(3.5rem,8vw,4.5rem)] flex items-center justify-between px-fluid-lg">
+        <header className="relative z-50 bg-black/40 backdrop-blur-2xl border-b border-white/[0.05] h-[clamp(3.5rem,8vw,4.5rem)] flex items-center justify-between px-fluid-lg">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
           <div className="flex items-center gap-fluid-sm">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="text-gray-400 hover:text-white lg:hidden"
+              className="text-zinc-400 hover:text-white lg:hidden w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/[0.06] transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             <h2 className="text-fluid-xl font-bold">
@@ -201,19 +209,15 @@ export default function DashboardLayout({
           </div>
           <div className="flex items-center gap-4">
             <NotificationBell />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {user.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full object-cover border border-white/10"
-                />
+                <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover border border-white/10" />
               ) : (
-                <div className="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center font-bold text-indigo-500">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500/20 to-blue-500/20 rounded-full flex items-center justify-center font-bold text-indigo-400 text-xs border border-indigo-500/15">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="font-medium hidden sm:inline">{user.name}</span>
+              <span className="font-medium text-sm text-zinc-200 hidden sm:inline">{user.name}</span>
             </div>
           </div>
         </header>
@@ -240,12 +244,13 @@ function SidebarLink({ href, icon, children, active, onClick }: SidebarLinkProps
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-fluid-sm px-fluid-md py-fluid-sm rounded-lg font-medium text-fluid-sm transition-all duration-300 ${
+      className={`flex items-center gap-fluid-sm px-fluid-md py-fluid-sm rounded-xl font-medium text-fluid-sm transition-all duration-300 relative group ${
         active
-          ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/10'
-          : 'text-gray-400 hover:text-white hover:bg-white/5'
+          ? 'bg-gradient-to-r from-blue-600/90 to-indigo-600/80 text-white shadow-lg shadow-blue-500/15 border border-blue-500/20'
+          : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
       }`}
     >
+      {active && <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-t-xl" />}
       <SidebarIcon name={icon} />
       {children}
     </Link>
