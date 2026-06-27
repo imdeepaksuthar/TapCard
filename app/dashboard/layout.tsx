@@ -160,7 +160,7 @@ export default function DashboardLayout({
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
           <div className="flex items-center gap-3 mb-4">
             {user.avatar ? (
-              <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-white/10 ring-1 ring-blue-500/10" />
+              <img src={user.avatar} alt={user.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover border border-white/10 ring-1 ring-blue-500/10" />
             ) : (
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex items-center justify-center font-bold text-blue-400 text-sm border border-blue-500/15">
                 {user.name.charAt(0).toUpperCase()}
@@ -211,7 +211,7 @@ export default function DashboardLayout({
             <NotificationBell />
             <div className="flex items-center gap-2.5">
               {user.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover border border-white/10" />
+                <img src={user.avatar} alt={user.name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover border border-white/10" />
               ) : (
                 <div className="w-8 h-8 bg-gradient-to-br from-indigo-500/20 to-blue-500/20 rounded-full flex items-center justify-center font-bold text-indigo-400 text-xs border border-indigo-500/15">
                   {user.name.charAt(0).toUpperCase()}

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\OTPAuthController;
+use App\Http\Controllers\Api\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +64,10 @@ Route::middleware('throttle:60,1')->group(function () {
 
     // Order Checkout Endpoint
     Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store']);
+
+    // Reviews (Public)
+    Route::get('/reviews', [ReviewController::class, 'index']);
+    Route::post('/reviews', [ReviewController::class, 'store']);
 
     // Pincode Verification Endpoint
     Route::get('/verify-pincode/{pincode}', [BusinessCardController::class, 'verifyPincode']);
@@ -136,5 +141,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/services', [ServiceController::class, 'store']);
     Route::put('/services/{service}', [ServiceController::class, 'update']);
     Route::delete('/services/{service}', [ServiceController::class, 'destroy']);
+
+    // Review Actions (Card owner can delete reviews)
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 });
 

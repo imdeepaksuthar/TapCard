@@ -3681,6 +3681,17 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
+  if (authLoading || checkingCards) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-[#030712]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+          <p className="text-gray-400 font-medium animate-pulse">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-[#030712]">
 
@@ -3884,7 +3895,9 @@ export default function CardForm({ id }: CardFormProps) {
             
             const hasProprietorBlock = showProprietor && proprietorDetails.length > 0 && proprietorDetails.some((p: any) => p.name);
             const hasGalleryBlock = showGallery && galleryContent.length > 0;
-            const hasHoursBlock = showHours && Object.keys(openingHours).length > 0;
+            const hasHoursBlock = showHours && Object.keys(openingHours).length > 0 &&
+              (Object.values(openingHours).some((h: any) => h && h.open && h.open.trim() && h.open !== '--:-- --') ||
+               Object.entries(openingHours).some(([day, h]: any) => day.toLowerCase() !== 'sunday' && h && h.closed === true));
             const hasBrochuresBlock = showBrochures && brochurePdfs.length > 0;
 
             const surface       = isDark ? 'bg-[#0f0f13]' : 'bg-white';

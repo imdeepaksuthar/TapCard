@@ -5,9 +5,13 @@ import PublicCardView from './PublicCardView';
 // Fetch public profile data server-side
 async function getCardData(slug: string) {
   try {
-    // Replace with absolute backend URL dynamically in production
+    // Replace with absolute backend URL dynamically in production.
+    // ISR: serve a cached render and refresh in the background at most once
+    // per `revalidate` window. This cuts the blocking backend round-trip on
+    // every visit (big TTFB win) and lets Next dedupe the metadata + page
+    // fetches into a single cached request. Card edits appear within ~60s.
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/cards/public/${slug}`, {
-      cache: 'no-store'
+      next: { revalidate: 60 }
     });
     if (!res.ok) return null;
     return res.json();

@@ -41,6 +41,12 @@ const hexToRgba = (hex: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+// Local inline placeholder (a self-contained SVG data URI) shown for
+// products/services with no image — avoids a slow cross-origin request to an
+// external stock-photo host on every such tile in the public card view.
+const IMG_PLACEHOLDER =
+  "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='600'%20height='600'%20viewBox='0%200%2024%2024'%3E%3Crect%20width='24'%20height='24'%20fill='%23eef0f6'/%3E%3Cg%20fill='none'%20stroke='%23c2c8d6'%20stroke-width='1.4'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20x='3.5'%20y='4.5'%20width='17'%20height='15'%20rx='2'/%3E%3Ccircle%20cx='9'%20cy='10'%20r='1.6'/%3E%3Cpath%20d='M20%2016l-4.5-4.5L7%2019.5'/%3E%3C/g%3E%3C/svg%3E";
+
 // Brand SVG icons (inline so we don't add deps)
 const Icon = {
   Phone: (p: AnyObj) => (
@@ -146,34 +152,6 @@ const Icon = {
   ChevronRight: (p: AnyObj) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <polyline points="9 18 15 12 9 6" />
-    </svg>
-  ),
-  QrCode: (p: AnyObj) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <rect width="5" height="5" x="3" y="3" rx="1" />
-      <rect width="5" height="5" x="16" y="3" rx="1" />
-      <rect width="5" height="5" x="3" y="16" rx="1" />
-      <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
-      <path d="M21 21v.01" />
-      <path d="M12 7v3a2 2 0 0 1-2 2H7" />
-      <path d="M3 12h.01" />
-      <path d="M12 3h.01" />
-      <path d="M12 16v.01" />
-      <path d="M16 12h1" />
-      <path d="M21 12v.01" />
-      <path d="M12 21v-1" />
-    </svg>
-  ),
-  X: (p: AnyObj) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  ),
-  Download: (p: AnyObj) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   ),
   // Social brand glyphs (monochrome)
@@ -290,6 +268,16 @@ const Icon = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
       <line x1="12" y1="18" x2="12.01" y2="18" />
+    </svg>
+  ),
+  Star: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  ),
+  MessageCircle: (p: AnyObj) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
     </svg>
   ),
 };
@@ -478,6 +466,84 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   // Gallery Lightbox State
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
+  // Feedback & Rating State
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [hoveredStar, setHoveredStar] = useState(0);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [hasAlreadyReviewed, setHasAlreadyReviewed] = useState(false);
+
+  // Generate or retrieve a unique device ID from localStorage
+  const getDeviceId = useCallback(() => {
+    if (typeof window === 'undefined') return '';
+    let deviceId = localStorage.getItem('tapcard_device_id');
+    if (!deviceId) {
+      deviceId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem('tapcard_device_id', deviceId);
+    }
+    return deviceId;
+  }, []);
+
+  // Fetch reviews on mount
+  useEffect(() => {
+    if (!card.id) return;
+    const deviceId = getDeviceId();
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/reviews?card_id=${card.id}&device_id=${deviceId}`)
+      .then(res => res.json())
+      .then(data => {
+        setReviews(data.reviews || []);
+        setAvgRating(data.avg_rating || 0);
+        setTotalReviews(data.total_reviews || 0);
+        setHasAlreadyReviewed(data.has_reviewed || false);
+      })
+      .catch(() => {});
+  }, [card.id, getDeviceId]);
+
+  // Submit review handler
+  const handleSubmitReview = async () => {
+    if (!reviewRating || !reviewName.trim()) return;
+    setIsSubmittingReview(true);
+    try {
+      const deviceId = getDeviceId();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          card_id: card.id,
+          device_id: deviceId,
+          reviewer_name: reviewName.trim(),
+          rating: reviewRating,
+          comment: reviewComment.trim() || null,
+        }),
+      });
+      if (res.status === 409) {
+        // Already reviewed from this device
+        setHasAlreadyReviewed(true);
+        setIsSubmittingReview(false);
+        return;
+      }
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      setReviews(prev => [data.review, ...prev]);
+      setAvgRating(data.avg_rating);
+      setTotalReviews(data.total_reviews);
+      setReviewRating(0);
+      setReviewName('');
+      setReviewComment('');
+      setReviewSuccess(true);
+      setHasAlreadyReviewed(true);
+      setTimeout(() => setReviewSuccess(false), 3000);
+    } catch {}
+    setIsSubmittingReview(false);
+  };
+
+
   // Fetch Pincode Details
   useEffect(() => {
     if (checkoutPincode.length === 6) {
@@ -526,6 +592,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
   // Native Appointment Booking State
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [appointmentStep, setAppointmentStep] = useState<number>(1);
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [bookingDate, setBookingDate] = useState<string>('');
   const [bookingTime, setBookingTime] = useState<string>('');
@@ -798,9 +865,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
   const hasProprietorBlock = !isPersonal && showProprietor && proprietorDetails.length > 0 && proprietorDetails.some((p: any) => p.name);
   const hasGalleryBlock = showGallery && galleryContent.length > 0;
-  // Opening hours block: only show if at least one day has a real time value OR is marked closed
+  // Opening hours block: only show if at least one day has a real time value OR is marked closed (excluding default Sunday)
   const hasHoursBlock = !isPersonal && showHours && Object.keys(openingHours).length > 0 &&
-    Object.values(openingHours).some((h: any) => h && (h.closed === true || (h.open && h.open.trim() && h.open !== '--:-- --')));
+    (Object.values(openingHours).some((h: any) => h && h.open && h.open.trim() && h.open !== '--:-- --') ||
+     Object.entries(openingHours).some(([day, h]: any) => day.toLowerCase() !== 'sunday' && h && h.closed === true));
   const hasBrochuresBlock = !isPersonal && showBrochures && brochurePdfs.length > 0;
 
   const copyToClipboard = async (label: string, value: string) => {
@@ -901,6 +969,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
         setBookingNotes('');
         setBookingDate('');
         setBookingTime('');
+        setAppointmentStep(1);
       }, 3000);
     } catch (err) {
       setFormError('Failed to book appointment. Please try again.');
@@ -988,10 +1057,12 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     }
   };
 
-  // Tailwind class helpers — still used for fine-grained element states
-  const surfaceSoft = isDark ? 'bg-white/[0.04]' : 'bg-slate-50';
-  const borderSoft = isDark ? 'border-white/10' : 'border-slate-200';
-  const ringSoft = isDark ? 'ring-white/10' : 'ring-slate-200';
+  // ─── Adaptive theme tokens (polished light + dark, brand-tinted) ───
+  // Legacy names kept so existing call-sites stay valid; values upgraded so
+  // every surface carries a faint wash of the brand color in BOTH modes.
+  const surfaceSoft = isDark ? 'bg-white/[0.04]' : 'bg-white';
+  const borderSoft = isDark ? 'border-white/10' : 'border-slate-200/70';
+  const ringSoft = isDark ? 'ring-white/10' : 'ring-slate-200/70';
 
   // Consistent interactive card style used for Connect, Business, Location, etc.
   const cardStyle = `${surfaceSoft} ring-1 ${ringSoft} transition-all hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'hover:bg-white/[0.08]' : 'hover:bg-white shadow-sm'}`;
@@ -1000,16 +1071,18 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   const textMuted = isDark ? 'text-slate-400' : 'text-slate-500';
   const textSubtle = isDark ? 'text-slate-300' : 'text-slate-600';
 
-  // Inline style values for the two main structural elements.
-  // Using inline styles (not Tailwind classes) here so the theme change is
-  // guaranteed to take effect immediately — bypasses any Tailwind class-scan issues.
+  // Page background — a soft brand-tinted wash in BOTH modes (was a flat
+  // brand-agnostic slate in light mode before) so each card feels branded.
   const pageStyle: React.CSSProperties = {
-    backgroundColor: isDark ? '#08080C' : '#f1f5f9',
+    backgroundColor: isDark ? '#08080C' : '#eef0f6',
+    backgroundImage: `radial-gradient(125% 85% at 50% -12%, ${hexToRgba(primaryColor, isDark ? 0.16 : 0.14)} 0%, transparent 60%)`,
     color: isDark ? '#f1f5f9' : '#0f172a',
     transition: 'background-color 300ms ease, color 300ms ease',
   };
+  // The main rounded card surface behind the bento grid — subtle brand sheen up top.
   const cardSurfaceStyle: React.CSSProperties = {
     backgroundColor: isDark ? '#0f0f13' : '#ffffff',
+    backgroundImage: `linear-gradient(180deg, ${hexToRgba(primaryColor, isDark ? 0.06 : 0.05)}, transparent 240px)`,
     transition: 'background-color 300ms ease',
   };
 
@@ -1029,7 +1102,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
         <MeshGradient color={primaryColor} isDark={isDark} intensity={0.4} />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[clamp(400px,90vw,800px)] flex-col px-1.5 pt-1.5 pb-24 sm:px-[clamp(1rem,3vw,3rem)] sm:pt-[clamp(1rem,5vh,4rem)] sm:pb-[clamp(5rem,10vh,10rem)]">
+      <div className="relative z-10 mx-auto flex w-full max-w-[clamp(400px,92vw,1000px)] flex-col px-1.5 pt-1.5 pb-24 sm:px-[clamp(1rem,3vw,3rem)] sm:pt-[clamp(1rem,5vh,4rem)] sm:pb-[clamp(5rem,10vh,10rem)]">
         {/* ============ CARD ============ */}
         <div
           className={`relative overflow-hidden rounded-3xl border ${borderSoft} shadow-2xl shadow-black/10 backdrop-blur`}
@@ -1040,7 +1113,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             <div className="gsap-hero relative h-[clamp(6rem,16vh,10rem)] w-full overflow-hidden">
               <div
                 className="absolute inset-0"
-                style={{ backgroundColor: primaryColor }}
+                style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 55%, ${palette.dark} 100%)` }}
               />
               {/* Premium mesh overlays */}
               <div
@@ -1193,24 +1266,55 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               </div>
 
 
+              {/* ---- APPOINTMENT / SCHEDULE ---- */}
+              {isProfessional && card.appointment_details?.is_enabled && (
+                <div className="mt-6 w-full">
+                  {(!card.appointment_details.booking_type || card.appointment_details.booking_type === 'url') ? (
+                    card.appointment_details.booking_url && (
+                      <a
+                        href={card.appointment_details.booking_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group relative w-full rounded-2xl py-4 text-sm font-bold text-white flex items-center justify-center gap-2 overflow-hidden"
+                        style={{ backgroundColor: primaryColor, boxShadow: `0 8px 28px ${hexToRgba(primaryColor, 0.4)}, 0 2px 8px ${hexToRgba(primaryColor, 0.25)}` }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <Icon.Calendar className="h-4 w-4 relative z-10" />
+                        <span className="relative z-10">{card.appointment_details.title || 'Book an Appointment'}</span>
+                      </a>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => setShowAppointmentModal(true)}
+                      className="group relative w-full rounded-2xl py-4 text-sm font-bold text-white flex items-center justify-center gap-2 overflow-hidden active:scale-[0.98] transition-transform"
+                      style={{ backgroundColor: primaryColor, boxShadow: `0 8px 28px ${hexToRgba(primaryColor, 0.4)}, 0 2px 8px ${hexToRgba(primaryColor, 0.25)}` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <Icon.Calendar className="h-4 w-4 relative z-10" />
+                      <span className="relative z-10">{card.appointment_details.title || 'Book an Appointment'}</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* ============ BENTO GRID ============ */}
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-6 sm:gap-4 [grid-auto-flow:dense]">
+
               {/* ---- ABOUT ---- */}
               {personalInfo.bio && (
-                <Section title="About" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
-                  <div className={`relative rounded-2xl p-5 ${cardStyle} overflow-hidden`}>
-                    <div className="absolute top-0 left-0 w-1 h-full" style={{ background: `linear-gradient(to bottom, ${primaryColor}, ${secondaryColor})` }} />
-                    <p className={`text-[14px] leading-relaxed ${textSubtle} whitespace-pre-wrap`}>
-                      {personalInfo.bio}
-                    </p>
-                  </div>
-                </Section>
+                <BentoTile title="About" tint={primaryColor} span="sm:col-span-6" isDark={isDark} textMuted={textMuted} bodyClassName="px-4 pb-4 pt-2">
+                  <p className={`text-[14px] leading-relaxed ${textSubtle} whitespace-pre-wrap`}>
+                    {personalInfo.bio}
+                  </p>
+                </BentoTile>
               )}
 
 
 
               {/* ---- BUSINESS ---- */}
               {hasBusinessBlock && (
-                <Section title="Business" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
-                  <div className={`flex flex-col rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
+                <BentoTile title="Business" icon={<Icon.Building className="h-4 w-4" />} tint={primaryColor} span="sm:col-span-3" isDark={isDark} textMuted={textMuted} bodyClassName="px-1.5 pb-2 sm:px-2">
+                  <div className="flex flex-col">
                     {showCompany && companyDetails.company_name && (
                       <div className={`${showCompany && (companyDetails.gst || companyDetails.website || fullAddress) ? (isDark ? 'border-b border-white/5' : 'border-b border-slate-200') : ''}`}>
                         <InfoRow
@@ -1264,13 +1368,12 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </div>
                     )}
                   </div>
-                </Section>
-
+                </BentoTile>
               )}
 
               {/* ---- PROPRIETOR DETAILS ---- */}
               {hasProprietorBlock && (
-                <Section title="Proprietor & Team" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
+                <BentoTile title="Proprietor & Team" icon={<Icon.Save className="h-4 w-4" />} tint={primaryColor} span="sm:col-span-6" isDark={isDark} textMuted={textMuted}>
                   <div className={`grid grid-cols-1 ${proprietorDetails.length === 1 ? 'w-full' : 'sm:grid-cols-2'} gap-4`}>
                     {proprietorDetails.map((proprietor: any, idx: number) => (
                       <div key={idx} className={`p-4 rounded-2xl ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'} flex flex-col gap-4`}>
@@ -1310,7 +1413,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </div>
                     ))}
                   </div>
-                </Section>
+                </BentoTile>
               )}
 
               {/* ---- LOCATION ---- */}
@@ -1328,36 +1431,19 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   : `https://www.openstreetmap.org/export/embed.html?bbox=${''}&layer=mapnik`;
 
                 return (
-                  <Section title="Location" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
-                    <div className={`overflow-hidden rounded-2xl ${surfaceSoft} ring-1 ${borderSoft}`}>
+                  <BentoTile title="Location" icon={<Icon.MapPin className="h-4 w-4" />} tint={primaryColor} span="sm:col-span-3" isDark={isDark} textMuted={textMuted} bodyClassName="p-2">
+                    <div className="overflow-hidden rounded-2xl">
                       {/* Map embed */}
                       {hasCoords && (
-                        <a href={mapsLink} target="_blank" rel="noreferrer" className="block relative group">
-                          <div className="relative w-full h-44 sm:h-52 overflow-hidden bg-slate-200 dark:bg-slate-800">
-                            <iframe
-                              src={embedSrc}
-                              className="absolute inset-0 w-full h-full border-0 pointer-events-none"
-                              loading="lazy"
-                              title="Location Map"
-                              style={{ filter: isDark ? 'invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9)' : 'none' }}
-                            />
-                            {/* Pin overlay — always centered and crisp */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <div className="relative -mt-5">
-                                <svg width="36" height="46" viewBox="0 0 36 46" fill="none" className="drop-shadow-lg">
-                                  <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 28 18 28s18-14.5 18-28C36 8.06 27.94 0 18 0z" fill={primaryColor} />
-                                  <circle cx="18" cy="18" r="7" fill="white" />
-                                </svg>
-                              </div>
-                            </div>
-                            {/* Tap to open overlay */}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-2">
-                              <span className="text-[10px] font-semibold text-white bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                Tap to open in Maps
-                              </span>
-                            </div>
-                          </div>
-                        </a>
+                        <div className="relative w-full h-44 sm:h-52 overflow-hidden bg-slate-200 dark:bg-slate-800">
+                          <iframe
+                            src={embedSrc}
+                            className="absolute inset-0 w-full h-full border-0"
+                            loading="lazy"
+                            title="Location Map"
+                            style={{ filter: isDark ? 'invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9)' : 'none' }}
+                          />
+                        </div>
                       )}
 
                       {/* Location details */}
@@ -1386,13 +1472,13 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                         </div>
                       </div>
                     </div>
-                  </Section>
+                  </BentoTile>
                 );
               })()}
 
               {/* ---- GALLERY ---- */}
               {hasGalleryBlock && (
-                <Section title="Gallery" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
+                <BentoTile title="Gallery" icon={<Icon.Image className="h-4 w-4" />} tint={primaryColor} span="sm:col-span-3" isDark={isDark} textMuted={textMuted}>
                   {galleryContent.length === 1 ? (
                     <div
                       className="w-full cursor-pointer rounded-2xl"
@@ -1408,33 +1494,53 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </div>
                     </div>
                   ) : (
-                    <div className="relative">
-                      {/* Right-edge fade to signal overflow */}
-                      <div className={`pointer-events-none absolute right-0 top-0 z-10 h-full w-10 ${isDark ? 'bg-gradient-to-l from-[#0f0f13]' : 'bg-gradient-to-l from-slate-100'}`} />
-                      <div className="flex overflow-x-auto gap-3 pb-3 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <>
+                      {/* Mobile: Clean 2-column grid */}
+                      <div className="grid grid-cols-2 gap-2.5 sm:hidden">
+                        {galleryContent.slice(0, 4).map((url: string, idx: number) => (
+                          <div
+                            key={idx}
+                            className="relative cursor-pointer group"
+                            onClick={() => setLightboxIndex(idx)}
+                          >
+                            <div className={`aspect-square overflow-hidden rounded-xl border ${borderSoft} shadow-sm`}>
+                              <img src={url} alt={`Gallery item ${idx + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                            </div>
+                            {/* Show remaining count on last visible item */}
+                            {idx === 3 && galleryContent.length > 4 && (
+                              <div className="absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
+                                <span className="text-white font-bold text-lg">+{galleryContent.length - 4}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {galleryContent.length > 4 && (
+                        <p className={`mt-2 text-center text-[11px] sm:hidden ${textMuted}`}>Tap to view all {galleryContent.length} photos</p>
+                      )}
+
+                      {/* Desktop: Grid showing all images */}
+                      <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {galleryContent.map((url: string, idx: number) => (
                           <div
                             key={idx}
-                            className="flex-none w-[130px] sm:w-[150px] rounded-xl snap-start shrink-0 cursor-pointer"
+                            className="relative cursor-pointer group"
                             onClick={() => setLightboxIndex(idx)}
                           >
-                            <div className="aspect-[4/3] overflow-hidden rounded-xl border border-white/10 group shadow-sm">
+                            <div className={`aspect-square overflow-hidden rounded-xl border ${borderSoft} shadow-sm`}>
                               <img src={url} alt={`Gallery item ${idx + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                             </div>
                           </div>
                         ))}
                       </div>
-                      {galleryContent.length > 2 && (
-                        <p className={`mt-2 text-center text-[10px] ${textMuted}`}>← Swipe to see more →</p>
-                      )}
-                    </div>
+                    </>
                   )}
-                </Section>
+                </BentoTile>
               )}
 
               {/* ---- BROCHURES ---- */}
               {hasBrochuresBlock && (
-                <Section title="Brochures & Documents" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
+                <BentoTile title="Brochures" icon={<Icon.FileText className="h-4 w-4" />} tint={primaryColor} span="sm:col-span-3" isDark={isDark} textMuted={textMuted}>
                   <div className="space-y-3">
                     {brochurePdfs.map((url: string, idx: number) => (
                       <a key={idx} href={url} target="_blank" rel="noreferrer" className={`flex items-center justify-between p-4 rounded-xl transition hover:-translate-y-0.5 ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200'}`}>
@@ -1451,7 +1557,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </a>
                     ))}
                   </div>
-                </Section>
+                </BentoTile>
               )}
 
               {/* ---- OPENING HOURS ---- */}
@@ -1460,7 +1566,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 const todayHours: any = Object.entries(openingHours).find(([d]) => d.toLowerCase() === todayName)?.[1];
                 const isOpenNow = todayHours && !todayHours.closed;
                 return (
-                  <Section title="Opening Hours" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
+                  <BentoTile title="Opening Hours" icon={<Icon.Calendar className="h-4 w-4" />} tint={primaryColor} span="sm:col-span-3" isDark={isDark} textMuted={textMuted}>
                     {/* Today's status badge */}
                     <div className="mb-3 flex items-center gap-2">
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${isOpenNow
@@ -1473,7 +1579,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                           : 'Closed Now'}
                       </span>
                     </div>
-                    <div className={`rounded-2xl divide-y ${isDark ? 'bg-white/[0.04] divide-white/5 ring-1 ring-white/10' : 'bg-slate-50 divide-slate-200 ring-1 ring-slate-200'}`}>
+                    <div className={`rounded-2xl divide-y ${isDark ? 'divide-white/5' : 'divide-slate-200'}`}>
                       {Object.entries(openingHours)
                         .filter(([, hours]: [string, any]) => hours && (hours.closed === true || (hours.open && hours.open.trim() && hours.open !== '--:-- --')))
                         .map(([day, hours]: [string, any]) => {
@@ -1499,13 +1605,13 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                           );
                         })}
                     </div>
-                  </Section>
+                  </BentoTile>
                 );
               })()}
 
               {/* ---- PAYMENT (PAY ME) ---- */}
               {showPayment && hasPayment && (
-                <Section title="Pay Me" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
+                <BentoTile title="Pay Me" icon={<Icon.Wallet className="h-4 w-4" />} tint={primaryColor} span="sm:col-span-6" isDark={isDark} textMuted={textMuted}>
                   <div className={`grid gap-3 ${((paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.ifsc_code) &&
                     (paymentInfo.qr_path || paymentInfo.upi_id || paymentInfo.upi || paymentInfo.phonepe))
                     ? 'grid-cols-2'
@@ -1553,8 +1659,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       Download Brochure (PDF)
                     </a>
                   )}
-                </Section>
+                </BentoTile>
               )}
+
+              </div>
+              {/* ============ /BENTO GRID ============ */}
 
             </div>
 
@@ -1616,7 +1725,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 {/* Product Grid */}
                 {filteredProducts.length > 0 ? (
                   (() => {
-                    const displayProducts = showAllProducts ? filteredProducts : filteredProducts.slice(0, 10);
+                    const displayProducts = showAllProducts ? filteredProducts : filteredProducts.slice(0, 12);
                     return (
                       <>
                         {displayProducts.length === 1 ? (
@@ -1634,14 +1743,14 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                       src={
                                         product.images?.[0] && (product.images[0].startsWith('http') || product.images[0].startsWith('/') || product.images[0].startsWith('data:'))
                                           ? product.images[0]
-                                          : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
+                                          : IMG_PLACEHOLDER
                                       }
                                       alt={product.name}
                                       loading="lazy"
                                       decoding="async"
                                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                       onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                                        (e.target as HTMLImageElement).src = IMG_PLACEHOLDER;
                                       }}
                                     />
                                     {product.category && (
@@ -1700,7 +1809,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                             })}
                           </div>
                         ) : (
-                          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
                             {displayProducts.map((product: any) => {
                               const inCart = cart.some(item => item.id === product.id);
                               const waHref = cleanedWhatsapp
@@ -1710,7 +1819,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                               return (
                                 <div
                                   key={product.id}
-                                  className={`group flex flex-col overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 ${isDark ? 'bg-white/[0.05] ring-1 ring-white/10 hover:ring-white/20' : 'bg-white ring-1 ring-slate-200/80 shadow-sm hover:shadow-slate-200'}`}
+                                  className={`group flex flex-col h-full overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 ${isDark ? 'bg-white/[0.05] ring-1 ring-white/10 hover:ring-white/20' : 'bg-white ring-1 ring-slate-200/80 shadow-sm hover:shadow-slate-200'}`}
                                   onClick={() => { setProductToView(product); setProductViewImgIdx(0); }}
                                 >
                                   {/* Product Image */}
@@ -1719,14 +1828,14 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                       src={
                                         product.images?.[0] && (product.images[0].startsWith('http') || product.images[0].startsWith('/') || product.images[0].startsWith('data:'))
                                           ? product.images[0]
-                                          : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
+                                          : IMG_PLACEHOLDER
                                       }
                                       alt={product.name}
                                       loading="lazy"
                                       decoding="async"
                                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                       onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                                        (e.target as HTMLImageElement).src = IMG_PLACEHOLDER;
                                       }}
                                     />
                                     {/* Category badge */}
@@ -1740,15 +1849,19 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                   {/* Content */}
                                   <div className="flex flex-1 flex-col p-3 sm:p-4">
                                     {/* Name */}
-                                    <h4 className={`text-sm sm:text-base font-bold leading-snug line-clamp-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                      {product.name}
-                                    </h4>
+                                    <div className="min-h-[1.5rem] sm:min-h-[1.75rem]">
+                                      <h4 className={`text-sm sm:text-base font-bold leading-snug line-clamp-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                        {product.name}
+                                      </h4>
+                                    </div>
                                     {/* Description */}
-                                    {product.description && (
-                                      <p className={`mt-1 text-[11px] sm:text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        {product.description}
-                                      </p>
-                                    )}
+                                    <div className="min-h-[2rem] sm:min-h-[2.25rem] mt-1">
+                                      {product.description && (
+                                        <p className={`text-[11px] sm:text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                          {product.description}
+                                        </p>
+                                      )}
+                                    </div>
 
                                     {/* Divider */}
                                     <div className={`my-2.5 h-px w-full ${isDark ? 'bg-white/10' : 'bg-slate-100'}`} />
@@ -1811,7 +1924,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                           </div>
                         )}
 
-                        {!showAllProducts && filteredProducts.length > 10 && (
+                        {!showAllProducts && filteredProducts.length > 12 && (
                           <div className="mt-8 flex justify-center">
                             <button
                               onClick={() => { setShowAllProducts(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -1934,49 +2047,221 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             )}
 
             <div className={showAllProducts ? 'hidden' : ''}>
-              {/* ---- APPOINTMENT / SCHEDULE ---- */}
-              {isProfessional && card.appointment_details?.is_enabled && (
-                <div className="mt-6 w-full">
-                  {(!card.appointment_details.booking_type || card.appointment_details.booking_type === 'url') ? (
-                    card.appointment_details.booking_url && (
-                      <a
-                        href={card.appointment_details.booking_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="group relative w-full rounded-2xl py-4 text-sm font-bold text-white flex items-center justify-center gap-2 overflow-hidden"
-                        style={{ backgroundColor: primaryColor, boxShadow: `0 8px 28px ${hexToRgba(primaryColor, 0.4)}, 0 2px 8px ${hexToRgba(primaryColor, 0.25)}` }}
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <Icon.Calendar className="h-4 w-4 relative z-10" />
-                        <span className="relative z-10">{card.appointment_details.title || 'Book an Appointment'}</span>
-                      </a>
-                    )
-                  ) : (
-                    <button
-                      onClick={() => setShowAppointmentModal(true)}
-                      className="group relative w-full rounded-2xl py-4 text-sm font-bold text-white flex items-center justify-center gap-2 overflow-hidden active:scale-[0.98] transition-transform"
-                      style={{ backgroundColor: primaryColor, boxShadow: `0 8px 28px ${hexToRgba(primaryColor, 0.4)}, 0 2px 8px ${hexToRgba(primaryColor, 0.25)}` }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <Icon.Calendar className="h-4 w-4 relative z-10" />
-                      <span className="relative z-10">{card.appointment_details.title || 'Book an Appointment'}</span>
-                    </button>
-                  )}
-                </div>
-              )}
 
               {/* ---- INQUIRY FORM ---- */}
               {customBranding.show_lead_form !== false && (
-                <Section title="Send an Inquiry" isDark={isDark} textMuted={textMuted} dividerColor={primaryColor}>
-                  <div className={`rounded-2xl p-5 ${cardStyle}`}>
-                    <p className="text-base font-semibold">Get in touch</p>
-                    <p className={`mt-0.5 text-xs ${textMuted}`}>We'll reply within 24 hours.</p>
-                    <div className="mt-4">
-                      <LeadForm cardId={card.id} bare isDark={isDark} primaryColor={primaryColor} />
+                <BentoTile title="Send an Inquiry" icon={<Icon.Mail className="h-4 w-4" />} tint={primaryColor} span="mt-6" isDark={isDark} textMuted={textMuted} bodyClassName="px-4 pb-5 pt-2 sm:px-5">
+                  <p className="text-base font-semibold">Get in touch</p>
+                  <p className={`mt-0.5 text-xs ${textMuted}`}>We'll reply within 24 hours.</p>
+                  <div className="mt-4">
+                    <LeadForm cardId={card.id} bare isDark={isDark} primaryColor={primaryColor} />
+                  </div>
+                </BentoTile>
+              )}
+
+              {/* ---- FEEDBACK & RATINGS ---- */}
+              <div className="mt-6 gsap-section">
+                <div className={`rounded-2xl p-5 sm:p-6 ${isDark ? 'bg-white/[0.03] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200/70 shadow-sm'}`}>
+                  {/* Section Header */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: hexToRgba(primaryColor, 0.12) }}>
+                      <Icon.Star className="h-4.5 w-4.5" style={{ color: primaryColor }} />
+                    </div>
+                    <div>
+                      <h3 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-800'}`}>Feedback & Ratings</h3>
+                      <p className={`text-[11px] ${textMuted}`}>Share your experience</p>
                     </div>
                   </div>
-                </Section>
-              )}
+
+                  {/* Average Rating Summary */}
+                  {totalReviews > 0 && (
+                    <div className={`flex items-center gap-4 rounded-xl p-4 mb-5 ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200/60'}`}>
+                      <div className="text-center">
+                        <div className={`text-3xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>{avgRating}</div>
+                        <div className="flex items-center gap-0.5 mt-1">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <Icon.Star
+                              key={star}
+                              className="h-3.5 w-3.5"
+                              style={{
+                                fill: star <= Math.round(avgRating) ? '#facc15' : 'transparent',
+                                color: star <= Math.round(avgRating) ? '#facc15' : isDark ? '#475569' : '#cbd5e1',
+                                strokeWidth: 1.5,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className={`h-10 w-px ${isDark ? 'bg-white/10' : 'bg-slate-200'}`} />
+                      <div>
+                        <span className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{totalReviews}</span>
+                        <span className={`text-sm ml-1 ${textMuted}`}>{totalReviews === 1 ? 'Review' : 'Reviews'}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submit Review Form */}
+                  {!hasAlreadyReviewed ? (
+                    <AnimatePresence mode="wait">
+                      {reviewSuccess ? (
+                        <motion.div
+                          key="success"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          className={`flex flex-col items-center justify-center gap-3 rounded-xl p-6 mb-5 ${isDark ? 'bg-emerald-500/10 ring-1 ring-emerald-500/20' : 'bg-emerald-50 ring-1 ring-emerald-200'}`}
+                        >
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20">
+                            <Icon.Check className="h-6 w-6 text-emerald-500" />
+                          </div>
+                          <p className={`text-sm font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>Thank you for your feedback!</p>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="form"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className={`rounded-xl p-4 mb-5 ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200/60'}`}
+                        >
+                          <p className={`text-xs font-semibold mb-3 ${isDark ? 'text-white' : 'text-slate-700'}`}>Leave a Review</p>
+
+                          {/* Star Rating Input */}
+                          <div className="flex items-center gap-1 mb-3">
+                            {[1, 2, 3, 4, 5].map(star => (
+                              <button
+                                key={star}
+                                type="button"
+                                onMouseEnter={() => setHoveredStar(star)}
+                                onMouseLeave={() => setHoveredStar(0)}
+                                onClick={() => setReviewRating(star)}
+                                className="p-0.5 transition-transform hover:scale-110 active:scale-95"
+                              >
+                                <Icon.Star
+                                  className="h-7 w-7 transition-colors duration-150"
+                                  style={{
+                                    fill: star <= (hoveredStar || reviewRating) ? '#facc15' : 'transparent',
+                                    color: star <= (hoveredStar || reviewRating) ? '#facc15' : isDark ? '#475569' : '#cbd5e1',
+                                    strokeWidth: 1.5,
+                                  }}
+                                />
+                              </button>
+                            ))}
+                            {reviewRating > 0 && (
+                              <span className={`ml-2 text-xs font-medium ${textMuted}`}>
+                                {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][reviewRating]}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Name Input */}
+                          <input
+                            type="text"
+                            value={reviewName}
+                            onChange={e => setReviewName(e.target.value)}
+                            placeholder="Your Name *"
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-sm outline-none transition-all mb-2.5 ${isDark
+                              ? 'bg-white/[0.06] text-white placeholder:text-slate-500 focus:ring-2 ring-white/20'
+                              : 'bg-white text-slate-900 placeholder:text-slate-400 ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-300'
+                              }`}
+                          />
+
+                          {/* Comment Textarea */}
+                          <textarea
+                            value={reviewComment}
+                            onChange={e => setReviewComment(e.target.value)}
+                            placeholder="Share your experience (optional)"
+                            rows={3}
+                            className={`w-full rounded-lg px-3.5 py-2.5 text-sm outline-none transition-all resize-none mb-3 ${isDark
+                              ? 'bg-white/[0.06] text-white placeholder:text-slate-500 focus:ring-2 ring-white/20'
+                              : 'bg-white text-slate-900 placeholder:text-slate-400 ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-300'
+                              }`}
+                          />
+
+                          {/* Submit Button */}
+                          <button
+                            onClick={handleSubmitReview}
+                            disabled={isSubmittingReview || !reviewRating || !reviewName.trim()}
+                            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: primaryColor }}
+                          >
+                            {isSubmittingReview ? (
+                              <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                            ) : (
+                              <>
+                                <Icon.MessageCircle className="h-4 w-4" />
+                                Submit Review
+                              </>
+                            )}
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  ) : (
+                    <div className={`flex flex-col items-center justify-center gap-2 rounded-xl p-5 mb-5 text-center ${isDark ? 'bg-white/[0.02] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200/60'}`}>
+                      <Icon.Check className="h-5 w-5 text-emerald-500 mb-1" />
+                      <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>You've already left a review.</p>
+                      <p className={`text-xs ${textMuted}`}>Thanks for sharing your experience!</p>
+                    </div>
+                  )}
+
+                  {/* Reviews List */}
+                  {reviews.length > 0 && (
+                    <div className="space-y-3">
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${textMuted}`}>Recent Reviews</p>
+                      {(showAllReviews ? reviews : reviews.slice(0, 3)).map((review: any, idx: number) => (
+                        <div
+                          key={review.id || idx}
+                          className={`rounded-xl p-3.5 ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200/60'}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white shrink-0"
+                                style={{ backgroundColor: primaryColor }}
+                              >
+                                {review.reviewer_name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                              <div>
+                                <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{review.reviewer_name}</p>
+                                <div className="flex items-center gap-0.5 mt-0.5">
+                                  {[1, 2, 3, 4, 5].map(star => (
+                                    <Icon.Star
+                                      key={star}
+                                      className="h-3 w-3"
+                                      style={{
+                                        fill: star <= review.rating ? '#facc15' : 'transparent',
+                                        color: star <= review.rating ? '#facc15' : isDark ? '#475569' : '#cbd5e1',
+                                        strokeWidth: 1.5,
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <span className={`text-[10px] shrink-0 ${textMuted}`}>
+                              {review.created_at ? new Date(review.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                            </span>
+                          </div>
+                          {review.comment && (
+                            <p className={`mt-2 text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{review.comment}</p>
+                          )}
+                        </div>
+                      ))}
+
+                      {/* Show More / Less */}
+                      {reviews.length > 3 && (
+                        <button
+                          onClick={() => setShowAllReviews(!showAllReviews)}
+                          className={`w-full text-center text-xs font-semibold py-2 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.04]' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                        >
+                          {showAllReviews ? 'Show Less' : `View All ${reviews.length} Reviews`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
 
 
             </div>
@@ -2111,8 +2396,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className={`w-full sm:max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[92vh] sm:max-h-[85vh]`}
-            style={{ backgroundColor: isDark ? '#0f0f13' : '#ffffff' }}
+            className={`w-full sm:max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ring-1 ${borderSoft} grid max-h-[92vh] sm:max-h-[85vh]`}
+            style={{ 
+              backgroundColor: isDark ? '#0f0f13' : '#ffffff',
+              gridTemplateRows: 'auto auto minmax(0, 1fr) auto'
+            }}
           >
             {/* Header */}
             <div className={`flex items-center justify-between border-b ${borderSoft} px-5 py-4 shrink-0`}>
@@ -2156,7 +2444,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             )}
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
               {orderSuccess ? (
                 /* ── Success state ── */
                 <div className="flex flex-col items-center justify-center py-16 px-5 text-center">
@@ -2179,7 +2467,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 </div>
               ) : checkoutStep === 1 ? (
                 /* ── STEP 1: Cart Review ── */
-                <div className="p-5 flex flex-col gap-3">
+                <div className="p-5 pb-8 flex flex-col gap-3">
                   {cart.map(item => (
                     <div key={item.id} className={`flex items-center gap-3 rounded-2xl p-3 ${isDark ? 'bg-white/[0.04] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
                       <div className={`h-14 w-14 overflow-hidden rounded-xl shrink-0 ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
@@ -2188,7 +2476,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                         ) : item.images?.[0] && (item.images[0].startsWith('http') || item.images[0].startsWith('/') || item.images[0].startsWith('data:')) ? (
                           <img src={item.images[0]} alt={item.name} className="h-full w-full object-cover" />
                         ) : (
-                          <img src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80" alt={item.name} className="h-full w-full object-cover" />
+                          <img src={IMG_PLACEHOLDER} alt={item.name} className="h-full w-full object-cover" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -2227,6 +2515,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </div>
                     </div>
                   </div>
+                  <div className="h-24 shrink-0 w-full" />
                 </div>
               ) : (
                 /* ── STEP 2: Customer Details ── */
@@ -2671,8 +2960,20 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               transition={{ duration: 0.2, delay: 0.05 }}
               src={galleryContent[lightboxIndex]}
               alt={`Enlarged view ${lightboxIndex + 1}`}
-              className="w-full max-w-4xl max-h-[85vh] object-contain rounded-xl shadow-2xl"
+              className="w-full max-w-4xl max-h-[85vh] object-contain rounded-xl shadow-2xl cursor-grab active:cursor-grabbing"
               onClick={(e) => e.stopPropagation()}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.7}
+              onDragEnd={(e, { offset }) => {
+                if (galleryContent.length <= 1) return;
+                const swipeThreshold = 50;
+                if (offset.x < -swipeThreshold) {
+                  setLightboxIndex(lightboxIndex === galleryContent.length - 1 ? 0 : lightboxIndex + 1);
+                } else if (offset.x > swipeThreshold) {
+                  setLightboxIndex(lightboxIndex === 0 ? galleryContent.length - 1 : lightboxIndex - 1);
+                }
+              }}
             />
           </motion.div>
         )}
@@ -2686,7 +2987,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center p-4"
-            onClick={() => setShowAppointmentModal(false)}
+            onClick={() => { setShowAppointmentModal(false); setAppointmentStep(1); }}
           >
             <motion.div
               initial={{ y: '100%' }}
@@ -2699,7 +3000,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xl font-bold">Book Appointment</h3>
                 <button
-                  onClick={() => setShowAppointmentModal(false)}
+                  onClick={() => { setShowAppointmentModal(false); setAppointmentStep(1); }}
                   className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-100 hover:bg-slate-200'}`}
                 >
                   <Icon.X className="h-4 w-4" />
@@ -2722,84 +3023,100 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                     </div>
                   )}
 
-                  <div>
-                    <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Select Date</label>
-                    <div className="flex gap-2 overflow-x-auto pb-2 snap-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                      {Array.from({ length: 30 }).map((_, i) => {
-                        const d = new Date();
-                        d.setDate(d.getDate() + i);
+                  {appointmentStep === 1 && (
+                    <>
+                      <div>
+                        <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Select Date</label>
+                        <div className="flex gap-2 overflow-x-auto pb-2 snap-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          {Array.from({ length: 30 }).map((_, i) => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + i);
 
-                        const year = d.getFullYear();
-                        const month = String(d.getMonth() + 1).padStart(2, '0');
-                        const day = String(d.getDate()).padStart(2, '0');
-                        const dateString = `${year}-${month}-${day}`;
+                            const year = d.getFullYear();
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const dateString = `${year}-${month}-${day}`;
 
-                        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-                        const monthName = d.toLocaleDateString('en-US', { month: 'short' });
-                        const dayNum = d.getDate();
-                        const isSelected = bookingDate === dateString;
+                            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                            const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+                            const dayNum = d.getDate();
+                            const isSelected = bookingDate === dateString;
 
-                        const workingDays = card.appointment_details?.working_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-                        if (!workingDays.includes(dayName)) return null;
+                            const workingDays = card.appointment_details?.working_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+                            if (!workingDays.includes(dayName)) return null;
 
-                        return (
-                          <button
-                            key={dateString}
-                            type="button"
-                            onClick={() => {
-                              setBookingDate(dateString);
-                              setBookingTime('');
-                            }}
-                            className={`flex flex-col items-center justify-center min-w-[72px] py-3 rounded-2xl border snap-start transition-all ${isSelected
-                              ? 'text-white shadow-lg'
-                              : isDark
-                                ? 'border-white/10 text-slate-300 hover:bg-white/5'
-                                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                              }`}
-                            style={isSelected ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}}
-                          >
-                            <span className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-1">{monthName}</span>
-                            <span className="text-2xl font-black mb-1">{dayNum}</span>
-                            <span className="text-[10px] uppercase font-semibold opacity-80">{dayName}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {bookingDate && (
-                    <div>
-                      <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Select Time</label>
-                      <div className="grid grid-cols-3 gap-2 max-h-[160px] overflow-y-auto p-1">
-                        {generateTimeSlots(bookingDate).map(slot => (
-                          <button
-                            key={slot.time}
-                            type="button"
-                            disabled={slot.isBooked}
-                            onClick={() => {
-                              if (!slot.isBooked) setBookingTime(slot.time);
-                            }}
-                            className={`py-2 px-2 text-xs font-medium rounded-lg border transition-all ${slot.isBooked
-                              ? isDark ? 'border-white/5 bg-white/5 text-white/30 cursor-not-allowed line-through' : 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed line-through'
-                              : bookingTime === slot.time
-                                ? 'bg-blue-500 text-white border-blue-500'
-                                : isDark ? 'border-white/10 text-white hover:bg-white/5' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                              }`}
-                          >
-                            {slot.isBooked ? `${slot.time} - Booked` : slot.time}
-                          </button>
-                        ))}
-                        {generateTimeSlots(bookingDate).length === 0 && (
-                          <div className={`col-span-3 text-center py-4 text-sm ${textMuted}`}>
-                            No available slots for this date.
-                          </div>
-                        )}
+                            return (
+                              <button
+                                key={dateString}
+                                type="button"
+                                onClick={() => {
+                                  setBookingDate(dateString);
+                                  setBookingTime('');
+                                }}
+                                className={`flex flex-col items-center justify-center min-w-[72px] py-3 rounded-2xl border snap-start transition-all ${isSelected
+                                  ? 'text-white shadow-lg'
+                                  : isDark
+                                    ? 'border-white/10 text-slate-300 hover:bg-white/5'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  }`}
+                                style={isSelected ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}}
+                              >
+                                <span className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-1">{monthName}</span>
+                                <span className="text-2xl font-black mb-1">{dayNum}</span>
+                                <span className="text-[10px] uppercase font-semibold opacity-80">{dayName}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
+
+                      {bookingDate && (
+                        <div>
+                          <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Select Time</label>
+                          <div className="grid grid-cols-3 gap-2 max-h-[160px] overflow-y-auto p-1">
+                            {generateTimeSlots(bookingDate).map(slot => (
+                              <button
+                                key={slot.time}
+                                type="button"
+                                disabled={slot.isBooked}
+                                onClick={() => {
+                                  if (!slot.isBooked) setBookingTime(slot.time);
+                                }}
+                                className={`py-2 px-2 text-xs font-medium rounded-lg border transition-all ${slot.isBooked
+                                  ? isDark ? 'border-white/5 bg-white/5 text-white/30 cursor-not-allowed line-through' : 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed line-through'
+                                  : bookingTime === slot.time
+                                    ? 'text-white shadow-md'
+                                    : isDark ? 'border-white/10 text-white hover:bg-white/5' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                                  }`}
+                                style={bookingTime === slot.time ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}}
+                              >
+                                {slot.isBooked ? `${slot.time} - Booked` : slot.time}
+                              </button>
+                            ))}
+                            {generateTimeSlots(bookingDate).length === 0 && (
+                              <div className={`col-span-3 text-center py-4 text-sm ${textMuted}`}>
+                                No available slots for this date.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setAppointmentStep(2)}
+                        disabled={!bookingTime}
+                        className="w-full mt-6 flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        Next
+                        <Icon.ChevronRight className="h-4 w-4" />
+                      </button>
+                    </>
                   )}
 
-                  {bookingTime && (
-                    <div className="space-y-4 pt-4 border-t border-dashed border-gray-500/30">
+                  {appointmentStep === 2 && bookingTime && (
+                    <div className="space-y-4">
                       <div>
                         <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${textMuted}`}>Your Name</label>
                         <input
@@ -2843,21 +3160,30 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                         />
                       </div>
 
-                      <button
-                        type="submit"
-                        disabled={isSubmittingBooking}
-                        className="w-full mt-4 flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-transform"
-                        style={{ backgroundColor: primaryColor }}
-                      >
-                        {isSubmittingBooking ? (
-                          <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <Icon.Calendar className="h-4 w-4" />
-                            Confirm Booking
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-3 mt-4">
+                        <button
+                          type="button"
+                          onClick={() => setAppointmentStep(1)}
+                          className={`flex items-center justify-center rounded-xl px-4 py-4 font-bold transition-all ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                        >
+                          <Icon.ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingBooking}
+                          className="flex-1 flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                          style={{ backgroundColor: primaryColor }}
+                        >
+                          {isSubmittingBooking ? (
+                            <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <Icon.Calendar className="h-4 w-4" />
+                              Confirm Booking
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </form>
@@ -2884,12 +3210,12 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       src={
                         item.images?.[0] && (item.images[0].startsWith('http') || item.images[0].startsWith('/') || item.images[0].startsWith('data:'))
                           ? item.images[0]
-                          : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=60&q=80'
+                          : IMG_PLACEHOLDER
                       }
                       alt=""
                       className="w-8 h-8 rounded-full border-2 border-white/20 object-cover shrink-0 bg-white/10"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=60&q=80';
+                        (e.target as HTMLImageElement).src = IMG_PLACEHOLDER;
                       }}
                     />
                   ))}
@@ -2911,30 +3237,75 @@ export default function PublicCardView({ data, products = [], services = [] }: {
  * Helper components
  * ============================================================ */
 
-function Section({
+// Bento grid tile — adaptive, brand-tinted surface with an optional compact
+// header. Carries the `gsap-section` class so the existing ScrollTrigger
+// reveal animation applies automatically.
+function BentoTile({
   title,
-  children,
+  icon,
+  tint = '#6366f1',
+  span = '',
   isDark,
   textMuted,
-  dividerColor,
+  className = '',
+  bodyClassName = 'p-3 sm:p-4',
+  headerRight,
+  children,
 }: {
-  title: string;
-  children: React.ReactNode;
+  title?: string;
+  icon?: React.ReactNode;
+  tint?: string;
+  span?: string;
   isDark: boolean;
   textMuted: string;
-  dividerColor?: string;
+  className?: string;
+  bodyClassName?: string;
+  headerRight?: React.ReactNode;
+  children: React.ReactNode;
 }) {
+  const face: React.CSSProperties = {
+    backgroundColor: isDark ? hexToRgba(tint, 0.055) : '#ffffff',
+    backgroundImage: isDark
+      ? 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0))'
+      : `linear-gradient(180deg, ${hexToRgba(tint, 0.05)}, rgba(255,255,255,0))`,
+    border: `1px solid ${isDark ? hexToRgba(tint, 0.16) : hexToRgba(tint, 0.12)}`,
+    boxShadow: isDark
+      ? '0 1px 0 rgba(255,255,255,0.05) inset, 0 10px 30px rgba(0,0,0,0.28)'
+      : `0 1px 2px rgba(15,23,42,0.04), 0 12px 30px ${hexToRgba(tint, 0.10)}`,
+  };
   return (
-    <div className="gsap-section mt-7">
-      <div className="flex items-center gap-3 mb-4 select-none">
-        <div className="flex-1 h-px opacity-40" style={{ background: dividerColor ? `linear-gradient(to right, transparent, ${dividerColor} 60%, transparent)` : undefined }} />
-        <h3 className={`text-[10px] font-bold uppercase tracking-[0.22em] ${textMuted} whitespace-nowrap`}>{title}</h3>
-        <div className="flex-1 h-px opacity-40" style={{ background: dividerColor ? `linear-gradient(to left, transparent, ${dividerColor} 60%, transparent)` : undefined }} />
-      </div>
-      {children}
-    </div>
+    <section
+      className={`gsap-section group relative flex min-w-0 flex-col overflow-hidden rounded-3xl ${span} ${className}`}
+      style={face}
+    >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{ background: `linear-gradient(to right, transparent, ${hexToRgba(tint, isDark ? 0.5 : 0.35)}, transparent)` }}
+      />
+      {(title || headerRight) && (
+        <div className="flex items-center justify-between gap-3 px-4 pt-4">
+          <div className="flex items-center gap-2.5">
+            {icon && (
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-xl"
+                style={{ backgroundColor: hexToRgba(tint, isDark ? 0.18 : 0.1), color: tint }}
+              >
+                {icon}
+              </span>
+            )}
+            {title && (
+              <h3 className={`text-[11px] font-bold uppercase tracking-[0.16em] ${textMuted}`}>{title}</h3>
+            )}
+          </div>
+          {headerRight}
+        </div>
+      )}
+      <div className={bodyClassName}>{children}</div>
+    </section>
   );
 }
+
+// (Section helper removed — replaced by the BentoTile bento layout above.)
 
 function QuickAction({
   icon,
@@ -3112,9 +3483,9 @@ function ProductViewModal({
     ? product.images.map((img: string) =>
       img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:'))
         ? img
-        : 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
+        : IMG_PLACEHOLDER
     )
-    : ['https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'];
+    : [IMG_PLACEHOLDER];
   const hasMultipleImages = images.length > 1;
 
   // Find current product index in the list
@@ -3200,7 +3571,7 @@ function ProductViewModal({
                   className="absolute inset-0 h-full w-full object-cover"
                   draggable={false}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80';
+                    (e.target as HTMLImageElement).src = IMG_PLACEHOLDER;
                   }}
                 />
               </AnimatePresence>
