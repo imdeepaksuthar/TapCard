@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import MeshGradient from '@/app/components/MeshGradient';
 import { derivePalette } from '@/lib/colorUtils';
@@ -1094,7 +1095,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
   return (
     <main
       ref={mainRef}
-      className={`relative min-h-screen w-full font-sans ${textMain}`}
+      className={`relative min-h-screen flex flex-col w-full font-sans ${textMain}`}
       style={pageStyle}
     >
       {/* Animated mesh gradient backdrop — derived from brand color */}
@@ -1102,10 +1103,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
         <MeshGradient color={primaryColor} isDark={isDark} intensity={0.4} />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[clamp(400px,92vw,1000px)] flex-col px-1.5 pt-1.5 pb-24 sm:px-[clamp(1rem,3vw,3rem)] sm:pt-[clamp(1rem,5vh,4rem)] sm:pb-[clamp(5rem,10vh,10rem)]">
+      <div className="relative z-10 mx-auto flex flex-1 w-full max-w-[clamp(400px,92vw,1000px)] flex-col px-1.5 pt-1.5 pb-24 sm:px-[clamp(1rem,3vw,3rem)] sm:pt-[clamp(1rem,5vh,4rem)] sm:pb-[clamp(5rem,10vh,10rem)]">
         {/* ============ CARD ============ */}
         <div
-          className={`relative overflow-hidden rounded-3xl border ${borderSoft} shadow-2xl shadow-black/10 backdrop-blur`}
+          className={`relative flex-1 overflow-hidden rounded-3xl border ${borderSoft} shadow-2xl shadow-black/10 backdrop-blur`}
           style={cardSurfaceStyle}
         >
           <div className={showAllProducts ? 'hidden' : ''}>
@@ -1166,8 +1167,15 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   />
                   <div className={`relative z-10 h-full w-full overflow-hidden rounded-full ring-4 ${isDark ? 'ring-[#12121A] bg-[#12121A]' : 'ring-white bg-white'} shadow-xl`}>
                     {profileImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={profileImage} alt={personalInfo.name || 'Profile'} className="h-full w-full object-cover" loading="eager" decoding="async" fetchPriority="high" width={128} height={128} />
+                      <Image 
+                        src={profileImage} 
+                        alt={personalInfo.name || 'Profile'} 
+                        className="h-full w-full object-cover" 
+                        priority 
+                        width={128} 
+                        height={128} 
+                        unoptimized={profileImage.includes('data:image') || profileImage.includes('blob:')}
+                      />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${palette.accent})` }}>
                         {(personalInfo.name || 'U').trim().charAt(0).toUpperCase()}
@@ -1275,6 +1283,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                         href={card.appointment_details.booking_url}
                         target="_blank"
                         rel="noreferrer"
+                        aria-label="Book an Appointment"
                         className="group relative w-full rounded-2xl py-4 text-sm font-bold text-white flex items-center justify-center gap-2 overflow-hidden"
                         style={{ backgroundColor: primaryColor, boxShadow: `0 8px 28px ${hexToRgba(primaryColor, 0.4)}, 0 2px 8px ${hexToRgba(primaryColor, 0.25)}` }}
                       >
@@ -1354,6 +1363,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                           href={companyDetails.website.startsWith('http') ? companyDetails.website : `https://${companyDetails.website}`}
                           tint={primaryColor}
                           isDark={isDark}
+                          ariaLabel="Visit Company Website"
                         />
                       </div>
                     )}
@@ -1393,19 +1403,19 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
                         <div className="flex flex-wrap gap-2">
                           {proprietor.phone && (
-                            <a href={`tel:${proprietor.phone}`} className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
+                            <a href={`tel:${proprietor.phone}`} aria-label={`Call ${proprietor.name}`} className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
                               <Icon.Phone className="w-3.5 h-3.5" />
                               Call
                             </a>
                           )}
                           {proprietor.whatsapp && (
-                            <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: primaryColor }}>
+                            <a href={`https://wa.me/${proprietor.whatsapp}`} target="_blank" rel="noreferrer" aria-label={`Message ${proprietor.name} on WhatsApp`} className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: primaryColor }}>
                               <Icon.Whatsapp className="w-3.5 h-3.5" />
                               WhatsApp
                             </a>
                           )}
                           {proprietor.email && (
-                            <a href={`mailto:${proprietor.email}`} className={`flex items-center justify-center p-2 rounded-xl transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
+                            <a aria-label={`Email ${proprietor.name}`} href={`mailto:${proprietor.email}`} className={`flex items-center justify-center p-2 rounded-xl transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}>
                               <Icon.Mail className="w-4 h-4" />
                             </a>
                           )}
@@ -1463,6 +1473,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                             href={mapsLink}
                             target="_blank"
                             rel="noreferrer"
+                            aria-label="Get directions on Maps"
                             className="mt-2 inline-flex items-center gap-1 text-xs font-medium"
                             style={{ color: primaryColor }}
                           >
@@ -1543,7 +1554,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                 <BentoTile title="Brochures" icon={<Icon.FileText className="h-4 w-4" />} tint={primaryColor} span="sm:col-span-3" isDark={isDark} textMuted={textMuted}>
                   <div className="space-y-3">
                     {brochurePdfs.map((url: string, idx: number) => (
-                      <a key={idx} href={url} target="_blank" rel="noreferrer" className={`flex items-center justify-between p-4 rounded-xl transition hover:-translate-y-0.5 ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200'}`}>
+                      <a key={idx} href={url} target="_blank" rel="noreferrer" aria-label={`Download Brochure ${idx + 1}`} className={`flex items-center justify-between p-4 rounded-xl transition hover:-translate-y-0.5 ${isDark ? 'bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10' : 'bg-slate-50 hover:bg-white ring-1 ring-slate-200'}`}>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-red-500/10 text-red-500">
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"></path></svg>
@@ -1653,6 +1664,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       href={companyDetails.brochure_url}
                       target="_blank"
                       rel="noreferrer"
+                      aria-label="Download Brochure"
                       className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-500 py-3 text-sm font-semibold text-indigo-500 transition hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-500/10`}
                     >
                       <Icon.Download className="h-4 w-4" />
@@ -1793,6 +1805,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                             href={`https://wa.me/${cleanedWhatsapp}?text=${encodeURIComponent(`Hi! I'm interested in *${product.name}*${Number(product.price) > 0 ? ` priced at ₹${Number(product.price).toLocaleString('en-IN')}` : ''}. Please share more details.`)}`}
                                             target="_blank"
                                             rel="noreferrer"
+                                            aria-label="Inquire via WhatsApp"
                                             onClick={(e) => e.stopPropagation()}
                                             className="flex shrink-0 items-center justify-center rounded-xl p-2.5 text-white transition-all active:scale-95 hover:opacity-90 aspect-square"
                                             style={{ backgroundColor: '#25D366' }}
@@ -1881,9 +1894,9 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                         {/* Add to Cart */}
                                         {inCart ? (
                                           <div className={`flex-1 flex shrink-0 items-center justify-between rounded-lg px-1.5 py-1 transition-all shadow-md`} style={{ backgroundColor: primaryColor }}>
-                                            <button onClick={(e) => { e.stopPropagation(); updateCartQty(product.id, -1); }} className="p-1.5 text-white active:scale-95 hover:bg-black/20 rounded-md"><Icon.Minus className="h-3 w-3" /></button>
+                                            <button aria-label="Decrease quantity" onClick={(e) => { e.stopPropagation(); updateCartQty(product.id, -1); }} className="p-1.5 text-white active:scale-95 hover:bg-black/20 rounded-md"><Icon.Minus className="h-3 w-3" /></button>
                                             <span className="text-white font-bold text-[11px] sm:text-xs">{cart.find(i => i.id === product.id)?.quantity || 1}</span>
-                                            <button onClick={(e) => { e.stopPropagation(); updateCartQty(product.id, 1); }} className="p-1.5 text-white active:scale-95 hover:bg-black/20 rounded-md"><Icon.Plus className="h-3 w-3" /></button>
+                                            <button aria-label="Increase quantity" onClick={(e) => { e.stopPropagation(); updateCartQty(product.id, 1); }} className="p-1.5 text-white active:scale-95 hover:bg-black/20 rounded-md"><Icon.Plus className="h-3 w-3" /></button>
                                           </div>
                                         ) : (
                                           <button
@@ -1905,6 +1918,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                             href={waHref}
                                             target="_blank"
                                             rel="noreferrer"
+                                            aria-label="Inquire via WhatsApp"
                                             onClick={(e) => e.stopPropagation()}
                                             className="flex shrink-0 items-center justify-center rounded-lg p-2 sm:p-2.5 text-white transition-all active:scale-95 hover:brightness-110 aspect-square"
                                             style={{ backgroundColor: '#25D366' }}
@@ -2017,6 +2031,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                                 href={waHref}
                                 target="_blank"
                                 rel="noreferrer"
+                                aria-label="Inquire via WhatsApp"
                                 className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold text-white transition-all active:scale-95 shadow-md"
                                 style={{ backgroundColor: primaryColor }}
                               >
@@ -2028,6 +2043,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                             ) : (
                               <a
                                 href={cleanedPhone ? `tel:${cleanedPhone}` : `mailto:${email || ''}`}
+                                aria-label="Inquire now"
                                 className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold text-white transition-all active:scale-95 shadow-md"
                                 style={{ backgroundColor: primaryColor }}
                               >
@@ -2272,7 +2288,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       {/* ============ QR CODE MODAL ============ */}
       <AnimatePresence>
         {showQrModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div key="qr-modal" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2295,6 +2311,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               {/* Glow orb behind QR */}
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-48 h-24 rounded-full blur-3xl opacity-30" style={{ backgroundColor: primaryColor }} />
               <button
+                aria-label="Close QR Modal"
                 onClick={() => setShowQrModal(false)}
                 className={`absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isDark ? 'bg-white/8 text-slate-400 hover:bg-white/15 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'
                   }`}
@@ -2407,6 +2424,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               <div className="flex items-center gap-3 min-w-0">
                 {checkoutStep === 2 && !orderSuccess && (
                   <button
+                    aria-label="Back to Cart"
                     onClick={() => { setCheckoutStep(1); setFormError(''); }}
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'}`}
                   >
@@ -2422,7 +2440,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   </button>
                 )}
               </div>
-              <button onClick={() => { setIsCartOpen(false); setCheckoutStep(1); setFormError(''); }} className={`shrink-0 rounded-full p-2 transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'}`}>
+              <button aria-label="Close Cart Modal" onClick={() => { setIsCartOpen(false); setCheckoutStep(1); setFormError(''); }} className={`shrink-0 rounded-full p-2 transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'}`}>
                 <Icon.X className="h-5 w-5" />
               </button>
             </div>
@@ -2487,15 +2505,15 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className={`flex items-center rounded-lg p-0.5 ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
-                          <button onClick={() => updateCartQty(item.id, -1)} className={`p-1.5 rounded-md transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-white'}`}>
+                          <button aria-label="Decrease quantity" onClick={() => updateCartQty(item.id, -1)} className={`p-1.5 rounded-md transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-white'}`}>
                             <Icon.Minus className="h-3 w-3" />
                           </button>
                           <span className="w-7 text-center text-xs font-bold">{item.quantity}</span>
-                          <button onClick={() => updateCartQty(item.id, 1)} className={`p-1.5 rounded-md transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-white'}`}>
+                          <button aria-label="Increase quantity" onClick={() => updateCartQty(item.id, 1)} className={`p-1.5 rounded-md transition ${isDark ? 'hover:bg-white/10' : 'hover:bg-white'}`}>
                             <Icon.Plus className="h-3 w-3" />
                           </button>
                         </div>
-                        <button onClick={() => removeFromCart(item.id)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition">
+                        <button aria-label="Remove from cart" onClick={() => removeFromCart(item.id)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition">
                           <Icon.Trash className="h-4 w-4" />
                         </button>
                       </div>
@@ -2689,6 +2707,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       <AnimatePresence>
         {productToView && (
           <ProductViewModal
+            key="product-modal"
             product={productToView}
             imgIdx={productViewImgIdx}
             setImgIdx={setProductViewImgIdx}
@@ -2714,7 +2733,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       {/* ---- GST VERIFICATION MODAL ---- */}
       <AnimatePresence>
         {showGstModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div key="gst-modal" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2735,7 +2754,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   </div>
                   <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>GST Verification</h3>
                 </div>
-                <button onClick={() => setShowGstModal(false)} className={`rounded-full p-2 transition ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100'}`}>
+                <button aria-label="Close GST Modal" onClick={() => setShowGstModal(false)} className={`rounded-full p-2 transition ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100'}`}>
                   <Icon.X className="h-5 w-5" />
                 </button>
               </div>
@@ -2780,7 +2799,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       {/* ---- PAYMENT MODAL ---- */}
       <AnimatePresence>
         {activePaymentModal && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+          <div key="payment-modal" className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2801,6 +2820,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
                 <div className="absolute right-4 top-4">
                   <button
+                    aria-label="Close Payment Modal"
                     onClick={() => setActivePaymentModal(null)}
                     className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-100 hover:bg-slate-200'}`}
                   >
@@ -2897,6 +2917,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                       <a
                         href={paymentInfo.qr_path}
                         download="payment_qr.png"
+                        aria-label="Download QR Code"
                         className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition ${isDark ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}
                       >
                         <Icon.Download className="h-4 w-4" />
@@ -2914,6 +2935,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       <AnimatePresence>
         {lightboxIndex !== null && galleryContent[lightboxIndex] && (
           <motion.div
+            key="lightbox"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -2922,6 +2944,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             onClick={() => setLightboxIndex(null)}
           >
             <button
+              aria-label="Close Lightbox"
               onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
               className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-white hover:text-gray-300 transition-colors bg-white/10 hover:bg-white/20 rounded-full z-10"
             >
@@ -2930,6 +2953,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
             {galleryContent.length > 1 && (
               <button
+                aria-label="Previous Image"
                 onClick={(e) => {
                   e.stopPropagation();
                   setLightboxIndex(lightboxIndex === 0 ? galleryContent.length - 1 : lightboxIndex - 1);
@@ -2942,6 +2966,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
             {galleryContent.length > 1 && (
               <button
+                aria-label="Next Image"
                 onClick={(e) => {
                   e.stopPropagation();
                   setLightboxIndex(lightboxIndex === galleryContent.length - 1 ? 0 : lightboxIndex + 1);
@@ -2983,6 +3008,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       <AnimatePresence>
         {showAppointmentModal && (
           <motion.div
+            key="appointment-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -3000,6 +3026,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xl font-bold">Book Appointment</h3>
                 <button
+                  aria-label="Close Appointment Modal"
                   onClick={() => { setShowAppointmentModal(false); setAppointmentStep(1); }}
                   className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-100 hover:bg-slate-200'}`}
                 >
@@ -3399,6 +3426,7 @@ function InfoRow({
   isDark,
   action,
   cardStyle,
+  ariaLabel,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -3410,6 +3438,7 @@ function InfoRow({
   isDark: boolean;
   action?: React.ReactNode;
   cardStyle?: string;
+  ariaLabel?: string;
 }) {
   return (
     <div className={`group flex items-center justify-between gap-4 rounded-2xl p-4 ${cardStyle || ''}`}>
@@ -3424,6 +3453,7 @@ function InfoRow({
               href={href}
               target="_blank"
               rel="noreferrer"
+              aria-label={ariaLabel}
               className="mt-1 block truncate text-sm font-medium hover:underline"
               style={{ color: tint }}
             >

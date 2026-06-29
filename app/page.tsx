@@ -402,72 +402,74 @@ export default function Home() {
       </section>
 
       {/* ─── Pricing ─── */}
-      <section id="pricing" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
-        <div className="max-w-[1440px] mx-auto">
-          <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,5rem)]">
-            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">Pricing</p>
-            <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight leading-tight">
-              Simple, transparent <span className="text-zinc-500">pricing.</span>
-            </h2>
-          </div>
+      {plans && plans.length > 0 && (
+        <section id="pricing" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
+          <div className="max-w-[1440px] mx-auto">
+            <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,5rem)]">
+              <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">Pricing</p>
+              <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight leading-tight">
+                Simple, transparent <span className="text-zinc-500">pricing.</span>
+              </h2>
+            </div>
 
-          <div className="pricing-grid grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-            {(Array.isArray(plans) ? plans : []).map((plan, index) => {
-              const isPopular = index === 1;
-              const formatPrice = (price: string | number) => {
-                const num = Number(price);
-                return num > 0 ? `₹${num.toFixed(2).replace(/\.00$/, '')}` : 'Free';
-              };
-              const periodLabel = plan.billing_period === 'monthly' ? '/mo' : (plan.billing_period === 'yearly' ? '/yr' : '');
+            <div className="pricing-grid grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+              {plans.map((plan, index) => {
+                const isPopular = index === 1;
+                const formatPrice = (price: string | number) => {
+                  const num = Number(price);
+                  return num > 0 ? `₹${num.toFixed(2).replace(/\.00$/, '')}` : 'Free';
+                };
+                const periodLabel = plan.billing_period === 'monthly' ? '/mo' : (plan.billing_period === 'yearly' ? '/yr' : '');
 
-              if (isPopular) {
+                if (isPopular) {
+                  return (
+                    <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl ag-glass-premium p-7 sm:p-8 flex flex-col relative overflow-hidden transition-all duration-500 hover:-translate-y-2">
+                      {/* Top shimmer */}
+                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
+                      {/* Glow orb */}
+                      <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-32 bg-blue-500/12 blur-3xl rounded-full" />
+                      {/* Popular badge */}
+                      <div className="absolute top-3.5 right-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-wider shadow-lg shadow-blue-500/30">POPULAR</div>
+                      <h3 className="text-lg font-bold mb-1 relative z-10">{plan.name}</h3>
+                      <p className="text-zinc-400 text-sm mb-6 relative z-10">For active professionals.</p>
+                      <div className="text-4xl font-extrabold mb-8 relative z-10 text-white">{formatPrice(plan.price)}<span className="text-lg text-zinc-400 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
+                      <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm relative z-10">
+                        {plan.features?.map((f: string, i: number) => (
+                          <li key={i} className="flex gap-2.5 items-center">
+                            <CheckCircle2 size={16} className="text-blue-400 shrink-0" /> {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <Link href="/register" className="ag-glow-btn block text-center w-full py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-blue-600/30 relative z-10">
+                        Upgrade to {plan.name.replace(' Plan', '')}
+                      </Link>
+                    </div>
+                  );
+                }
+
                 return (
-                  <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl ag-glass-premium p-7 sm:p-8 flex flex-col relative overflow-hidden transition-all duration-500 hover:-translate-y-2">
-                    {/* Top shimmer */}
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
-                    {/* Glow orb */}
-                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-32 bg-blue-500/12 blur-3xl rounded-full" />
-                    {/* Popular badge */}
-                    <div className="absolute top-3.5 right-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-wider shadow-lg shadow-blue-500/30">POPULAR</div>
-                    <h3 className="text-lg font-bold mb-1 relative z-10">{plan.name}</h3>
-                    <p className="text-zinc-400 text-sm mb-6 relative z-10">For active professionals.</p>
-                    <div className="text-4xl font-extrabold mb-8 relative z-10 text-white">{formatPrice(plan.price)}<span className="text-lg text-zinc-400 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
-                    <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm relative z-10">
+                  <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl ag-float-card p-7 sm:p-8 flex flex-col relative overflow-hidden">
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-600/40 to-transparent" />
+                    <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
+                    <p className="text-zinc-500 text-sm mb-6">{index === 0 ? 'Perfect for individuals.' : 'For teams and companies.'}</p>
+                    <div className="text-4xl font-extrabold mb-8">{formatPrice(plan.price)}<span className="text-lg text-zinc-500 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
+                    <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
                       {plan.features?.map((f: string, i: number) => (
                         <li key={i} className="flex gap-2.5 items-center">
-                          <CheckCircle2 size={16} className="text-blue-400 shrink-0" /> {f}
+                          <CheckCircle2 size={16} className="text-blue-500/80 shrink-0" /> {f}
                         </li>
                       ))}
                     </ul>
-                    <Link href="/register" className="ag-glow-btn block text-center w-full py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-blue-600/30 relative z-10">
-                      Upgrade to {plan.name.replace(' Plan', '')}
+                    <Link href="/register" className="block text-center w-full py-3.5 rounded-full ag-glass-card border border-white/10 hover:border-white/20 text-zinc-200 hover:text-white font-semibold text-sm transition-all duration-300">
+                      {index === 0 ? 'Get Started' : 'Contact Sales'}
                     </Link>
                   </div>
                 );
-              }
-
-              return (
-                <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl ag-float-card p-7 sm:p-8 flex flex-col relative overflow-hidden">
-                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-600/40 to-transparent" />
-                  <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-                  <p className="text-zinc-500 text-sm mb-6">{index === 0 ? 'Perfect for individuals.' : 'For teams and companies.'}</p>
-                  <div className="text-4xl font-extrabold mb-8">{formatPrice(plan.price)}<span className="text-lg text-zinc-500 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
-                  <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
-                    {plan.features?.map((f: string, i: number) => (
-                      <li key={i} className="flex gap-2.5 items-center">
-                        <CheckCircle2 size={16} className="text-blue-500/80 shrink-0" /> {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/register" className="block text-center w-full py-3.5 rounded-full ag-glass-card border border-white/10 hover:border-white/20 text-zinc-200 hover:text-white font-semibold text-sm transition-all duration-300">
-                    {index === 0 ? 'Get Started' : 'Contact Sales'}
-                  </Link>
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ─── FAQ ─── */}
       <section id="faq" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
@@ -559,7 +561,7 @@ export default function Home() {
           <div>
             <h4 className="text-zinc-300 font-semibold text-sm mb-5 uppercase tracking-wider text-xs">Product</h4>
             <ul className="space-y-3 text-sm text-zinc-500">
-              {[{label:'Features',href:'#features'},{label:'How it Works',href:'#how-it-works'},{label:'Pricing',href:'#pricing'},{label:'FAQ',href:'#faq'}].map(l => (
+              {[{label:'Features',href:'#features'},{label:'How it Works',href:'#how-it-works'},{label:'Pricing',href:'#pricing'},{label:'FAQ',href:'#faq'}].filter(l => l.label !== 'Pricing' || (plans && plans.length > 0)).map(l => (
                 <li key={l.label}>
                   <Link href={l.href} className="hover:text-zinc-200 transition-colors duration-200 relative group">
                     {l.label}

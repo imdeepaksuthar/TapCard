@@ -12,6 +12,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hasPlans, setHasPlans] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,10 +56,24 @@ export default function Header() {
       threshold: 0
     });
 
-    sections.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
+    const observed = new Set<string>();
+    
+    const observeElements = () => {
+      sections.forEach(id => {
+        if (!observed.has(id)) {
+          const el = document.getElementById(id);
+          if (el) {
+            observer.observe(el);
+            observed.add(id);
+          }
+        }
+      });
+    };
+
+    observeElements();
+    
+    // Check periodically for asynchronously rendered sections like pricing
+    const interval = setInterval(observeElements, 500);
 
     // 3. Close search on ESC key
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,8 +84,23 @@ export default function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
+      clearInterval(interval);
       document.removeEventListener('keydown', handleKeyDown);
     };
+  }, []);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${API}/api/plans`);
+        if (res.ok) {
+          const plansData = await res.json();
+          if (plansData && plansData.length > 0) setHasPlans(true);
+        }
+      } catch { /* ignore */ }
+    };
+    fetchPlans();
   }, []);
 
   return (
@@ -102,7 +132,7 @@ export default function Header() {
             { id: 'how-it-works', label: 'How it Works', href: '/#how-it-works' },
             { id: 'pricing', label: 'Pricing', href: '/#pricing' },
             { id: 'faq', label: 'FAQ', href: '/#faq' },
-          ].map((item) => (
+          ].filter(item => item.id !== 'pricing' || hasPlans).map((item) => (
             <Link
               key={item.id}
               href={item.href}
@@ -170,6 +200,7 @@ export default function Header() {
 
         {/* Mobile Menu Toggle */}
         <button
+          aria-label="Toggle mobile menu"
           className="md:hidden p-2 ml-1 text-zinc-400 hover:text-white pointer-events-auto rounded-full hover:bg-white/[0.06] transition-colors"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
@@ -189,7 +220,7 @@ export default function Header() {
           { id: 'how-it-works', label: 'How it Works', href: '/#how-it-works' },
           { id: 'pricing', label: 'Pricing', href: '/#pricing' },
           { id: 'faq', label: 'FAQ', href: '/#faq' },
-        ].map((item) => (
+        ].filter(item => item.id !== 'pricing' || hasPlans).map((item) => (
           <Link 
             key={item.id} 
             href={item.href} 
@@ -237,7 +268,7 @@ export default function Header() {
                   className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-4 pl-3 pr-10 outline-none"
                 />
                 {searchQuery ? (
-                  <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="absolute right-4 text-zinc-500 hover:text-white transition-colors">
+                  <button aria-label="Clear search" onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="absolute right-4 text-zinc-500 hover:text-white transition-colors">
                     <X size={16} />
                   </button>
                 ) : (

@@ -59,7 +59,6 @@ export default function MeshGradient({ color, isDark = true, intensity = 0.55, c
             position: 'absolute',
             borderRadius: '9999px',
             filter: 'blur(80px)',
-            mixBlendMode: isDark ? 'screen' : 'multiply',
             transform: 'translate(-50%, -50%)',
             animation: 'meshFloat 22s ease-in-out infinite',
             willChange: 'transform',
@@ -69,7 +68,7 @@ export default function MeshGradient({ color, isDark = true, intensity = 0.55, c
             height: o.size,
             background: o.color,
             opacity: isDark ? intensity : intensity * 0.55,
-            transition: 'opacity 0.4s ease, mix-blend-mode 0.4s ease',
+            transition: 'opacity 0.4s ease',
             animationDelay: `${o.delay}s`,
           }}
         />
