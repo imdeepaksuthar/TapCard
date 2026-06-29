@@ -22,7 +22,7 @@ app.prepare().then(() => {
       res.end("Internal Server Error");
     }
   })
-      .listen(port, "0.0.0.0", () => {
-        console.log(`> Ready on port ${port}`);
-      });
+    .listen(port, () => {
+      console.log(`> Ready on port ${port}`);
+    });
 });
