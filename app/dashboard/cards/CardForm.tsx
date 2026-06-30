@@ -4037,9 +4037,12 @@ export default function CardForm({ id }: CardFormProps) {
               ),
             };
 
-            const RenderSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
-              <div className="mt-4 text-left">
-                <h4 className={`text-[9px] font-semibold uppercase tracking-[0.14em] ${textMuted} mb-1.5`}>{title}</h4>
+            const RenderSection = ({ title, children, icon }: { title: string; children: React.ReactNode; icon?: React.ReactNode }) => (
+              <div className={`mt-4 relative rounded-2xl border p-3 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'} ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {icon && <span className="flex h-5 w-5 items-center justify-center rounded-md" style={{ backgroundColor: hexToRgba(primaryColor, 0.15), color: primaryColor }}>{icon}</span>}
+                  <h4 className={`text-[9px] font-bold uppercase tracking-widest ${textMuted}`}>{title}</h4>
+                </div>
                 {children}
               </div>
             );
@@ -4111,20 +4114,20 @@ export default function CardForm({ id }: CardFormProps) {
                     <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px] mix-blend-overlay" />
                     
                     {/* Simulated live actions at top of preview */}
-                    <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-2">
-                      <div className="flex items-center gap-1 rounded-full bg-black/30 px-2 py-0.5 text-[8px] font-medium text-white backdrop-blur-md ring-1 ring-white/10">
+                    <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-3">
+                      <div className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[9px] font-bold text-white backdrop-blur-md ring-1 ring-white/20">
                         <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                        1,042 views
+                        7 views
                       </div>
-                      <div className="flex items-center gap-1">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md">
-                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md">
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
                         </div>
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md">
                           {isDark ? (
-                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
+                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
                           ) : (
-                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
                           )}
                         </div>
                       </div>
@@ -4137,9 +4140,9 @@ export default function CardForm({ id }: CardFormProps) {
                       <div className="relative">
                         <div
                           className="absolute -inset-0.5 rounded-full opacity-60 blur-sm"
-                          style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
+                          style={{ background: `conic-gradient(from 0deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})` }}
                         />
-                        <div className={`relative z-10 h-16 w-16 overflow-hidden rounded-full ring-2 shadow-lg ${
+                        <div className={`relative z-10 h-[4.5rem] w-[4.5rem] overflow-hidden rounded-full ring-[3px] shadow-lg ${
                           isDark ? 'ring-[#12121A] bg-[#12121A]' : 'ring-white bg-white'
                         }`}>
                           {formData.personal_info?.profile_image ? (
@@ -4153,129 +4156,137 @@ export default function CardForm({ id }: CardFormProps) {
                             </div>
                           )}
                         </div>
-                        <div className={`absolute bottom-0 right-0 z-20 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-500 ring-1 ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
-                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                        <div className={`absolute bottom-0 right-0 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-[2px] ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
+                          <PreviewIcon.Check className="w-3 h-3 text-white" />
                         </div>
                       </div>
 
                       {formData.personal_info?.name && (
-                        <h2 className={`mt-2 text-base font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{formData.personal_info.name}</h2>
+                        <h2 className={`mt-3 text-[15px] font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{formData.personal_info.name}</h2>
                       )}
                       {formData.personal_info?.designation && (
-                        <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formData.personal_info.designation}</p>
+                        <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formData.personal_info.designation}</p>
                       )}
 
-                      <div className="mt-2 flex flex-wrap items-center justify-center gap-1">
+                      <div className="mt-2.5 flex flex-wrap items-center justify-center gap-1.5">
                         {formData.category_id && (
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                            isDark ? 'bg-white/5 text-slate-300 border-white/5' : 'bg-slate-50 text-slate-600 border-slate-100'
-                          } border`}>
-                            <svg className="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M7 7h.01M6 20a2 2 0 002 2h8a2 2 0 002-2V8l-6-6H8a2 2 0 00-2 2v16z" /></svg>
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold ${
+                            isDark ? 'bg-white/[0.04] text-slate-300 border-white/20' : 'bg-slate-50 text-slate-600 border-slate-200'
+                          } ring-1 ring-inset ${isDark ? 'ring-white/10' : 'ring-slate-900/5'}`}>
+                            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M7 7h.01M6 20a2 2 0 002 2h8a2 2 0 002-2V8l-6-6H8a2 2 0 00-2 2v16z" /></svg>
                             {categories.find(c => c.id.toString() === formData.category_id)?.name}
                           </span>
                         )}
                         {formData.custom_branding?.show_company && companyName && (
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                            isDark ? 'bg-white/5 text-slate-300 border-white/5' : 'bg-slate-50 text-slate-600 border-slate-100'
-                          } border`}>
-                            <svg className="w-2.5 h-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" /></svg>
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold ${
+                            isDark ? 'bg-white/[0.04] text-slate-300 border-white/20' : 'bg-slate-50 text-slate-600 border-slate-200'
+                          } ring-1 ring-inset ${isDark ? 'ring-white/10' : 'ring-slate-900/5'}`}>
+                            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" /></svg>
                             {companyName}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* ---- Simulated QUICK ACTIONS ---- */}
-                    <div className="mt-4 grid grid-cols-4 gap-1.5">
-                      <div className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 border ${
-                        isDark ? 'bg-white/[0.04] border-white/5' : 'bg-slate-50 border-slate-100'
-                      } ${!cleanedPhone ? 'opacity-40' : 'opacity-80'}`}>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, 0.14), color: primaryColor }}>
-                          <PreviewIcon.Phone className="w-4 h-4" />
-                        </span>
-                        <span className={`text-[9px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Call</span>
-                      </div>
-
-                      <div className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 border ${
-                        isDark ? 'bg-white/[0.04] border-white/5' : 'bg-slate-50 border-slate-100'
-                      } ${!cleanedWhatsapp ? 'opacity-40' : 'opacity-80'}`}>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, 0.14), color: primaryColor }}>
-                          <PreviewIcon.Whatsapp className="w-4 h-4" />
-                        </span>
-                        <span className={`text-[9px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>WhatsApp</span>
-                      </div>
-
-                      <div className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 border ${
-                        isDark ? 'bg-white/[0.04] border-white/5' : 'bg-slate-50 border-slate-100'
-                      } ${!email ? 'opacity-40' : 'opacity-80'}`}>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, 0.14), color: primaryColor }}>
-                          <PreviewIcon.Mail className="w-4 h-4" />
-                        </span>
-                        <span className={`text-[9px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Email</span>
-                      </div>
-
-                      <div className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 border ${
-                        isDark ? 'bg-white/[0.04] border-white/5' : 'bg-slate-50 border-slate-100'
-                      } opacity-80`}>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, 0.14), color: primaryColor }}>
-                          <PreviewIcon.Save className="w-4 h-4" />
-                        </span>
-                        <span className={`text-[9px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Save</span>
-                      </div>
-                    </div>
-
-                    {/* ---- Simulated ABOUT ---- */}
-                    {formData.personal_info?.bio && (
-                      <RenderSection title="About">
-                        <div className={`relative rounded-2xl p-3 border ${
-                          isDark ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-100'
-                        } overflow-hidden`}>
-                          <div className="absolute top-0 left-0 w-1 h-full" style={{ background: `linear-gradient(to bottom, ${primaryColor}, ${secondaryColor})` }} />
-                          <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'} pl-1.5 whitespace-pre-wrap`}>
-                            {formData.personal_info.bio}
-                          </p>
-                        </div>
-                      </RenderSection>
-                    )}
-
                     {/* ---- Simulated SOCIAL LINKS ---- */}
                     {showSocial && Object.values(socialLinks).some(Boolean) && (
-                      <div className="mt-4 flex flex-col items-center gap-1.5">
+                      <div className="mt-5 mb-2 flex flex-col items-center gap-1.5">
                         <p className={`text-[8px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Connect</p>
                         <div className="flex flex-wrap items-center justify-center gap-2">
                           {socialLinks.linkedin && (
                             <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#0A66C2' }}>
-                              <PreviewIcon.LinkedIn className="w-3.5 h-3.5" />
+                              <PreviewIcon.LinkedIn className="w-3 h-3" />
                             </span>
                           )}
                           {socialLinks.instagram && (
                             <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#E1306C' }}>
-                              <PreviewIcon.Instagram className="w-3.5 h-3.5" />
+                              <PreviewIcon.Instagram className="w-3 h-3" />
                             </span>
                           )}
                           {socialLinks.facebook && (
                             <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#1877F2' }}>
-                              <PreviewIcon.Facebook className="w-3.5 h-3.5" />
+                              <PreviewIcon.Facebook className="w-3 h-3" />
                             </span>
                           )}
                           {socialLinks.twitter && (
                             <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#0F1419' }}>
-                              <PreviewIcon.Twitter className="w-3.5 h-3.5" />
+                              <PreviewIcon.Twitter className="w-3 h-3" />
                             </span>
                           )}
                           {socialLinks.youtube && (
                             <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#FF0000' }}>
-                              <PreviewIcon.YouTube className="w-3.5 h-3.5" />
+                              <PreviewIcon.YouTube className="w-3 h-3" />
                             </span>
                           )}
                         </div>
                       </div>
                     )}
 
+                    {/* ---- Simulated QUICK ACTIONS ---- */}
+                    <div className="mt-5 grid grid-cols-4 gap-2">
+                      <div className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border ${
+                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'
+                      } p-1 ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'} ${!cleanedPhone ? 'opacity-40' : 'opacity-80'}`}>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, isDark ? 0.15 : 0.1), color: primaryColor }}>
+                          <PreviewIcon.Phone className="w-3.5 h-3.5" />
+                        </span>
+                        <span className={`text-[8px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Call</span>
+                      </div>
+
+                      <div className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border ${
+                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'
+                      } p-1 ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'} ${!cleanedWhatsapp ? 'opacity-40' : 'opacity-80'}`}>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, isDark ? 0.15 : 0.1), color: primaryColor }}>
+                          <PreviewIcon.Whatsapp className="w-3.5 h-3.5" />
+                        </span>
+                        <span className={`text-[8px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>WhatsApp</span>
+                      </div>
+
+                      <div className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border ${
+                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'
+                      } p-1 ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'} ${!email ? 'opacity-40' : 'opacity-80'}`}>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, isDark ? 0.15 : 0.1), color: primaryColor }}>
+                          <PreviewIcon.Mail className="w-3.5 h-3.5" />
+                        </span>
+                        <span className={`text-[8px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Email</span>
+                      </div>
+
+                      <div className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border ${
+                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'
+                      } p-1 ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'} opacity-80`}>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, isDark ? 0.15 : 0.1), color: primaryColor }}>
+                          <PreviewIcon.Save className="w-3.5 h-3.5" />
+                        </span>
+                        <span className={`text-[8px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Save</span>
+                      </div>
+                    </div>
+
+                    {/* ---- Simulated APPOINTMENT BUTTON ---- */}
+                    {(formData.personal_info as any)?.card_type === 'professional' && formData.appointment_details?.is_enabled && (
+                      <div className="mt-4 w-full">
+                        <div
+                          className="w-full rounded-xl py-2.5 text-[10px] font-bold text-white flex items-center justify-center gap-1.5 overflow-hidden shadow-lg"
+                          style={{ backgroundColor: primaryColor }}
+                        >
+                          <PreviewIcon.Calendar className="h-3 w-3" />
+                          <span>{formData.appointment_details.title || 'Book an Appointment'}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ---- Simulated ABOUT ---- */}
+                    {formData.personal_info?.bio && (
+                      <RenderSection title="About">
+                        <p className={`text-[10px] leading-relaxed ${textSubtle} whitespace-pre-wrap px-1`}>
+                          {formData.personal_info.bio}
+                        </p>
+                      </RenderSection>
+                    )}
+
                     {/* ---- Simulated BUSINESS DETAILS ---- */}
                     {hasBusinessBlock && (
-                      <RenderSection title="Business">
-                        <div className={`flex flex-col rounded-xl border ${isDark ? 'bg-white/[0.03] border-white/5 divide-white/5' : 'bg-slate-50 border-slate-200 divide-slate-200'} divide-y`}>
+                      <RenderSection title="Business" icon={<PreviewIcon.Building className="h-3 w-3" />}>
+                        <div className="flex flex-col px-1">
                           {showCompany && companyDetails.company_name && (
                             <RenderInfoRow
                               icon={<PreviewIcon.Building className="h-4 w-4" style={{ color: primaryColor }} />}
@@ -4320,11 +4331,11 @@ export default function CardForm({ id }: CardFormProps) {
 
                     {/* ---- Simulated PROPRIETORS & TEAM ---- */}
                     {hasProprietorBlock && (
-                      <RenderSection title="Proprietor & Team">
-                        <div className="grid grid-cols-1 gap-2">
+                      <RenderSection title="Proprietor & Team" icon={<svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}>
+                        <div className="grid grid-cols-1 gap-2 mt-1 px-1">
                           {proprietorDetails.map((proprietor: any, idx: number) => (
-                            <div key={idx} className={`p-3 rounded-xl border ${
-                              isDark ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-200'
+                            <div key={idx} className={`p-2.5 rounded-xl ${
+                              isDark ? 'bg-white/[0.03] ring-1 ring-white/10' : 'bg-slate-50 ring-1 ring-slate-200'
                             } flex flex-col gap-2`}>
                               <div className="flex items-center gap-2.5">
                                 {proprietor.image ? (
@@ -4340,9 +4351,9 @@ export default function CardForm({ id }: CardFormProps) {
                                 </div>
                               </div>
                               
-                              <div className="flex flex-wrap gap-1">
+                              <div className="flex flex-wrap gap-1 mt-1">
                                 {proprietor.phone && (
-                                  <div className={`flex-1 flex items-center justify-center gap-1 py-1 rounded bg-black/10 text-[8px] font-bold ${textSubtle}`}>
+                                  <div className={`flex-1 flex items-center justify-center gap-1 py-1 rounded bg-black/20 text-[8px] font-bold ${textSubtle}`}>
                                     <PreviewIcon.Phone className="w-2 h-2" />
                                     Call
                                   </div>
@@ -4426,31 +4437,31 @@ export default function CardForm({ id }: CardFormProps) {
 
                     {/* ---- Simulated OPENING HOURS ---- */}
                     {formData.card_type !== 'personal' && showHours && hasHoursBlock && (
-                      <RenderSection title="Opening Hours">
-                        <div className="mb-2 flex items-center gap-1.5">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[8px] font-bold ${
+                      <RenderSection title="Opening Hours" icon={<PreviewIcon.Calendar className="h-3 w-3" />}>
+                        <div className="mb-2.5 px-1 mt-1">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[8px] font-bold ${
                             isOpenNow
-                              ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20'
-                              : 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20'
+                              ? 'bg-emerald-500/10 text-emerald-500'
+                              : 'bg-red-500/10 text-red-500'
                           }`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${isOpenNow ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                            {isOpenNow ? `Open Now · ${todayHours.open || '09:00'} – ${todayHours.close || '18:00'}` : 'Closed Now'}
+                            <span className={`h-1.5 w-1.5 rounded-full ${isOpenNow ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                            {isOpenNow ? `Open Now · ${todayHours.open || '10:00'} – ${todayHours.close || '19:00'}` : 'Closed'}
                           </span>
                         </div>
-                        <div className={`rounded-xl divide-y text-[10px] ${isDark ? 'bg-white/[0.03] divide-white/5 border border-white/5' : 'bg-slate-50 divide-slate-100 border border-slate-200'}`}>
+                        <div className={`mt-2 rounded-2xl divide-y text-[9px] font-medium ${isDark ? 'bg-white/[0.02] divide-white/5 border border-white/5' : 'bg-white divide-slate-100 border border-slate-100'}`}>
                           {Object.entries(openingHours).map(([day, hours]: [string, any]) => {
                             const isToday = day.toLowerCase() === todayName;
                             return (
-                              <div key={day} className={`flex justify-between items-center px-3 py-1.5 ${isToday ? (isDark ? 'bg-white/[0.04]' : 'bg-white') : ''}`}>
-                                <span className={`capitalize font-medium flex items-center gap-1 ${isToday ? (isDark ? 'text-white' : 'text-slate-900') : textMuted}`}>
+                              <div key={day} className={`flex justify-between items-center px-3 py-2.5 ${isToday ? (isDark ? 'bg-white/[0.04]' : 'bg-slate-50') : ''}`}>
+                                <span className={`capitalize flex items-center gap-1.5 ${isToday ? (isDark ? 'text-white' : 'text-slate-900') : textMuted}`}>
                                   {day}
-                                  {isToday && <span className="text-[8px] font-bold uppercase tracking-wider" style={{ color: primaryColor }}>Today</span>}
+                                  {isToday && <span className="text-[7px] font-extrabold uppercase tracking-widest text-emerald-500">TODAY</span>}
                                 </span>
                                 {hours.closed ? (
-                                  <span className="text-[8px] font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">Closed</span>
+                                  <span className="text-[8px] font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded-md">Closed</span>
                                 ) : (
-                                  <span className={`font-medium ${isToday ? (isDark ? 'text-white' : 'text-slate-900') : textSubtle}`}>
-                                    {hours.open || '09:00'} – {hours.close || '18:00'}
+                                  <span className={isToday ? (isDark ? 'text-white' : 'text-slate-900') : textSubtle}>
+                                    {hours.open || '10:00'} – {hours.close || '19:00'}
                                   </span>
                                 )}
                               </div>
@@ -4462,32 +4473,32 @@ export default function CardForm({ id }: CardFormProps) {
 
                     {/* ---- Simulated PAYMENT (PAY ME) ---- */}
                     {showPayment && hasPayment && (
-                      <RenderSection title="Pay Me">
-                        <div className="grid grid-cols-2 gap-2">
+                      <RenderSection title="Pay Me" icon={<PreviewIcon.Wallet className="h-3 w-3" />}>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
                           {(paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.ifsc_code) && (
-                            <div className={`flex flex-col items-start justify-center gap-1 rounded-xl p-3 text-left border ${
-                              isDark ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-200 shadow-sm'
+                            <div className={`flex flex-col items-start justify-center gap-1.5 rounded-2xl p-3 border ${
+                              isDark ? 'bg-white/[0.02] border-white/5' : 'bg-white border-slate-100 shadow-sm'
                             }`}>
                               <div className="flex items-center gap-1.5">
-                                <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-50 text-indigo-600 animate-pulse">
-                                  <PreviewIcon.Wallet className="h-3 w-3" />
+                                <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-50 text-indigo-500">
+                                  <PreviewIcon.Building className="h-3 w-3" />
                                 </span>
                                 <span className={`text-[10px] font-bold ${textMain}`}>Bank</span>
                               </div>
-                              <span className={`text-[8px] ${textMuted}`}>Pay via Bank Transfer</span>
+                              <span className={`text-[7px] font-medium mt-1 ${textMuted}`}>Pay via Bank Transfer</span>
                             </div>
                           )}
                           {(paymentInfo.qr_path || paymentInfo.upi_id || paymentInfo.phonepe) && (
-                            <div className={`flex flex-col items-start justify-center gap-1 rounded-xl p-3 text-left border ${
-                              isDark ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-200 shadow-sm'
+                            <div className={`flex flex-col items-start justify-center gap-1.5 rounded-2xl p-3 border ${
+                              isDark ? 'bg-white/[0.02] border-white/5' : 'bg-white border-slate-100 shadow-sm'
                             }`}>
                               <div className="flex items-center gap-1.5">
-                                <span className="flex h-5 w-5 items-center justify-center rounded bg-emerald-50 text-emerald-600 animate-pulse">
+                                <span className="flex h-5 w-5 items-center justify-center rounded bg-emerald-50 text-emerald-500">
                                   <PreviewIcon.QrCode className="h-3 w-3" />
                                 </span>
                                 <span className={`text-[10px] font-bold ${textMain}`}>QR / UPI</span>
                               </div>
-                              <span className={`text-[8px] ${textMuted}`}>Scan QR or UPI</span>
+                              <span className={`text-[7px] font-medium mt-1 ${textMuted}`}>Scan QR or UPI</span>
                             </div>
                           )}
                         </div>
@@ -4555,19 +4566,57 @@ export default function CardForm({ id }: CardFormProps) {
 
                     {/* ---- Simulated INQUIRY ---- */}
                     {customBranding.show_lead_form !== false && (
-                      <RenderSection title="Send an Inquiry">
-                        <div className={`p-3.5 rounded-xl border ${
-                          isDark ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-200'
-                        }`}>
-                          <div className={`w-full h-6 rounded-lg mb-1.5 border border-dashed ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-300'}`} />
-                          <div className={`w-full h-6 rounded-lg mb-1.5 border border-dashed ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-300'}`} />
-                          <div className={`w-full h-12 rounded-lg mb-1.5 border border-dashed ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-300'}`} />
-                          <div className="w-full h-7 rounded-xl flex items-center justify-center font-bold text-[10px] text-white transition active:scale-95 shadow-md" style={{ backgroundColor: primaryColor }}>
-                            Submit Inquiry
+                      <RenderSection title="Send an Inquiry" icon={<PreviewIcon.Mail className="h-3 w-3" />}>
+                        <div className="mt-1 px-1">
+                          <h4 className={`text-[11px] font-bold ${textMain}`}>Get in touch</h4>
+                          <p className={`text-[9px] mb-3 ${textMuted}`}>We'll reply within 24 hours.</p>
+                          <div className="space-y-2">
+                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                              Your name
+                            </div>
+                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                              Email
+                            </div>
+                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                              Phone
+                            </div>
+                            <div className={`w-full h-16 rounded-xl border px-3 py-2.5 text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                              How can we help you?
+                            </div>
+                            <div className="w-full h-9 mt-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] text-white shadow-lg" style={{ backgroundColor: primaryColor }}>
+                              Send Message <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </div>
                           </div>
                         </div>
                       </RenderSection>
                     )}
+
+                    {/* ---- Simulated FEEDBACK & RATINGS ---- */}
+                    <RenderSection title="Feedback & Ratings" icon={<svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>}>
+                      <div className="mt-1 px-1">
+                        <p className={`text-[8px] mb-3 ${textMuted}`}>Share your experience</p>
+                        <div className={`p-3.5 rounded-2xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
+                          <p className={`text-[9px] font-bold mb-2 ${textMain}`}>Leave a Review</p>
+                          <div className="flex gap-1.5 mb-3.5">
+                            {[1,2,3,4,5].map(i => (
+                              <svg key={i} className="w-5 h-5 text-slate-300 stroke-[1.5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                            ))}
+                          </div>
+                          <div className="space-y-2">
+                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                              Your Name *
+                            </div>
+                            <div className={`w-full h-12 rounded-xl border px-3 py-2 text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                              Share your experience (optional)
+                            </div>
+                            <div className="w-full h-8 mt-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] text-white opacity-50" style={{ backgroundColor: primaryColor }}>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                              Submit Review
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </RenderSection>
 
 
                   </div>

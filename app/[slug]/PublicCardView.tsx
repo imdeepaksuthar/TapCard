@@ -645,11 +645,9 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     };
   }, []);
 
-  // Pause Lenis scrolling when any modal is open to prevent background scrolling
+  // Lock body when any modal is open to prevent background scrolling
+  // We avoid lenis.stop() here because it is known to cause permanent touch freezes on mobile devices
   useEffect(() => {
-    const lenis = lenisRef.current;
-    if (!lenis) return;
-
     const isModalOpen = !!(
       isCartOpen ||
       productToView ||
@@ -661,10 +659,15 @@ export default function PublicCardView({ data, products = [], services = [] }: {
     );
 
     if (isModalOpen) {
-      lenis.stop();
+      document.body.style.overflow = 'hidden';
     } else {
-      lenis.start();
+      document.body.style.overflow = '';
     }
+
+    // Cleanup to ensure we never get stuck locked
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isCartOpen, productToView, showGstModal, activePaymentModal, lightboxIndex, showAppointmentModal, showQrModal]);
 
   const productCategories = useMemo(() => {
@@ -1174,7 +1177,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                         priority 
                         width={128} 
                         height={128} 
-                        unoptimized={profileImage.includes('data:image') || profileImage.includes('blob:')}
+                        unoptimized={true}
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-white" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${palette.accent})` }}>

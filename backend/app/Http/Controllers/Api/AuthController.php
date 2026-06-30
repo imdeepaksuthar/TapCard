@@ -35,6 +35,7 @@ class AuthController extends Controller
         ]);
 
         $user->sendEmailVerificationNotification();
+        \App\Jobs\SendWelcomeEmailsJob::dispatch($user);
 
         return response()->json([
             'message' => 'Registration successful. Please check your email to verify your account.',
@@ -196,7 +197,7 @@ class AuthController extends Controller
         }
 
         if ($user->markEmailAsVerified()) {
-            \App\Jobs\SendWelcomeEmailsJob::dispatch($user);
+            // Welcome email is now sent at registration.
         }
 
         return response()->json(['message' => 'Email verified successfully.']);

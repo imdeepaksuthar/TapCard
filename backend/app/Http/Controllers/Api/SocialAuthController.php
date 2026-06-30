@@ -64,6 +64,7 @@ class SocialAuthController extends Controller
                     'status' => 'active',
                 ]);
                 $user->markEmailAsVerified();
+                \App\Jobs\SendWelcomeEmailsJob::dispatch($user);
             }
         } else {
             // Update avatar if changed

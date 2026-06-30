@@ -578,7 +578,7 @@ export default function MyCards() {
                     hidden: { opacity: 0, y: 28, scale: 0.96 },
                     show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 240, damping: 22 } },
                   }}
-                  className="w-full max-w-[1050px] mx-auto group/card relative rounded-[32px] p-2 bg-[#0D1527]/40 backdrop-blur-2xl border border-white/10 shadow-2xl flex flex-col gap-2 overflow-hidden"
+                  className="w-full max-w-[850px] mx-auto group/card relative rounded-[32px] p-5 sm:p-6 bg-[#0D1527]/40 backdrop-blur-2xl border border-white/10 shadow-2xl flex flex-col md:flex-row items-center md:items-stretch gap-6 overflow-hidden"
                 >
                   {/* Ambient glowing orb based on primaryColor */}
                   <div 
@@ -586,179 +586,128 @@ export default function MyCards() {
                     style={{ background: primaryColor }}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-2 relative z-10">
+                  {/* Left: Avatar */}
+                  <div className="relative shrink-0 flex flex-col items-center justify-center">
+                    <div className="relative group/avatar">
+                       <div className="absolute inset-0 rounded-[24px] opacity-40 blur-xl scale-110 transition-transform duration-700 group-hover/avatar:scale-125 group-hover/avatar:opacity-60" style={{ background: primaryColor }} />
+                       <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-[24px] bg-[#1a2333] border-2 border-white/20 overflow-hidden flex items-center justify-center relative z-10 shadow-2xl">
+                         {profileImage ? (
+                           <img src={profileImage} alt={card.personal_info?.name || 'Profile'} className="h-full w-full object-cover transition-transform duration-700 group-hover/avatar:scale-110" />
+                         ) : (
+                           <span className="text-5xl font-bold text-white">{(card.personal_info?.name || 'U').charAt(0).toUpperCase()}</span>
+                         )}
+                       </div>
+                       
+                       <div className="absolute -top-3 -right-3 flex items-center gap-1.5 bg-[#0D1527] border border-white/10 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-20 shadow-xl">
+                         <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                         {card.views_count}
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Middle: Details & Socials */}
+                  <div className="flex-1 min-w-0 flex flex-col text-center md:text-left relative z-10 items-center md:items-start justify-center">
+                    <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight mb-1 truncate w-full">{card.personal_info?.name || 'Untitled Card'}</h3>
+                    {designation && <p className="text-xs font-bold text-gray-400 uppercase tracking-widest truncate w-full mb-3">{designation}</p>}
                     
-                    {/* Left Column (Profile & Socials) -> md:col-span-5 */}
-                    <div className="md:col-span-5 flex flex-col gap-2">
-                      {/* Profile Box */}
-                      <div className="flex-1 rounded-[24px] bg-white/[0.03] border border-white/5 p-5 flex flex-col items-center justify-center relative overflow-hidden group/profile hover:bg-white/[0.06] transition-colors duration-500">
-                        <div className="absolute top-5 left-5 flex items-center gap-1.5 bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full border border-white/10">
-                           <svg className="w-3.5 h-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                           <span>{card.views_count}</span>
-                        </div>
-                        
-                        {/* Avatar */}
-                        <div className="relative mt-4 mb-6 group/avatar">
-                           <div className="absolute inset-0 rounded-[24px] opacity-40 blur-xl scale-110 transition-transform duration-700 group-hover/avatar:scale-125 group-hover/avatar:opacity-60" style={{ background: primaryColor }} />
-                           <div className="h-24 w-24 rounded-[20px] bg-[#1a2333] border-2 border-white/20 overflow-hidden flex items-center justify-center relative z-10 shadow-2xl">
-                             {profileImage ? (
-                               <img src={profileImage} alt={card.personal_info?.name || 'Profile'} className="h-full w-full object-cover transition-transform duration-700 group-hover/avatar:scale-110" />
-                             ) : (
-                               <span className="text-4xl font-bold text-white">{(card.personal_info?.name || 'U').charAt(0).toUpperCase()}</span>
-                             )}
-                           </div>
-                           <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#00d26a] rounded-full border-[3px] border-[#0D1527] flex items-center justify-center shadow-lg z-20">
-                             <svg className="relative w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                           </div>
-                        </div>
-
-                        {/* Text */}
-                        <div className="text-center w-full relative z-20">
-                           <h3 className="text-[22px] font-black text-white tracking-tight leading-tight mb-1.5 truncate">{card.personal_info?.name || 'Untitled Card'}</h3>
-                           {designation && <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest truncate">{designation}</p>}
-                        </div>
-
-                        {/* Chips */}
-                        {(companyName || card.category?.name) && (
-                          <div className="mt-6 flex flex-wrap justify-center gap-2 relative z-20">
-                            {companyName && (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-white/5 border border-white/10 text-white">
-                                <svg className="w-3.5 h-3.5" style={{ color: primaryColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                <span className="truncate max-w-[120px]">{companyName}</span>
-                              </span>
-                            )}
-                            {card.category?.name && (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-white/5 border border-white/10 text-gray-400">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" /></svg>
-                                <span className="truncate max-w-[120px]">{card.category.name}</span>
-                              </span>
-                            )}
-                          </div>
+                    {/* Chips */}
+                    {(companyName || card.category?.name) && (
+                      <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                        {companyName && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-white/5 border border-white/10 text-white">
+                            <svg className="w-3.5 h-3.5" style={{ color: primaryColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            <span className="truncate max-w-[150px]">{companyName}</span>
+                          </span>
+                        )}
+                        {card.category?.name && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-white/5 border border-white/10 text-gray-400">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" /></svg>
+                            <span className="truncate max-w-[150px]">{card.category.name}</span>
+                          </span>
                         )}
                       </div>
+                    )}
 
-                      {/* Socials Box */}
-                      {socials.length > 0 && (
-                        <div className="rounded-[24px] bg-white/[0.03] border border-white/5 p-6 flex flex-wrap justify-center items-center gap-3 hover:bg-white/[0.06] transition-colors duration-500">
-                          {socials.map((s) => (
-                            <a
-                              key={s.k}
-                              href={s.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={s.label}
-                              className="h-10 w-10 rounded-xl flex items-center justify-center text-gray-400 bg-white/5 border border-white/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group/social"
-                            >
-                              <span className="absolute inset-0 rounded-xl opacity-0 group-hover/social:opacity-20 transition-opacity duration-300" style={{ background: primaryColor }} />
-                              <span className="relative z-10 transition-colors duration-300 group-hover/social:text-white">
-                                <SocialIcon name={s.k} className="w-4 h-4" />
-                              </span>
-                            </a>
-                          ))}
-                        </div>
-                      )}
+                    {/* Socials */}
+                    {socials.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {socials.map((s) => (
+                          <a
+                            key={s.k}
+                            href={s.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={s.label}
+                            className="h-9 w-9 rounded-xl flex items-center justify-center text-gray-400 bg-white/5 border border-white/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group/social relative overflow-hidden"
+                          >
+                            <span className="absolute inset-0 rounded-xl opacity-0 group-hover/social:opacity-20 transition-opacity duration-300" style={{ background: primaryColor }} />
+                            <span className="relative z-10 transition-colors duration-300 group-hover/social:text-white">
+                              <SocialIcon name={s.k} className="w-4 h-4" />
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right: Actions & Status */}
+                  <div className="w-full md:w-auto shrink-0 flex flex-col justify-center gap-3 relative z-10 bg-white/[0.02] border border-white/5 p-4 rounded-3xl">
+                    <div className="flex items-center justify-between gap-3 mb-1">
+                      <span className={`text-[10px] font-black tracking-[0.15em] uppercase ${isActive ? 'text-[#00d26a]' : 'text-gray-500'}`}>
+                        {card.status}
+                      </span>
+                      <button
+                        onClick={() => handleToggleStatus(card.id, card.status)}
+                        className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none shadow-inner ${isActive ? 'bg-[#00d26a]/20 border-[#00d26a]/30' : 'bg-white/5 border-white/10'}`}
+                      >
+                        <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out ${isActive ? 'translate-x-5 shadow-[0_0_12px_rgba(0,210,106,0.8)]' : 'translate-x-0'}`} />
+                      </button>
                     </div>
 
-                    {/* Right Column (Controls & Info) -> md:col-span-7 */}
-                    <div className="md:col-span-7 flex flex-col gap-2">
+                    {/* Primary Highlighted Buttons */}
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/${card.slug}`}
+                        target="_blank"
+                        className="flex-1 flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white text-[12px] font-black tracking-widest uppercase transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 group/live relative overflow-hidden"
+                      >
+                        <span className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover/live:translate-y-[0%] transition-transform duration-300"></span>
+                        <span className="relative z-10 flex items-center gap-2">
+                          Live
+                          <svg className="w-4 h-4 transition-transform group-hover/live:translate-x-1 group-hover/live:-translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </span>
+                      </Link>
+
+                      <Link
+                        href={`/dashboard/cards/edit/${card.id}`}
+                        className="flex-1 flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white text-[12px] font-black tracking-widest uppercase transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 group/edit"
+                      >
+                        Edit
+                        <svg className="w-4 h-4 transition-transform group-hover/edit:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </Link>
+                    </div>
+
+                    {/* Secondary Actions */}
+                    <div className="flex items-center gap-2 mt-1">
+                      <button onClick={() => setQrCard(card)} className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all shadow-sm group/btn">
+                        <svg className="w-4 h-4 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16h.01M20 16h.01M14 20h.01M18 20h.01M20 20h.01" /></svg>
+                      </button>
                       
-                      {/* Top Controls Box */}
-                      <div className="rounded-[24px] bg-white/[0.03] border border-white/5 p-5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 hover:bg-white/[0.06] transition-colors duration-500">
-                        {/* Status Toggle */}
-                        <div className="flex items-center gap-3 pl-1">
-                          <button
-                            onClick={() => handleToggleStatus(card.id, card.status)}
-                            className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none shadow-inner ${isActive ? 'bg-[#00d26a]/20 border-[#00d26a]/30' : 'bg-white/5 border-white/10'}`}
-                            aria-label="Toggle card status"
-                          >
-                            <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out ${isActive ? 'translate-x-5 shadow-[0_0_12px_rgba(0,210,106,0.8)]' : 'translate-x-0'}`} />
-                          </button>
-                          <span className={`text-[10px] font-black tracking-[0.15em] uppercase ${isActive ? 'text-[#00d26a]' : 'text-gray-500'}`}>
-                            {card.status}
-                          </span>
-                        </div>
-                        
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setQrCard(card)}
-                            className="h-9 w-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all shadow-sm cursor-pointer relative z-50"
-                            title="Show QR code"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16h.01M20 16h.01M14 20h.01M18 20h.01M20 20h.01" /></svg>
-                          </button>
-                          
-                          <button
-                            onClick={() => copyLink(card.slug)}
-                            className="h-9 w-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all shadow-sm relative group/copy cursor-pointer z-50"
-                            title={isCopied ? 'Link copied!' : 'Copy link'}
-                          >
-                            {isCopied ? (
-                              <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                            ) : (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5" /></svg>
-                            )}
-                          </button>
-
-                          <Link
-                            href={`/${card.slug}`}
-                            className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white text-[11px] font-extrabold tracking-widest uppercase transition-all duration-300 shadow-lg shadow-blue-500/25 active:scale-95 group/btn cursor-pointer relative z-50"
-                            title="View Live Profile"
-                          >
-                            <span>Live</span>
-                            <svg className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          </Link>
-                          
-                          <div className="w-px h-6 bg-white/10 mx-1"></div>
-
-                          <Link
-                            href={`/dashboard/cards/edit/${card.id}`}
-                            className="h-9 w-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all shadow-sm cursor-pointer relative z-50"
-                            title="Edit Card"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                          </Link>
-
-                          <button
-                            onClick={() => { setDeleteTargetId(card.id); }}
-                            className="h-9 w-9 rounded-xl bg-white/5 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/30 flex items-center justify-center text-gray-400 hover:text-rose-400 transition-all shadow-sm cursor-pointer relative z-50"
-                            title="Delete Card"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Info Box (About + Contact) */}
-                      <div className="flex-1 rounded-[24px] bg-white/[0.03] border border-white/5 p-5 sm:p-6 flex flex-col hover:bg-white/[0.06] transition-colors duration-500">
-                        {bio && (
-                          <div className="mb-7">
-                            <div className="flex items-center gap-2.5 mb-3">
-                              <div className="w-1.5 h-1.5 rounded-full" style={{ background: primaryColor, boxShadow: `0 0 8px ${primaryColor}` }} />
-                              <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">About</h4>
-                            </div>
-                            <p className="text-[13px] leading-relaxed text-gray-300 font-medium">{bio}</p>
-                          </div>
+                      <button onClick={() => copyLink(card.slug)} className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all shadow-sm group/btn">
+                        {isCopied ? (
+                          <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        ) : (
+                          <svg className="w-4 h-4 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5" /></svg>
                         )}
+                      </button>
 
-                        {hasContact && (
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2.5 mb-4">
-                              <div className="w-1.5 h-1.5 rounded-full" style={{ background: primaryColor, boxShadow: `0 0 8px ${primaryColor}` }} />
-                              <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Contact</h4>
-                            </div>
-                            <div className="grid grid-cols-1 gap-1">
-                              {phone && <InfoRow type="phone" value={phone} href={`tel:${cleanPhone}`} color={primaryColor} />}
-                              {whatsapp && <InfoRow type="whatsapp" value={whatsapp} href={`https://wa.me/${cleanWa}`} color="#25D366" />}
-                              {email && <InfoRow type="email" value={email} href={`mailto:${email}`} color={primaryColor} />}
-                              {website && <InfoRow type="website" value={websiteLabel} href={websiteHref} color={primaryColor} />}
-                              {address && <InfoRow type="location" value={address} href={mapHref} color={primaryColor} />}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <button onClick={() => setDeleteTargetId(card.id)} className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/30 flex items-center justify-center text-gray-400 hover:text-rose-400 transition-all shadow-sm group/btn">
+                        <svg className="w-4 h-4 transition-transform group-hover/btn:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
                     </div>
                   </div>
                 </motion.div>
