@@ -66,6 +66,18 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  /* Safe-area helpers for notched / foldable devices (requires
+     viewport-fit=cover, set in app/layout.tsx). */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

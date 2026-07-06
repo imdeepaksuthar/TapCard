@@ -209,8 +209,10 @@ class BusinessCardController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
-        // Increment views count
+        // Increment views count efficiently (skip updating `updated_at` timestamp)
+        $card->timestamps = false;
         $card->increment('views_count');
+        $card->timestamps = true;
 
         // Load theme if available
         $theme = null;

@@ -9,6 +9,16 @@ export const metadata = {
   },
 };
 
+// Opt into edge-to-edge rendering so `env(safe-area-inset-*)` reports real
+// values on notched / foldable devices (used by the fixed bottom bars).
+// `maximumScale`/`userScalable` are left at their accessible defaults so users
+// can still pinch-zoom.
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 export default function RootLayout({
   children,
 }: {

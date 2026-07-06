@@ -1160,7 +1160,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
           </div>
 
           {/* ---- PROFILE ---- */}
-          <div className="relative px-[clamp(1.25rem,4vw,2.5rem)] pb-[clamp(0.5rem,2vw,1rem)]">
+          <div className="relative px-[clamp(1rem,4vw,2.5rem)] pb-[clamp(0.5rem,2vw,1rem)]">
             <div className={showAllProducts ? 'hidden' : ''}>
               <div className="-mt-[clamp(3.5rem,10vw,5rem)] flex flex-col items-center text-center pointer-events-none">
                 <div className="gsap-profile-avatar relative h-[clamp(7rem,18vw,10rem)] w-[clamp(7rem,18vw,10rem)] pointer-events-auto">
@@ -1241,7 +1241,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               )}
 
               {/* ---- QUICK ACTIONS ---- */}
-              <div className="gsap-quick-actions mt-6 grid grid-cols-4 gap-[clamp(0.5rem,2vw,1rem)]">
+              <div className="gsap-quick-actions mt-6 grid grid-cols-4 gap-[clamp(0.375rem,2vw,1rem)]">
                 <QuickAction
                   disabled={!cleanedPhone}
                   href={cleanedPhone ? `tel:${cleanedPhone}` : undefined}
@@ -1315,7 +1315,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               {/* ---- ABOUT ---- */}
               {personalInfo.bio && (
                 <BentoTile title="About" tint={primaryColor} span="sm:col-span-6" isDark={isDark} textMuted={textMuted} bodyClassName="px-4 pb-4 pt-2">
-                  <p className={`text-[14px] leading-relaxed ${textSubtle} whitespace-pre-wrap`}>
+                  <p className={`text-[14px] leading-relaxed ${textSubtle} whitespace-pre-wrap break-words`}>
                     {personalInfo.bio}
                   </p>
                 </BentoTile>
@@ -2304,7 +2304,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 24 }}
               transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-              className={`relative w-full max-w-sm overflow-hidden rounded-3xl p-8 text-center shadow-[0_32px_80px_rgba(0,0,0,0.6)] ${isDark
+              className={`relative w-full max-w-sm overflow-hidden rounded-3xl p-6 sm:p-8 text-center shadow-[0_32px_80px_rgba(0,0,0,0.6)] ${isDark
                   ? 'bg-[#0f0f1a]/90 text-white ring-1 ring-white/10 backdrop-blur-2xl'
                   : 'bg-white/90 text-slate-900 ring-1 ring-slate-200 backdrop-blur-2xl'
                 }`}
@@ -2336,6 +2336,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                   size={192}
                   level="H"
                   includeMargin={false}
+                  className="h-auto max-w-full"
                 />
               </div>
 
@@ -2366,7 +2367,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       </AnimatePresence>
 
       {/* ---- STICKY ACTION BAR ---- */}
-      <div className="gsap-sticky-bar fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-4 sm:pb-5">
+      <div className="gsap-sticky-bar fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[calc(1rem_+_env(safe-area-inset-bottom))] sm:pb-[calc(1.25rem_+_env(safe-area-inset-bottom))]">
         {/* Blur gradient ground shadow */}
         <div className="absolute inset-x-0 bottom-0 h-24 pointer-events-none" style={{ background: isDark ? 'linear-gradient(to top, rgba(8,8,12,0.85), transparent)' : 'linear-gradient(to top, rgba(241,245,249,0.90), transparent)' }} />
         <div
@@ -2654,7 +2655,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
             {/* Footer actions */}
             {cart.length > 0 && !orderSuccess && (
-              <div className={`border-t ${borderSoft} p-4 shrink-0 ${isDark ? 'bg-white/[0.02]' : 'bg-slate-50'}`}>
+              <div className={`border-t ${borderSoft} px-4 pt-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] shrink-0 ${isDark ? 'bg-white/[0.02]' : 'bg-slate-50'}`}>
                 {checkoutStep === 1 ? (
                   /* Step 1 → Proceed to checkout */
                   <button
@@ -3225,7 +3226,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
 
       {/* Floating Cart Footer */}
       {cartItemCount > 0 && (
-        <div className={`fixed bottom-0 left-0 right-0 z-[90] p-4 pb-safe bg-white shadow-[0_-4px_15px_rgba(0,0,0,0.1)] transform transition-transform translate-y-0 ${isDark ? 'dark:bg-[#12121A] border-t border-white/10' : ''}`}>
+        <div className={`fixed bottom-0 left-0 right-0 z-[90] px-4 pt-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] bg-white shadow-[0_-4px_15px_rgba(0,0,0,0.1)] transform transition-transform translate-y-0 ${isDark ? 'dark:bg-[#12121A] border-t border-white/10' : ''}`}>
           <div className="mx-auto max-w-[clamp(400px,90vw,800px)]">
             <button
               onClick={() => setIsCartOpen(true)}
@@ -3356,7 +3357,7 @@ function QuickAction({
   isDark: boolean;
   disabled?: boolean;
 }) {
-  const base = `group relative flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 overflow-hidden gsap-hover-safe-action transition-all duration-300 ${isDark
+  const base = `group relative flex flex-col items-center justify-center gap-1.5 rounded-2xl p-[clamp(0.375rem,2.2vw,0.75rem)] overflow-hidden gsap-hover-safe-action transition-all duration-300 ${isDark
       ? 'bg-white/[0.05] ring-1 ring-white/[0.09] hover:bg-white/[0.09] hover:ring-white/20'
       : 'bg-white ring-1 ring-slate-200/80 shadow-sm hover:shadow-md hover:ring-slate-300'
     } ${disabled ? 'cursor-not-allowed opacity-40' : 'hover:-translate-y-1 active:scale-95'}`;
@@ -3371,7 +3372,7 @@ function QuickAction({
         />
       )}
       <span
-        className="flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 group-hover:scale-110"
+        className="flex h-[clamp(2.25rem,11vw,2.75rem)] w-[clamp(2.25rem,11vw,2.75rem)] items-center justify-center rounded-full transition-all duration-300 group-hover:scale-110"
         style={{
           backgroundColor: hexToRgba(tint, isDark ? 0.16 : 0.10),
           color: tint,
@@ -3386,7 +3387,7 @@ function QuickAction({
       >
         {icon}
       </span>
-      <span className={`text-[11px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{label}</span>
+      <span className={`w-full truncate text-center text-[10px] sm:text-[11px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{label}</span>
     </>
   );
 
