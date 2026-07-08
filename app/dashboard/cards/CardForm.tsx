@@ -1314,13 +1314,13 @@ export default function CardForm({ id }: CardFormProps) {
 
             <div>
 
-              <h2 className="text-2xl font-bold mb-2">Choose Card Type</h2>
+              <h2 className="text-xl font-bold mb-2">Choose Card Type</h2>
 
-              <p className="text-gray-400 mb-6">Select the foundation for your digital identity.</p>
+              <p className="text-sm text-gray-400 mb-4">Select the foundation for your digital identity.</p>
 
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4">
 
               {[
 
@@ -1339,29 +1339,29 @@ export default function CardForm({ id }: CardFormProps) {
 
                   onClick={() => setFormData({ ...formData, card_type: type.id })}
 
-                  className={`group cursor-pointer rounded-2xl p-5 sm:p-6 border-2 transition-all duration-300 relative overflow-hidden ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-xl shadow-blue-500/10 scale-[1.02]' : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06] hover:scale-[1.01]'
+                  className={`group cursor-pointer rounded-2xl p-4 sm:p-5 border-2 transition-all duration-300 relative overflow-hidden ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-xl shadow-blue-500/10 scale-[1.02]' : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06] hover:scale-[1.01]'
                     }`}
 
                 >
                   {/* Selection glow */}
                   {isSelected && <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 pointer-events-none" />}
 
-                  <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 ${isSelected ? `bg-gradient-to-br ${type.gradient} text-white shadow-lg` : 'bg-white/[0.07] text-gray-400 group-hover:bg-white/10'}`}>
+                  <div className={`relative w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-all duration-300 ${isSelected ? `bg-gradient-to-br ${type.gradient} text-white shadow-lg` : 'bg-white/[0.07] text-gray-400 group-hover:bg-white/10'}`}>
 
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={type.icon} /></svg>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={type.icon} /></svg>
 
                   </div>
 
                   <div className="relative">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <h3 className="text-lg font-bold">{type.title}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-base font-bold">{type.title}</h3>
                       {isSelected && (
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white">
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-400 leading-relaxed">{type.desc}</p>
+                    <p className="text-xs text-gray-400 leading-relaxed">{type.desc}</p>
                   </div>
 
                 </div>
@@ -1382,9 +1382,9 @@ export default function CardForm({ id }: CardFormProps) {
 
             <div>
 
-              <h2 className="text-2xl font-bold mb-2">Basic Information</h2>
+              <h2 className="text-xl font-bold mb-2">Basic Information</h2>
 
-              <p className="text-gray-400 mb-6">Your profile picture and identity.</p>
+              <p className="text-sm text-gray-400 mb-4">Your profile picture and identity.</p>
 
             </div>
 
@@ -1651,9 +1651,9 @@ export default function CardForm({ id }: CardFormProps) {
 
             <div>
 
-              <h2 className="text-2xl font-bold mb-2">Contact & Social</h2>
+              <h2 className="text-xl font-bold mb-2">Contact & Social</h2>
 
-              <p className="text-gray-400 mb-6">How your leads and clients will reach you.</p>
+              <p className="text-sm text-gray-400 mb-4">How your leads and clients will reach you.</p>
 
             </div>
 
@@ -2157,11 +2157,11 @@ export default function CardForm({ id }: CardFormProps) {
 
                               {!isVerifyingGst && isGstVerified && (
 
-                                <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-2 py-0.5 text-[10px] font-bold" title="Verification is currently mocked">
+                                <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full px-2 py-0.5 text-[10px] font-bold" title="GSTIN format is valid. This is not an official government (GSTN) verification.">
 
-                                  <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                  <svg className="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
 
-                                  Verified (Mock)
+                                  Format valid
 
                                 </div>
 
@@ -2935,11 +2935,11 @@ export default function CardForm({ id }: CardFormProps) {
                       {Object.entries(formData.opening_hours).map(([dayStr, hours]: [string, any]) => {
                         const day = dayStr as keyof typeof formData.opening_hours;
                         return (
-                        <div key={day} className="flex items-center justify-between gap-4 py-2 border-b border-white/5 last:border-0">
+                        <div key={day} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 py-2 border-b border-white/5 last:border-0">
 
-                          <div className="w-24 capitalize text-gray-300 text-sm font-medium">{day}</div>
+                          <div className="w-20 shrink-0 capitalize text-gray-300 text-sm font-medium">{day}</div>
 
-                          <div className="flex items-center gap-2 flex-1">
+                          <div className="flex items-center flex-wrap gap-2">
 
                             <input type="time" value={hours.open || ''} disabled={hours.closed} onChange={(e) => {
 
@@ -3499,7 +3499,7 @@ export default function CardForm({ id }: CardFormProps) {
 
               <h3 className="text-lg font-semibold text-white mb-3">Select Brand Colors</h3>
 
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+              <div className="grid grid-cols-4 min-[360px]:grid-cols-5 md:grid-cols-10 gap-2 sm:gap-3">
 
                 {[
 
@@ -3755,7 +3755,7 @@ export default function CardForm({ id }: CardFormProps) {
                         )}
                         {isActive && <span className="absolute -inset-1 rounded-full bg-blue-500/20 animate-ping opacity-30" />}
                       </div>
-                      <span className={`mt-2 text-[11px] font-medium transition-colors duration-300 text-center leading-tight
+                      <span className={`mt-2 hidden min-[360px]:block text-[11px] font-medium transition-colors duration-300 text-center leading-tight
                         ${isActive ? 'text-blue-400' : isCompleted ? 'text-green-400/80 group-hover:text-green-300' : 'text-gray-600 group-hover:text-gray-400'}
                       `}>{step.label}</span>
                     </button>
@@ -4298,15 +4298,7 @@ export default function CardForm({ id }: CardFormProps) {
                             <RenderInfoRow
                               icon={<PreviewIcon.Wallet className="h-4 w-4" style={{ color: primaryColor }} />}
                               label="GST"
-                              value={
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  <span>{companyDetails.gst}</span>
-                                  <span className="flex items-center gap-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-1 py-0.25 text-[7px] font-bold">
-                                    <PreviewIcon.Check className="w-1.5 h-1.5 text-green-400" />
-                                    Verified
-                                  </span>
-                                </div>
-                              }
+                              value={companyDetails.gst}
                             />
                           )}
                           {showCompany && companyDetails.website && (

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '../../lib/api';
+import { toast } from '@/components/toast';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -69,7 +70,7 @@ export default function Dashboard() {
       const res = await apiFetch<{ leads: any[] }>('/api/leads');
       const leads = res.leads || [];
       if (leads.length === 0) {
-        alert('No leads available to export.');
+        toast.info('No leads available to export.');
         return;
       }
       
@@ -94,7 +95,7 @@ export default function Dashboard() {
       document.body.removeChild(link);
     } catch (err) {
       console.error('Failed to export leads:', err);
-      alert('Failed to export leads. Please try again.');
+      toast.error('Failed to export leads. Please try again.');
     }
   };
 
@@ -199,7 +200,7 @@ export default function Dashboard() {
               description="Show your card QR" 
               onClick={() => {
                 if (cards.length === 0) {
-                  alert('Please create a business card first!');
+                  toast.info('Please create a business card first!');
                   return;
                 }
                 setIsQrOpen(true);
@@ -221,7 +222,7 @@ export default function Dashboard() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative bg-[#090f1e] border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center"
+            className="relative bg-[#090f1e] border border-white/10 rounded-3xl p-5 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl text-center"
           >
             <button 
               onClick={() => setIsQrOpen(false)}
@@ -237,8 +238,8 @@ export default function Dashboard() {
             <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-inner">
               <img 
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`)}`} 
-                alt="Card QR Code" 
-                className="w-48 h-48"
+                alt="Card QR Code"
+                className="w-40 h-40 sm:w-48 sm:h-48"
               />
             </div>
 

@@ -79,7 +79,9 @@ class SocialAuthController extends Controller
         // Redirect to the frontend callback page to save the token
         $frontendUrl = env('FRONTEND_URL', 'http://127.0.0.1:3000');
         
+        $isSecure = app()->environment('production');
+
         return redirect()->away($frontendUrl . '/auth/callback?token=' . $token)
-            ->cookie('auth_token', $token, 60 * 24 * 30, '/', null, false, false, false, 'Lax');
+            ->cookie('auth_token', $token, 60 * 24 * 30, '/', null, $isSecure, true, false, 'Lax');
     }
 }

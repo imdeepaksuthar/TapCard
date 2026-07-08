@@ -19,15 +19,18 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3001',
-        'http://localhost',
-        'http://127.0.0.1',
-        'https://tapcard.mamtastationery.com',
-    ],
+    // Local dev origins are always allowed; production origins come from env
+    // (CORS_ALLOWED_ORIGINS, comma-separated) so the deployed domain is never
+    // hardcoded. Falls back to FRONTEND_URL if CORS_ALLOWED_ORIGINS is unset.
+    'allowed_origins' => array_values(array_filter(array_merge(
+        [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3001',
+        ],
+        array_map('trim', array_filter(explode(',', (string) env('CORS_ALLOWED_ORIGINS', (string) env('FRONTEND_URL', '')))))
+    ))),
 
     'allowed_origins_patterns' => [],
 

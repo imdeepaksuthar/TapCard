@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\BusinessCard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = auth('sanctum')->user();
         $query = Service::query();
@@ -20,6 +21,15 @@ class ServiceController extends Controller
             $query->where('is_active', true);
             if ($user) {
                 $query->where('user_id', $user->id);
+            } else {
+                // Public callers must scope to a single owner via ?user_id= or
+                // ?card_slug=; otherwise we return nothing rather than leaking
+                // every tenant's catalog.
+                $ownerId = $request->query('user_id');
+                if (!$ownerId && $request->query('card_slug')) {
+                    $ownerId = optional(BusinessCard::where('slug', $request->query('card_slug'))->first())->user_id;
+                }
+                $query->where('user_id', $ownerId ?: 0);
             }
         }
 

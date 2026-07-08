@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../../../lib/api';
 import { useAuth } from '../../../context/AuthContext';
 import { compressProductImage } from '../../../lib/compressImage';
+import { toast } from '@/components/toast';
 
 interface Product {
   id: number;
@@ -25,8 +26,9 @@ interface UploadedImage {
 
 export default function ProductsPage() {
   const { user } = useAuth();
-  // Changed to true permanently as requested so users can manage products
-  const isAdmin = true;
+  // Catalog management is available to any signed-in owner — the API scopes all
+  // writes to the authenticated user, so this is not an admin-only capability.
+  const canManage = !!user;
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -296,7 +298,7 @@ export default function ProductsPage() {
     } catch (err) {
       // Revert on failure
       setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_active: product.is_active } : p));
-      alert((err as Error).message || 'Failed to update status');
+      toast.error((err as Error).message || 'Failed to update status');
     }
   };
 
@@ -308,7 +310,7 @@ export default function ProductsPage() {
       setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
       setProductToDelete(null);
     } catch (err) {
-      alert((err as Error).message || 'Failed to delete product');
+      toast.error((err as Error).message || 'Failed to delete product');
     } finally {
       setIsDeleting(false);
     }
@@ -342,8 +344,8 @@ export default function ProductsPage() {
             <h1 className="text-3xl font-bold text-white tracking-tight">Products</h1>
             <p className="text-gray-400 mt-2">Manage and organize your product catalog.</p>
           </div>
-          {isAdmin && (
-            <div className="flex items-center gap-3">
+          {canManage && (
+            <div className="flex items-center gap-3 flex-wrap">
               <button
                 onClick={openImportModal}
                 className="flex items-center gap-2 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 hover:border-white/20 text-gray-300 font-medium py-2.5 px-5 rounded-2xl transition-all duration-300 active:scale-95 shadow-lg cursor-pointer"
@@ -460,7 +462,7 @@ export default function ProductsPage() {
                 className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative group"
               >
                 {/* Status toggle badge with switch */}
-                {isAdmin && (
+                {canManage && (
                   <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-white/10">
                     <span className={`text-[10px] font-bold uppercase tracking-wider ${product.is_active ? 'text-green-400' : 'text-gray-400'}`}>
                       {product.is_active ? 'Active' : 'Inactive'}
@@ -549,7 +551,7 @@ export default function ProductsPage() {
                       ₹{product.price.toFixed(2)}
                     </span>
                     <div className="flex items-center gap-2">
-                      {isAdmin && (
+                      {canManage && (
                         <>
                           <button onClick={() => openEditModal(product)} className="p-2 text-gray-400 hover:text-blue-400 bg-white/5 hover:bg-blue-500/10 rounded-lg transition-colors border border-white/5" title="Edit Product">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>

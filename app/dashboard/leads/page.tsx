@@ -176,7 +176,7 @@ export default function Leads() {
                         {lead.status !== 'archived' && (
                           <button
                             onClick={() => updateLeadStatus(lead.id, 'archived')}
-                            className="text-gray-400 hover:text-gray-200 transition-colors"
+                            className="p-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-colors"
                             title="Archive Lead"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +186,7 @@ export default function Leads() {
                         )}
                         <button
                           onClick={() => deleteLead(lead.id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                           title="Delete Lead"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

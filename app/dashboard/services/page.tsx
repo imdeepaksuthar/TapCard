@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../../../lib/api';
 import { useAuth } from '../../../context/AuthContext';
 import { compressProductImage } from '../../../lib/compressImage';
+import { toast } from '@/components/toast';
 
 interface Service {
   id: number;
@@ -25,8 +26,9 @@ interface UploadedImage {
 
 export default function ServicesPage() {
   const { user } = useAuth();
-  // Changed to true permanently as requested so users can manage services
-  const isAdmin = true;
+  // Service management is available to any signed-in owner — the API scopes all
+  // writes to the authenticated user, so this is not an admin-only capability.
+  const canManage = !!user;
 
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -211,7 +213,7 @@ export default function ServicesPage() {
     } catch (err) {
       // Revert on failure
       setServices(prev => prev.map(p => p.id === service.id ? { ...p, is_active: service.is_active } : p));
-      alert((err as Error).message || 'Failed to update status');
+      toast.error((err as Error).message || 'Failed to update status');
     }
   };
 
@@ -223,7 +225,7 @@ export default function ServicesPage() {
       setServices(prev => prev.filter(p => p.id !== serviceToDelete.id));
       setServiceToDelete(null);
     } catch (err) {
-      alert((err as Error).message || 'Failed to delete service');
+      toast.error((err as Error).message || 'Failed to delete service');
     } finally {
       setIsDeleting(false);
     }
@@ -264,7 +266,7 @@ export default function ServicesPage() {
               )}
             </p>
           </div>
-          {isAdmin && (
+          {canManage && (
             <button
               onClick={openAddModal}
               className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold py-2.5 px-6 rounded-2xl transition-all duration-300 shadow-lg shadow-blue-500/30 active:scale-95"
@@ -435,7 +437,7 @@ export default function ServicesPage() {
                 className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative group"
               >
                 {/* Status toggle badge with switch */}
-                {isAdmin && (
+                {canManage && (
                   <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-white/10">
                     <span className={`text-[10px] font-bold uppercase tracking-wider ${service.is_active ? 'text-green-400' : 'text-gray-400'}`}>
                       {service.is_active ? 'Active' : 'Inactive'}
@@ -516,10 +518,10 @@ export default function ServicesPage() {
                   ) : (
                     <div className="mb-4 flex-1" />
                   )}
-                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-                      {service.price !== null ? `₹${service.price.toFixed(2)}` : 'Custom Price'}
-                    <div className="flex items-center gap-2">
-                      {isAdmin && (
+                  <div className="flex items-center justify-between flex-wrap gap-2 mt-auto pt-3 border-t border-white/5">
+                      <span className="text-sm font-bold text-white truncate min-w-0">{service.price !== null ? `₹${service.price.toFixed(2)}` : 'Custom Price'}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {canManage && (
                         <>
                           <button onClick={() => openEditModal(service)} className="p-2 text-gray-400 hover:text-blue-400 bg-white/5 hover:bg-blue-500/10 rounded-lg transition-colors border border-white/5" title="Edit Service">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -540,7 +542,7 @@ export default function ServicesPage() {
       )}
 
       {/* Floating Action Button — always reachable while scrolling */}
-      {!isLoading && services.length > 0 && isAdmin && (
+      {!isLoading && services.length > 0 && canManage && (
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

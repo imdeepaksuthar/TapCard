@@ -24,10 +24,25 @@ class MediaController extends Controller
 
         $file = $request->file('file');
         $type = $request->input('type');
-        
+
+        // Enforce the real (server-guessed) MIME per declared type. Defends
+        // against an SVG/HTML/PHP payload disguised as an "image" — we never
+        // trust the client-supplied filename/extension.
+        $allowedExt = [
+            'image' => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+            'document' => ['pdf'],
+            'video' => ['mp4', 'webm', 'mov'],
+        ];
+        $ext = strtolower($file->extension() ?: ''); // derived from MIME, not the client name
+        if (!in_array($ext, $allowedExt[$type] ?? [], true)) {
+            return response()->json([
+                'message' => 'Unsupported file type for a ' . $type . ' upload.',
+            ], 422);
+        }
+
         $folder = 'media/' . $type . 's'; // media/images, media/documents
-        
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+
+        $filename = Str::uuid() . '.' . $ext;
         
         // Store in public disk
         $path = $file->storeAs($folder, $filename, 'public');
@@ -54,7 +69,6 @@ class MediaController extends Controller
                 }
 
                 // Re-encode as WebP if supported, otherwise keep original format
-                $ext = strtolower($file->getClientOriginalExtension());
                 if (in_array($ext, ['jpg', 'jpeg', 'png', 'bmp'])) {
                     $webpPath = preg_replace('/\.[^.]+$/', '.webp', $fullPath);
                     $webpStoragePath = preg_replace('/\.[^.]+$/', '.webp', $path);

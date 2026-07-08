@@ -117,9 +117,9 @@ function StatCard({ title, value, subtitle, icon, trend, color = '#3b82f6', spar
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: `${color}15`, boxShadow: `0 4px 20px -2px ${color}40` }}>
             <div style={{ color }}>{icon}</div>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-gray-400 font-medium mb-1">{title}</p>
-            <p className="text-3xl font-bold text-white tracking-tight">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-white tracking-tight truncate">{typeof value === 'number' ? value.toLocaleString() : value}</p>
           </div>
         </div>
         {trend && (

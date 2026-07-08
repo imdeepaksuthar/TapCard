@@ -354,7 +354,7 @@ export default function Login() {
                     </div>
 
                     {/* OTP boxes */}
-                    <div className="flex gap-2 justify-center my-4">
+                    <div className="flex gap-1.5 sm:gap-2 justify-center my-4 overflow-x-auto -mx-2 px-2">
                       {otpArray.map((digit, idx) => (
                         <input
                           key={idx}
@@ -367,7 +367,7 @@ export default function Login() {
                           onChange={e => handleOtpChange(e.target.value, idx)}
                           onKeyDown={e => handleOtpKeyDown(e, idx)}
                           onPaste={handleOtpPaste}
-                          className={`w-11 h-13 text-center text-xl font-bold bg-white/[0.07] border rounded-xl text-white outline-none transition-all duration-200 ${
+                          className={`w-9 sm:w-11 h-13 shrink-0 text-center text-xl font-bold bg-white/[0.07] border rounded-xl text-white outline-none transition-all duration-200 ${
                             digit
                               ? 'border-blue-500/60 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
                               : 'border-white/[0.12] focus:border-blue-500/50 focus:shadow-[0_0_12px_rgba(59,130,246,0.15)]'

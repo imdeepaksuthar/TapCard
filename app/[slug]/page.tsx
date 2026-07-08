@@ -35,13 +35,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const company = personalInfo.company_name ? ` at ${personalInfo.company_name}` : '';
   const bio = personalInfo.bio || `Connect with ${name} via their digital business card.`;
   
+  const profileImage = card.profile_image || personalInfo.profile_image || null;
+  const fullTitle = `${name}${designation}${company}`;
+
   return {
-    title: `${name}${designation}${company}`,
+    title: fullTitle,
     description: bio,
+    alternates: { canonical: `/${slug}` },
     openGraph: {
-      title: `${name}${designation}${company}`,
+      title: fullTitle,
       description: bio,
       type: 'profile',
+      url: `/${slug}`,
+      siteName: 'Card Setu',
+      images: profileImage ? [{ url: profileImage }] : undefined,
+    },
+    twitter: {
+      card: profileImage ? 'summary_large_image' : 'summary',
+      title: fullTitle,
+      description: bio,
+      images: profileImage ? [profileImage] : undefined,
     },
   };
 }
@@ -86,5 +99,35 @@ export default async function PublicCardPage({ params }: { params: Promise<{ slu
 
   const primaryColor = data.theme?.primary_color || getHexColor(themeColor);
 
-  return <PublicCardView data={data} products={products} services={services} />;
+  // Person structured data so shared cards can earn rich results.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cardsetu.com';
+  const companyName = (card.company_details && card.company_details.company_name) || personalInfo.company_name || null;
+  const jsonLd: any = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: personalInfo.name || 'Digital Business Card',
+    url: `${siteUrl}/${slug}`,
+  };
+  if (personalInfo.designation) jsonLd.jobTitle = personalInfo.designation;
+  if (companyName) jsonLd.worksFor = { '@type': 'Organization', name: companyName };
+  const jsonLdImage = card.profile_image || personalInfo.profile_image;
+  if (jsonLdImage) jsonLd.image = jsonLdImage;
+  if (contactButtons.email) jsonLd.email = contactButtons.email;
+  if (contactButtons.call) jsonLd.telephone = contactButtons.call;
+
+  // Escape so owner-controlled fields (name, company, etc.) can't break out of
+  // the <script> tag — JSON.stringify alone does NOT neutralise "</script>".
+  const jsonLdHtml = JSON.stringify(jsonLd)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/ /g, '\\u2028')
+    .replace(/ /g, '\\u2029');
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml }} />
+      <PublicCardView data={data} products={products} services={services} />
+    </>
+  );
 }

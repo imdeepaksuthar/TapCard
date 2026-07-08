@@ -2,10 +2,15 @@ import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
 
 export const metadata = {
-  title: 'Card Setu',
-  description: 'Card Setu SaaS',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://cardsetu.com'),
+  title: { default: 'Card Setu — Digital Business Cards for Modern Professionals' },
+  description: 'Create a stunning digital business card. Share your contact details, products, services, and more with a single tap or scan.',
   icons: {
     icon: '/favicon.png',
+  },
+  openGraph: {
+    siteName: 'Card Setu',
+    type: 'website',
   },
 };
 

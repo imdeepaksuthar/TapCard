@@ -506,6 +506,19 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       .catch(() => {});
   }, [card.id, getDeviceId]);
 
+  // Record a de-duplicated view via a client beacon. Done here (not during the
+  // ISR-cached server render) so counts reflect real visits, not cache misses.
+  useEffect(() => {
+    if (!card?.slug) return;
+    const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    fetch(`${api}/api/cards/public/${card.slug}/view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_id: getDeviceId() }),
+      keepalive: true,
+    }).catch(() => {});
+  }, [card?.slug, getDeviceId]);
+
   // Submit review handler
   const handleSubmitReview = async () => {
     if (!reviewRating || !reviewName.trim()) return;
@@ -1342,15 +1355,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                         <InfoRow
                           icon={<Icon.Wallet className="h-5 w-5" style={{ color: primaryColor }} />}
                           label="GST"
-                          value={
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span>{companyDetails.gst}</span>
-                              <span className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-1.5 py-0.5 text-[9px] font-bold shrink-0">
-                                <Icon.Check className="w-2.5 h-2.5 text-green-400" />
-                                Verified
-                              </span>
-                            </div>
-                          }
+                          value={companyDetails.gst}
                           onCopy={() => copyToClipboard('gst', companyDetails.gst)}
                           copied={copied === 'gst'}
                           isDark={isDark}
@@ -2753,10 +2758,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             >
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
-                    <Icon.Check className="h-4 w-4 text-emerald-500" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: primary15, color: primaryColor }}>
+                    <Icon.FileText className="h-4 w-4" />
                   </div>
-                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>GST Verification</h3>
+                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>GSTIN Details</h3>
                 </div>
                 <button aria-label="Close GST Modal" onClick={() => setShowGstModal(false)} className={`rounded-full p-2 transition ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100'}`}>
                   <Icon.X className="h-5 w-5" />
@@ -2766,7 +2771,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               {verifyingGst ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: primaryColor, borderTopColor: 'transparent' }} />
-                  <p className="mt-4 text-sm font-medium text-slate-400">Fetching Govt. Records...</p>
+                  <p className="mt-4 text-sm font-medium text-slate-400">Checking GSTIN format…</p>
                 </div>
               ) : gstData?.error ? (
                 <div className="rounded-2xl bg-red-500/10 p-4 text-center text-red-500 ring-1 ring-red-500/20">
@@ -2776,23 +2781,24 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               ) : gstData ? (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Legal Name</p>
-                    <p className={`mt-1 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{gstData.legal_name}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">GSTIN</p>
+                    <p className={`mt-1 font-semibold break-all ${isDark ? 'text-white' : 'text-slate-900'}`}>{gstData.gstin}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</p>
-                      <p className="mt-1 font-semibold text-emerald-500">{gstData.status}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">State</p>
+                      <p className={`mt-1 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{gstData.state}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Taxpayer Type</p>
-                      <p className={`mt-1 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{gstData.taxpayer_type}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Entity Type</p>
+                      <p className={`mt-1 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{gstData.entity_type}</p>
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Principal Place of Business</p>
-                    <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{gstData.principal_place_of_business}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">PAN</p>
+                    <p className={`mt-1 text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{gstData.pan}</p>
                   </div>
+                  <p className="text-[11px] leading-relaxed text-slate-500">{gstData.note}</p>
                 </div>
               ) : null}
             </motion.div>

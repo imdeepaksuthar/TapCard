@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationBell from '../../components/NotificationBell';
+import { Toaster } from '../../components/toast';
 
 
 export default function DashboardLayout({
@@ -120,7 +121,7 @@ export default function DashboardLayout({
             </svg>
           </button>
         </div>
-        <nav className="flex-1 px-fluid-md space-y-fluid-xs">
+        <nav className="flex-1 px-fluid-md space-y-fluid-xs overflow-y-auto custom-scrollbar">
           <SidebarLink href="/dashboard" icon="dashboard" active={pathname === '/dashboard'} onClick={() => setIsSidebarOpen(false)}>Dashboard</SidebarLink>
           <SidebarLink href="/dashboard/cards" icon="cards" active={pathname === '/dashboard/cards'} onClick={() => setIsSidebarOpen(false)}>My Cards</SidebarLink>
           {isCheckingCardType ? (
@@ -129,11 +130,16 @@ export default function DashboardLayout({
             </div>
           ) : (
             <>
-              {/* Services — only visible for professional cards */}
+              {/* Services & Appointments — only visible for professional cards */}
               {isProfessional && (
-                <SidebarLink href="/dashboard/services" icon="services" active={pathname === '/dashboard/services'} onClick={() => setIsSidebarOpen(false)}>
-                  Services
-                </SidebarLink>
+                <>
+                  <SidebarLink href="/dashboard/services" icon="services" active={pathname === '/dashboard/services'} onClick={() => setIsSidebarOpen(false)}>
+                    Services
+                  </SidebarLink>
+                  <SidebarLink href="/dashboard/appointments" icon="appointments" active={pathname === '/dashboard/appointments'} onClick={() => setIsSidebarOpen(false)}>
+                    Appointments
+                  </SidebarLink>
+                </>
               )}
               {/* Products & Orders — only for non-personal, non-professional cards */}
               {!hideShopModules && !isProfessional && (
@@ -202,6 +208,7 @@ export default function DashboardLayout({
                pathname === '/dashboard/cards' ? 'My Cards' :
                pathname === '/dashboard/products' ? 'Products' :
                pathname === '/dashboard/services' ? 'Services' :
+               pathname === '/dashboard/appointments' ? 'Appointments' :
                pathname === '/dashboard/leads' ? 'Leads' :
                pathname === '/dashboard/analytics' ? 'Analytics' :
                pathname === '/dashboard/settings' ? 'Settings' : 'Dashboard'}
@@ -227,6 +234,9 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Global toast notifications */}
+      <Toaster />
     </div>
   );
 }
@@ -300,6 +310,12 @@ function SidebarIcon({ name }: { name: string }) {
       return (
         <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0h6v-4a2 2 0 00-2-2h-2a2 2 0 00-2 2v4zm0 0h6v-2a2 2 0 00-2-2h-2a2 2 0 00-2 2v2z"></path>
+        </svg>
+      );
+    case 'appointments':
+      return (
+        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
         </svg>
       );
     case 'settings':

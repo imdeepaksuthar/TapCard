@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '../../../lib/api';
 
 export default function Settings() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
   
   const [formData, setFormData] = useState({
@@ -25,6 +25,11 @@ export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -56,7 +61,8 @@ export default function Settings() {
         }),
       });
       setMessage('Profile updated successfully!');
-      // Note: In a real app, you would also update the user context here
+      // Keep the sidebar/header (context-driven) in sync with the new details.
+      await refreshUser();
     } catch (err) {
       setError('Failed to update profile.');
     } finally {
@@ -93,6 +99,25 @@ export default function Settings() {
       setError('Failed to update password.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setError('');
+    setIsDeleting(true);
+    try {
+      await apiFetch('/api/user', {
+        method: 'DELETE',
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      // Clear the local session and return to the homepage.
+      localStorage.removeItem('card-setu-token');
+      document.cookie = 'card-setu-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      window.location.href = '/';
+    } catch (err: any) {
+      setShowDeleteModal(false);
+      setError(err?.message || 'Failed to delete account. Please try again.');
+      setIsDeleting(false);
     }
   };
 
@@ -232,10 +257,76 @@ export default function Settings() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
         <h3 className="text-xl font-bold text-red-500 mb-2">Danger Zone</h3>
         <p className="text-sm text-gray-400 mb-6">Once you delete your account, there is no going back. Please be certain.</p>
-        <button className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 py-3 px-8 rounded-2xl font-bold transition-all duration-300 active:scale-95 shadow-sm">
+        <button
+          onClick={() => { setDeletePassword(''); setDeleteConfirm(''); setError(''); setShowDeleteModal(true); }}
+          className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 py-3 px-8 rounded-2xl font-bold transition-all duration-300 active:scale-95 shadow-sm"
+        >
           Delete Account
         </button>
       </div>
+
+      {/* Delete Account confirmation modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => !isDeleting && setShowDeleteModal(false)}
+          />
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-red-500/20 bg-[#0B1528] p-6 sm:p-8 shadow-2xl">
+            <h3 className="text-xl font-bold text-white">Delete your account?</h3>
+            <p className="mt-2 text-sm text-gray-400">
+              This permanently deletes your account along with your cards, products, services and leads. This cannot be undone.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-2">Password</label>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  className="w-full bg-[#0F1C35]/80 border border-white/10 focus:border-red-500/50 rounded-2xl px-5 py-3 text-white text-sm outline-none transition-all"
+                  placeholder="••••••••"
+                />
+                <p className="text-xs text-gray-600 mt-1">Leave blank if you signed up with Google.</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-2">
+                  Type <span className="text-red-400 font-mono">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  className="w-full bg-[#0F1C35]/80 border border-white/10 focus:border-red-500/50 rounded-2xl px-5 py-3 text-white text-sm outline-none transition-all"
+                  placeholder="DELETE"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-2xl transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting || deleteConfirm !== 'DELETE'}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                  'Delete Account'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

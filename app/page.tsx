@@ -587,10 +587,10 @@ export default function Home() {
           <div>
             <h4 className="text-zinc-300 font-semibold text-sm mb-5 uppercase tracking-wider text-xs">Legal</h4>
             <ul className="space-y-3 text-sm text-zinc-500">
-              {['Privacy Policy','Terms of Service','Refund Policy'].map(l => (
-                <li key={l}>
-                  <Link href="#" className="hover:text-zinc-200 transition-colors duration-200 relative group">
-                    {l}
+              {[{label:'Privacy Policy',href:'/privacy'},{label:'Terms of Service',href:'/terms'},{label:'Refund Policy',href:'/refund'}].map(l => (
+                <li key={l.label}>
+                  <Link href={l.href} className="hover:text-zinc-200 transition-colors duration-200 relative group">
+                    {l.label}
                     <span className="absolute -bottom-px left-0 w-0 h-px bg-blue-400/50 group-hover:w-full transition-all duration-300" />
                   </Link>
                 </li>

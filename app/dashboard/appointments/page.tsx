@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from '@/components/toast';
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -54,7 +55,7 @@ export default function AppointmentsPage() {
       if (!res.ok) throw new Error('Failed to update status');
       fetchAppointments();
     } catch (err: any) {
-      alert('Error updating status: ' + err.message);
+      toast.error('Error updating status: ' + err.message);
     }
   };
 
@@ -67,8 +68,8 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-6xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white">Appointments</h1>
           <p className="text-gray-400">Manage your native bookings</p>

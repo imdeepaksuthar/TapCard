@@ -36,6 +36,7 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::get('/cards/public/{slug}', [BusinessCardController::class, 'showPublic']);
     Route::post('/cards/public/{slug}/appointments', [BusinessCardController::class, 'bookAppointment']);
     Route::get('/cards/public/{slug}/vcard', [BusinessCardController::class, 'downloadVCard']);
+    Route::post('/cards/public/{slug}/view', [BusinessCardController::class, 'recordView']);
 
     // Lead Injection Endpoint
     Route::post('/leads', [LeadController::class, 'store']);
@@ -61,6 +62,7 @@ Route::middleware('throttle:60,1')->group(function () {
     // Public Search & Discovery
     Route::get('/cards/search', [\App\Http\Controllers\Api\PublicController::class, 'searchCards']);
     Route::get('/cards/recent', [\App\Http\Controllers\Api\PublicController::class, 'recentCards']);
+    Route::get('/cards/sitemap', [\App\Http\Controllers\Api\PublicController::class, 'sitemap']);
 
     // Order Checkout Endpoint
     Route::post('/orders', [\App\Http\Controllers\OrderController::class, 'store']);
@@ -73,25 +75,26 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::get('/verify-pincode/{pincode}', [BusinessCardController::class, 'verifyPincode']);
 });
 
-// Auth routes (Rate limited to 60 req/min for development)
-Route::middleware('throttle:60,1')->group(function () {
+// Sensitive credential endpoints — tight per-IP limit to blunt brute-force and
+// enumeration (OTP login additionally has a per-email lockout in the controller).
+Route::middleware('throttle:8,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+    Route::post('/auth/otp/send', [OTPAuthController::class, 'sendOTP']);
+    Route::post('/auth/otp/login', [OTPAuthController::class, 'loginWithOTP']);
+});
+
+// Lower-risk auth endpoints (verification links, OAuth redirects).
+Route::middleware('throttle:30,1')->group(function () {
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
         ->name('verification.verify');
     Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail']);
 
-    // Forgot Password routes
-    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
-    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
-
     // Google OAuth routes
     Route::get('/auth/google/redirect', [SocialAuthController::class, 'redirectToGoogle']);
     Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
-
-    // Email OTP routes
-    Route::post('/auth/otp/send', [OTPAuthController::class, 'sendOTP']);
-    Route::post('/auth/otp/login', [OTPAuthController::class, 'loginWithOTP']);
 });
 
 // Protected routes
@@ -100,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user', [AuthController::class, 'updateProfile']);
     Route::put('/user/password', [AuthController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::delete('/user', [AuthController::class, 'deleteAccount']);
 
     // Media Upload
     Route::post('/upload', [\App\Http\Controllers\Api\MediaController::class, 'upload']);

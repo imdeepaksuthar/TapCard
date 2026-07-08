@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
 use App\Mail\CardCreated;
 
 class BusinessCardController extends Controller
@@ -152,11 +153,6 @@ class BusinessCardController extends Controller
             'seo_metadata' => 'nullable|array',
         ]);
 
-        \Illuminate\Support\Facades\Log::info('Card update - personal_info received', [
-            'personal_info' => $request->input('personal_info'),
-            'validated_personal_info' => $validated['personal_info'] ?? null,
-        ]);
-
         $card->update($validated);
 
         return response()->json([
@@ -200,6 +196,31 @@ class BusinessCardController extends Controller
     }
 
     /**
+     * Record a de-duplicated public view. Called by a client-side beacon so the
+     * count reflects real visits rather than ISR cache-miss renders.
+     */
+    public function recordView(Request $request, string $slug): JsonResponse
+    {
+        $card = BusinessCard::where('slug', $slug)->first();
+        if (!$card) {
+            return response()->json(['message' => 'Card not found'], 404);
+        }
+
+        // Count at most one view per visitor per 6-hour window.
+        $visitor = $request->input('device_id') ?: $request->ip();
+        $key = 'card_view:' . $card->id . ':' . md5((string) $visitor);
+
+        if (!Cache::has($key)) {
+            $card->timestamps = false;
+            $card->increment('views_count');
+            $card->timestamps = true;
+            Cache::put($key, true, now()->addHours(6));
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
      * Display the specified business card publicly by slug.
      */
     public function showPublic(string $slug): JsonResponse
@@ -209,10 +230,8 @@ class BusinessCardController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
-        // Increment views count efficiently (skip updating `updated_at` timestamp)
-        $card->timestamps = false;
-        $card->increment('views_count');
-        $card->timestamps = true;
+        // View counting is handled by recordView() via a client beacon, so it is
+        // not suppressed by the public page's ISR cache.
 
         // Load theme if available
         $theme = null;
@@ -233,6 +252,7 @@ class BusinessCardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($item) {
+                $item->makeHidden(['user_id']);
                 $item->type = 'product';
                 return $item;
             });
@@ -242,9 +262,14 @@ class BusinessCardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($item) {
+                $item->makeHidden(['user_id']);
                 $item->type = 'service';
                 return $item;
             });
+
+        // Don't ship internal-only fields to the public (owner id enables tenant
+        // correlation; documents / seo_metadata aren't used by the public page).
+        $card->makeHidden(['user_id', 'documents', 'seo_metadata']);
 
         return response()->json([
             'card' => $card,
