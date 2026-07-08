@@ -44,7 +44,7 @@ function BarChart({ data, labels, color = '#3b82f6', height = 120 }: { data: num
             title={`${labels[i]}: ${v}`}
           />
           {data.length <= 14 && (
-            <span className="text-[8px] text-gray-500 truncate w-full text-center">{labels[i]?.slice(5)}</span>
+            <span className="text-[8px] text-[var(--d-text-faint)] truncate w-full text-center">{labels[i]?.slice(5)}</span>
           )}
         </div>
       ))}
@@ -55,7 +55,7 @@ function BarChart({ data, labels, color = '#3b82f6', height = 120 }: { data: num
 // ── Donut chart ──
 function DonutChart({ segments, size = 120 }: { segments: { label: string; value: number; color: string }[]; size?: number }) {
   const total = segments.reduce((s, seg) => s + seg.value, 0);
-  if (total === 0) return <div className="text-gray-500 text-sm text-center py-4">No data</div>;
+  if (total === 0) return <div className="text-[var(--d-text-faint)] text-sm text-center py-4">No data</div>;
 
   const r = 42;
   const cx = 50;
@@ -96,8 +96,8 @@ function DonutChart({ segments, size = 120 }: { segments: { label: string; value
         {segments.filter(s => s.value > 0).map((seg, i) => (
           <div key={i} className="flex items-center gap-1.5 text-xs">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: seg.color }} />
-            <span className="text-gray-400">{seg.label}</span>
-            <span className="font-semibold text-white">{seg.value}</span>
+            <span className="text-[var(--d-text-muted)]">{seg.label}</span>
+            <span className="font-semibold text-[var(--d-text)]">{seg.value}</span>
           </div>
         ))}
       </div>
@@ -110,7 +110,7 @@ function StatCard({ title, value, subtitle, icon, trend, color = '#3b82f6', spar
   title: string; value: string | number; subtitle?: string; icon: React.ReactNode; trend?: string; color?: string; sparkData?: number[];
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 flex flex-col gap-4 group hover:border-white/20 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300" style={{ boxShadow: `0 10px 40px -10px ${color}15` }}>
+    <div className="relative overflow-hidden rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 flex flex-col gap-4 group hover:border-[var(--d-border)] hover:-translate-y-1 hover:shadow-2xl transition-all duration-300" style={{ boxShadow: `0 10px 40px -10px ${color}15` }}>
       <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom right, ${color}, transparent)` }} />
       <div className="flex items-start justify-between relative z-10">
         <div className="flex items-center gap-4">
@@ -118,17 +118,17 @@ function StatCard({ title, value, subtitle, icon, trend, color = '#3b82f6', spar
             <div style={{ color }}>{icon}</div>
           </div>
           <div className="min-w-0">
-            <p className="text-sm text-gray-400 font-medium mb-1">{title}</p>
-            <p className="text-2xl sm:text-3xl font-bold text-white tracking-tight truncate">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+            <p className="text-sm text-[var(--d-text-muted)] font-medium mb-1">{title}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-[var(--d-text)] tracking-tight truncate">{typeof value === 'number' ? value.toLocaleString() : value}</p>
           </div>
         </div>
         {trend && (
-          <span className={`text-xs font-bold px-2.5 py-1.5 rounded-xl shadow-sm ${trend.startsWith('+') || trend.startsWith('↑') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : trend === '0' ? 'bg-gray-500/10 text-gray-400 border border-gray-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+          <span className={`text-xs font-bold px-2.5 py-1.5 rounded-xl shadow-sm ${trend.startsWith('+') || trend.startsWith('↑') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : trend === '0' ? 'bg-gray-500/10 text-[var(--d-text-muted)] border border-gray-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
             {trend}
           </span>
         )}
       </div>
-      {subtitle && <p className="text-xs text-gray-500 relative z-10">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-[var(--d-text-faint)] relative z-10">{subtitle}</p>}
       {sparkData && sparkData.length > 1 && (
         <Sparkline data={sparkData} color={color} height={36} className="mt-2 opacity-70 group-hover:opacity-100 transition-opacity relative z-10" />
       )}
@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-400 text-sm">Loading analytics...</p>
+          <p className="text-[var(--d-text-muted)] text-sm">Loading analytics...</p>
         </div>
       </div>
     );
@@ -201,7 +201,7 @@ export default function AnalyticsPage() {
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-400">Failed to load analytics data.</p>
+        <p className="text-[var(--d-text-muted)]">Failed to load analytics data.</p>
       </div>
     );
   }
@@ -223,15 +223,15 @@ export default function AnalyticsPage() {
       {/* Header + Period Selector */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Analytics</h1>
-          <p className="text-gray-400 mt-2">Track your card performance, leads, and revenue in real-time.</p>
+          <h1 className="text-3xl font-bold text-[var(--d-text)] tracking-tight">Analytics</h1>
+          <p className="text-[var(--d-text-muted)] mt-2">Track your card performance, leads, and revenue in real-time.</p>
         </div>
-        <div className="flex items-center gap-1.5 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-lg">
+        <div className="flex items-center gap-1.5 bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-2xl p-1.5 shadow-lg">
           {PERIODS.map(p => (
             <button
               key={p.value}
               onClick={() => setDays(p.value)}
-              className={`px-5 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 ${days === p.value ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+              className={`px-5 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 ${days === p.value ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-[var(--d-text-muted)] hover:text-white hover:bg-[var(--d-hover)]'}`}
             >
               {p.label}
             </button>
@@ -240,12 +240,12 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-2xl p-2 overflow-x-auto shadow-lg">
+      <div className="flex gap-2 bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-2xl p-2 overflow-x-auto shadow-lg">
         {(['overview', 'cards', 'leads', 'orders'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 min-w-[100px] px-5 py-3 text-sm font-bold rounded-xl transition-all duration-300 capitalize ${activeTab === tab ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            className={`flex-1 min-w-[100px] px-5 py-3 text-sm font-bold rounded-xl transition-all duration-300 capitalize ${activeTab === tab ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]' : 'text-[var(--d-text-muted)] hover:text-white hover:bg-[var(--d-hover)]'}`}
           >
             {tab}
           </button>
@@ -294,43 +294,43 @@ export default function AnalyticsPage() {
 
           {/* Conversion funnel */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl flex flex-col justify-center">
-              <p className="text-sm text-gray-400 font-medium mb-2">View → Lead</p>
-              <p className="text-4xl font-bold text-white tracking-tight">{o.conversion_rate}%</p>
-              <div className="mt-4 w-full bg-white/5 rounded-full h-2 border border-white/10">
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl flex flex-col justify-center">
+              <p className="text-sm text-[var(--d-text-muted)] font-medium mb-2">View → Lead</p>
+              <p className="text-4xl font-bold text-[var(--d-text)] tracking-tight">{o.conversion_rate}%</p>
+              <div className="mt-4 w-full bg-[var(--d-elevate)] rounded-full h-2 border border-[var(--d-border)]">
                 <div className="h-2 rounded-full bg-blue-500 transition-all shadow-[0_0_10px_rgba(59,130,246,0.8)]" style={{ width: `${Math.min(o.conversion_rate, 100)}%` }} />
               </div>
             </div>
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl flex flex-col justify-center">
-              <p className="text-sm text-gray-400 font-medium mb-2">Lead → Order</p>
-              <p className="text-4xl font-bold text-white tracking-tight">{o.order_conversion}%</p>
-              <div className="mt-4 w-full bg-white/5 rounded-full h-2 border border-white/10">
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl flex flex-col justify-center">
+              <p className="text-sm text-[var(--d-text-muted)] font-medium mb-2">Lead → Order</p>
+              <p className="text-4xl font-bold text-[var(--d-text)] tracking-tight">{o.order_conversion}%</p>
+              <div className="mt-4 w-full bg-[var(--d-elevate)] rounded-full h-2 border border-[var(--d-border)]">
                 <div className="h-2 rounded-full bg-emerald-500 transition-all shadow-[0_0_10px_rgba(16,185,129,0.8)]" style={{ width: `${Math.min(o.order_conversion, 100)}%` }} />
               </div>
             </div>
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl flex flex-col justify-center">
-              <p className="text-sm text-gray-400 font-medium mb-2">Catalog</p>
-              <p className="text-4xl font-bold text-white tracking-tight">{o.total_products + o.total_services}</p>
-              <p className="text-sm text-gray-500 mt-2">{o.total_products} products, {o.total_services} services</p>
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl flex flex-col justify-center">
+              <p className="text-sm text-[var(--d-text-muted)] font-medium mb-2">Catalog</p>
+              <p className="text-4xl font-bold text-[var(--d-text)] tracking-tight">{o.total_products + o.total_services}</p>
+              <p className="text-sm text-[var(--d-text-faint)] mt-2">{o.total_products} products, {o.total_services} services</p>
             </div>
           </div>
 
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Leads chart */}
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-white">Leads Over Time</h3>
-                <span className="text-xs text-gray-500">{days} days</span>
+                <h3 className="text-sm font-semibold text-[var(--d-text)]">Leads Over Time</h3>
+                <span className="text-xs text-[var(--d-text-faint)]">{days} days</span>
               </div>
               <BarChart data={data.charts.leads} labels={chartLabels} color="#8b5cf6" height={140} />
             </div>
 
             {/* Revenue chart */}
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-white">Revenue Over Time</h3>
-                <span className="text-xs text-gray-500">{days} days</span>
+                <h3 className="text-sm font-semibold text-[var(--d-text)]">Revenue Over Time</h3>
+                <span className="text-xs text-[var(--d-text-faint)]">{days} days</span>
               </div>
               <BarChart data={data.charts.revenue} labels={chartLabels} color="#10b981" height={140} />
             </div>
@@ -338,40 +338,40 @@ export default function AnalyticsPage() {
 
           {/* Breakdowns row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
-              <h3 className="text-sm font-semibold text-white mb-4">Leads by Status</h3>
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl">
+              <h3 className="text-sm font-semibold text-[var(--d-text)] mb-4">Leads by Status</h3>
               <DonutChart segments={Object.entries(data.breakdowns.leads_by_status).map(([k, v]) => ({ label: k, value: v, color: statusColors[k] || '#6b7280' }))} size={100} />
             </div>
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
-              <h3 className="text-sm font-semibold text-white mb-4">Orders by Status</h3>
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl">
+              <h3 className="text-sm font-semibold text-[var(--d-text)] mb-4">Orders by Status</h3>
               <DonutChart segments={Object.entries(data.breakdowns.orders_by_status).map(([k, v]) => ({ label: k, value: v, color: statusColors[k] || '#6b7280' }))} size={100} />
             </div>
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
-              <h3 className="text-sm font-semibold text-white mb-4">Appointments</h3>
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl">
+              <h3 className="text-sm font-semibold text-[var(--d-text)] mb-4">Appointments</h3>
               <DonutChart segments={Object.entries(data.breakdowns.appointments_by_status).map(([k, v]) => ({ label: k, value: v, color: statusColors[k] || '#6b7280' }))} size={100} />
             </div>
           </div>
 
           {/* Top Products */}
           {data.top_products.length > 0 && (
-            <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl">
-              <h3 className="text-sm font-semibold text-white mb-4">Top Products by Revenue</h3>
+            <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-6 sm:p-8 shadow-xl">
+              <h3 className="text-sm font-semibold text-[var(--d-text)] mb-4">Top Products by Revenue</h3>
               <div className="space-y-3">
                 {data.top_products.map((p, i) => {
                   const maxRev = data.top_products[0]?.revenue || 1;
                   return (
                     <div key={i} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 w-5 text-right font-mono">{i + 1}</span>
+                      <span className="text-xs text-[var(--d-text-faint)] w-5 text-right font-mono">{i + 1}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-white font-medium truncate">{p.name}</span>
+                          <span className="text-sm text-[var(--d-text)] font-medium truncate">{p.name}</span>
                           <span className="text-xs text-emerald-400 font-semibold ml-2 shrink-0">₹{p.revenue.toLocaleString('en-IN')}</span>
                         </div>
-                        <div className="w-full bg-gray-800 rounded-full h-1.5">
+                        <div className="w-full bg-[var(--d-surface-2)] rounded-full h-1.5">
                           <div className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all" style={{ width: `${(p.revenue / maxRev) * 100}%` }} />
                         </div>
                       </div>
-                      <span className="text-[10px] text-gray-500 shrink-0">{p.count} sold</span>
+                      <span className="text-[10px] text-[var(--d-text-faint)] shrink-0">{p.count} sold</span>
                     </div>
                   );
                 })}
@@ -384,38 +384,38 @@ export default function AnalyticsPage() {
       {/* ═══════════════ CARDS TAB ═══════════════ */}
       {activeTab === 'cards' && (
         <div className="space-y-4">
-          <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 overflow-hidden shadow-xl">
+          <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Card</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Views</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Leads</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Orders</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Conversion</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">Status</th>
+                  <tr className="border-b border-[var(--d-border)]">
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Card</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider text-right">Views</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider text-right">Leads</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider text-right">Orders</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider text-right">Conversion</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.card_performance.map(card => (
-                    <tr key={card.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                    <tr key={card.id} className="border-b border-[var(--d-border)] hover:bg-[var(--d-hover)] transition-colors">
                       <td className="px-5 py-4">
                         <div>
-                          <p className="text-sm font-semibold text-white">{card.name}</p>
-                          <p className="text-xs text-gray-500">/{card.slug}</p>
+                          <p className="text-sm font-semibold text-[var(--d-text)]">{card.name}</p>
+                          <p className="text-xs text-[var(--d-text-faint)]">/{card.slug}</p>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-right text-sm text-white font-medium">{card.views.toLocaleString()}</td>
-                      <td className="px-5 py-4 text-right text-sm text-white font-medium">{card.leads}</td>
-                      <td className="px-5 py-4 text-right text-sm text-white font-medium">{card.orders}</td>
+                      <td className="px-5 py-4 text-right text-sm text-[var(--d-text)] font-medium">{card.views.toLocaleString()}</td>
+                      <td className="px-5 py-4 text-right text-sm text-[var(--d-text)] font-medium">{card.leads}</td>
+                      <td className="px-5 py-4 text-right text-sm text-[var(--d-text)] font-medium">{card.orders}</td>
                       <td className="px-5 py-4 text-right">
-                        <span className={`text-sm font-bold ${card.conversion > 5 ? 'text-emerald-400' : card.conversion > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                        <span className={`text-sm font-bold ${card.conversion > 5 ? 'text-emerald-400' : card.conversion > 0 ? 'text-yellow-400' : 'text-[var(--d-text-faint)]'}`}>
                           {card.conversion}%
                         </span>
                       </td>
                       <td className="px-5 py-4 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${card.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-400'}`}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${card.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-[var(--d-text-muted)]'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${card.status === 'active' ? 'bg-emerald-400' : 'bg-gray-500'}`} />
                           {card.status}
                         </span>
@@ -426,7 +426,7 @@ export default function AnalyticsPage() {
               </table>
             </div>
             {data.card_performance.length === 0 && (
-              <div className="py-12 text-center text-gray-500 text-sm">No cards found. Create your first card to see analytics.</div>
+              <div className="py-12 text-center text-[var(--d-text-faint)] text-sm">No cards found. Create your first card to see analytics.</div>
             )}
           </div>
         </div>
@@ -442,43 +442,43 @@ export default function AnalyticsPage() {
             <StatCard title="Conversion" value={`${o.conversion_rate}%`} icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>} color="#f59e0b" />
           </div>
 
-          <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 overflow-hidden shadow-xl">
-            <div className="px-5 py-3 border-b border-white/5">
-              <h3 className="text-sm font-semibold text-white">Recent Leads</h3>
+          <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] overflow-hidden shadow-xl">
+            <div className="px-5 py-3 border-b border-[var(--d-border)]">
+              <h3 className="text-sm font-semibold text-[var(--d-text)]">Recent Leads</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Name</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Card</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
+                  <tr className="border-b border-[var(--d-border)]">
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Name</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Contact</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Card</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Status</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.recent_leads.map(lead => (
-                    <tr key={lead.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3 text-sm text-white font-medium">{lead.name}</td>
+                    <tr key={lead.id} className="border-b border-[var(--d-border)] hover:bg-[var(--d-hover)] transition-colors">
+                      <td className="px-5 py-3 text-sm text-[var(--d-text)] font-medium">{lead.name}</td>
                       <td className="px-5 py-3">
-                        <p className="text-xs text-gray-300">{lead.email}</p>
-                        {lead.phone && <p className="text-xs text-gray-500">{lead.phone}</p>}
+                        <p className="text-xs text-[var(--d-text-muted)]">{lead.email}</p>
+                        {lead.phone && <p className="text-xs text-[var(--d-text-faint)]">{lead.phone}</p>}
                       </td>
-                      <td className="px-5 py-3 text-xs text-gray-400">{lead.card_name}</td>
+                      <td className="px-5 py-3 text-xs text-[var(--d-text-muted)]">{lead.card_name}</td>
                       <td className="px-5 py-3">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${lead.status === 'new' ? 'bg-blue-500/10 text-blue-400' : lead.status === 'read' ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-500/10 text-gray-400'}`}>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${lead.status === 'new' ? 'bg-blue-500/10 text-blue-400' : lead.status === 'read' ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-500/10 text-[var(--d-text-muted)]'}`}>
                           {lead.status}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-xs text-gray-500">{new Date(lead.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3 text-xs text-[var(--d-text-faint)]">{new Date(lead.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             {data.recent_leads.length === 0 && (
-              <div className="py-12 text-center text-gray-500 text-sm">No leads yet.</div>
+              <div className="py-12 text-center text-[var(--d-text-faint)] text-sm">No leads yet.</div>
             )}
           </div>
         </div>
@@ -494,43 +494,43 @@ export default function AnalyticsPage() {
             <StatCard title="Avg. Order" value={`₹${o.avg_order_value.toLocaleString('en-IN')}`} icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>} color="#8b5cf6" />
           </div>
 
-          <div className="rounded-3xl bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 overflow-hidden shadow-xl">
-            <div className="px-5 py-3 border-b border-white/5">
-              <h3 className="text-sm font-semibold text-white">Recent Orders</h3>
+          <div className="rounded-3xl bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] overflow-hidden shadow-xl">
+            <div className="px-5 py-3 border-b border-[var(--d-border)]">
+              <h3 className="text-sm font-semibold text-[var(--d-text)]">Recent Orders</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Customer</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Amount</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">Items</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
+                  <tr className="border-b border-[var(--d-border)]">
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Customer</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider text-right">Amount</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider text-center">Items</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Status</th>
+                    <th className="px-5 py-3 text-xs font-semibold text-[var(--d-text-muted)] uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.recent_orders.map(order => (
-                    <tr key={order.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                    <tr key={order.id} className="border-b border-[var(--d-border)] hover:bg-[var(--d-hover)] transition-colors">
                       <td className="px-5 py-3">
-                        <p className="text-sm text-white font-medium">{order.customer}</p>
-                        <p className="text-xs text-gray-500">{order.email}</p>
+                        <p className="text-sm text-[var(--d-text)] font-medium">{order.customer}</p>
+                        <p className="text-xs text-[var(--d-text-faint)]">{order.email}</p>
                       </td>
                       <td className="px-5 py-3 text-right text-sm text-emerald-400 font-bold">₹{order.total.toLocaleString('en-IN')}</td>
-                      <td className="px-5 py-3 text-center text-xs text-gray-400">{order.items_count}</td>
+                      <td className="px-5 py-3 text-center text-xs text-[var(--d-text-muted)]">{order.items_count}</td>
                       <td className="px-5 py-3">
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>
                           {order.status}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3 text-xs text-[var(--d-text-faint)]">{new Date(order.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             {data.recent_orders.length === 0 && (
-              <div className="py-12 text-center text-gray-500 text-sm">No orders yet.</div>
+              <div className="py-12 text-center text-[var(--d-text-faint)] text-sm">No orders yet.</div>
             )}
           </div>
         </div>

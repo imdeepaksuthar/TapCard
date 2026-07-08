@@ -117,12 +117,14 @@ export default async function PublicCardPage({ params }: { params: Promise<{ slu
 
   // Escape so owner-controlled fields (name, company, etc.) can't break out of
   // the <script> tag — JSON.stringify alone does NOT neutralise "</script>".
+  const LS = '\u2028'; // U+2028 LINE SEPARATOR
+  const PS = '\u2029'; // U+2029 PARAGRAPH SEPARATOR
   const jsonLdHtml = JSON.stringify(jsonLd)
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
     .replace(/&/g, '\\u0026')
-    .replace(/ /g, '\\u2028')
-    .replace(/ /g, '\\u2029');
+    .split(LS).join('\\u2028')
+    .split(PS).join('\\u2029');
 
   return (
     <>

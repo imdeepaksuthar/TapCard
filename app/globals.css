@@ -373,6 +373,58 @@ body {
   cursor: not-allowed;
 }
 
+/* ─── Dashboard theme tokens (scoped to .dash-scope; LIGHT is the default,
+   .dark on the same element switches to dark). Every dashboard surface reads
+   these vars via arbitrary utilities, e.g. bg-[var(--d-surface)], so a single
+   class works in both themes and the whole palette lives here. ─── */
+.dash-scope {
+  --d-bg: #eef1f8;
+  --d-surface: #ffffff;
+  --d-surface-2: #f5f7fc;
+  --d-sidebar: #ffffff;
+  --d-header: rgba(255, 255, 255, 0.85);
+  --d-text: #0f172a;
+  --d-text-muted: #64748b;
+  --d-text-faint: #94a3b8;
+  --d-border: #e6e9f2;
+  --d-border-strong: #d4dae8;
+  --d-hover: #eef2f9;
+  --d-elevate: rgba(15, 23, 42, 0.04);
+  --d-accent: #4f46e5;
+  --d-accent-2: #3b82f6;
+  --d-accent-soft: #eef2ff;
+  --d-danger: #e11d48;
+  --d-danger-soft: #fff1f2;
+  --d-success: #059669;
+  --d-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 30px rgba(15, 23, 42, 0.06);
+
+  color: var(--d-text);
+  background-color: var(--d-bg);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.dash-scope.dark {
+  --d-bg: #030712;
+  --d-surface: #0b1528;
+  --d-surface-2: #0f1c35;
+  --d-sidebar: rgba(5, 8, 20, 0.72);
+  --d-header: rgba(0, 0, 0, 0.4);
+  --d-text: #f1f5f9;
+  --d-text-muted: #94a3b8;
+  --d-text-faint: #64748b;
+  --d-border: rgba(255, 255, 255, 0.10);
+  --d-border-strong: rgba(255, 255, 255, 0.18);
+  --d-hover: rgba(255, 255, 255, 0.05);
+  --d-elevate: rgba(255, 255, 255, 0.05);
+  --d-accent: #6366f1;
+  --d-accent-2: #3b82f6;
+  --d-accent-soft: rgba(99, 102, 241, 0.15);
+  --d-danger: #f43f5e;
+  --d-danger-soft: rgba(244, 63, 94, 0.12);
+  --d-success: #34d399;
+  --d-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
 /* ─── Legal / policy pages ─── */
 .legal-prose h2 { color: #fff; font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 2rem; }
 .legal-prose h2:first-child { margin-top: 0; }

@@ -76,7 +76,7 @@ export default function Leads() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-[#030712] text-white flex justify-center items-center">
+      <div className="min-h-screen bg-[var(--d-surface)] text-[var(--d-text)] flex justify-center items-center">
         <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
       </div>
     );
@@ -87,15 +87,15 @@ export default function Leads() {
       {/* Title Section with Filter */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Captured Leads</h1>
-          <p className="text-gray-400 mt-2">Manage contacts captured from your digital cards.</p>
+          <h1 className="text-3xl font-bold text-[var(--d-text)] tracking-tight">Captured Leads</h1>
+          <p className="text-[var(--d-text-muted)] mt-2">Manage contacts captured from your digital cards.</p>
         </div>
-        <div className="flex items-center gap-3 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-2 sm:p-3 rounded-2xl shadow-lg">
-          <span className="text-gray-400 text-sm pl-2 font-medium">Filter:</span>
+        <div className="flex items-center gap-3 bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-2 sm:p-3 rounded-2xl shadow-lg">
+          <span className="text-[var(--d-text-muted)] text-sm pl-2 font-medium">Filter:</span>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as any)}
-            className="bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-2 text-sm font-semibold text-gray-300 outline-none transition-all duration-300 shadow-inner cursor-pointer"
+            className="bg-[var(--d-surface-2)] border border-[var(--d-border)] hover:border-[var(--d-border)] focus:border-blue-500/50 rounded-xl px-4 py-2 text-sm font-semibold text-[var(--d-text-muted)] outline-none transition-all duration-300 shadow-inner cursor-pointer"
           >
             <option value="all">All</option>
             <option value="new">New</option>
@@ -111,21 +111,21 @@ export default function Leads() {
           <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
         </div>
       ) : filteredLeads.length === 0 ? (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-16 flex flex-col justify-center items-center text-center shadow-xl">
+        <div className="bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-3xl p-16 flex flex-col justify-center items-center text-center shadow-xl">
           <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mb-6">
             <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
             </svg>
           </div>
-          <h3 className="text-xl font-bold tracking-tight text-white mb-2">No leads found</h3>
-          <p className="text-gray-400 max-w-sm">When people submit contact forms on your digital cards, they will appear here.</p>
+          <h3 className="text-xl font-bold tracking-tight text-[var(--d-text)] mb-2">No leads found</h3>
+          <p className="text-[var(--d-text-muted)] max-w-sm">When people submit contact forms on your digital cards, they will appear here.</p>
         </div>
       ) : (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-xl">
+        <div className="bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-3xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-gray-400 bg-white/5">
+                <tr className="border-b border-[var(--d-border)] text-[var(--d-text-muted)] bg-[var(--d-elevate)]">
                   <th className="py-4 px-6">Name</th>
                   <th className="py-4 px-6">Contact Info</th>
                   <th className="py-4 px-6">Message</th>
@@ -136,20 +136,20 @@ export default function Leads() {
               </thead>
               <tbody>
                 {filteredLeads.map((lead) => (
-                  <tr key={lead.id} className="border-b border-white/5 last:border-0 text-gray-300 hover:bg-white/5 transition-colors">
+                  <tr key={lead.id} className="border-b border-[var(--d-border)] last:border-0 text-[var(--d-text-muted)] hover:bg-[var(--d-hover)] transition-colors">
                     <td className="py-4 px-6">
-                      <p className="font-medium text-white">{lead.name}</p>
-                      <p className="text-xs text-gray-500">{new Date(lead.created_at).toLocaleString()}</p>
+                      <p className="font-medium text-[var(--d-text)]">{lead.name}</p>
+                      <p className="text-xs text-[var(--d-text-faint)]">{new Date(lead.created_at).toLocaleString()}</p>
                     </td>
                     <td className="py-4 px-6">
                       {lead.email && <p className="text-sm">{lead.email}</p>}
-                      {lead.phone && <p className="text-xs text-gray-500">{lead.phone}</p>}
+                      {lead.phone && <p className="text-xs text-[var(--d-text-faint)]">{lead.phone}</p>}
                     </td>
                     <td className="py-4 px-6">
                       <p className="text-sm truncate max-w-xs" title={lead.message || ''}>{lead.message || '-'}</p>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="text-xs bg-white/5 px-2 py-1 rounded-md text-gray-400">
+                      <span className="text-xs bg-[var(--d-elevate)] px-2 py-1 rounded-md text-[var(--d-text-muted)]">
                         {lead.businessCard?.slug || 'Card'}
                       </span>
                     </td>
@@ -157,7 +157,7 @@ export default function Leads() {
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                         lead.status === 'new' ? 'bg-blue-500/10 text-blue-500' :
                         lead.status === 'read' ? 'bg-green-500/10 text-green-500' :
-                        'bg-gray-500/10 text-gray-500'
+                        'bg-gray-500/10 text-[var(--d-text-faint)]'
                       }`}>
                         {lead.status.toUpperCase()}
                       </span>
@@ -167,7 +167,7 @@ export default function Leads() {
                         {lead.status === 'new' && (
                           <button
                             onClick={() => updateLeadStatus(lead.id, 'read')}
-                            className="text-gray-400 hover:text-green-500 transition-colors text-xs font-medium"
+                            className="text-[var(--d-text-muted)] hover:text-green-500 transition-colors text-xs font-medium"
                             title="Mark as Read"
                           >
                             Mark Read
@@ -176,7 +176,7 @@ export default function Leads() {
                         {lead.status !== 'archived' && (
                           <button
                             onClick={() => updateLeadStatus(lead.id, 'archived')}
-                            className="p-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-colors"
+                            className="p-2 rounded-lg text-[var(--d-text-muted)] hover:text-[var(--d-text)] hover:bg-[var(--d-hover)] transition-colors"
                             title="Archive Lead"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +186,7 @@ export default function Leads() {
                         )}
                         <button
                           onClick={() => deleteLead(lead.id)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                          className="p-2 rounded-lg text-[var(--d-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
                           title="Delete Lead"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
