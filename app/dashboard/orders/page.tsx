@@ -36,6 +36,11 @@ export default function OrdersPage() {
 
   const [orderToView, setOrderToView] = useState<Order | null>(null);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
+  const [expandedOrders, setExpandedOrders] = useState<Record<number, boolean>>({});
+
+  const toggleOrderExpand = (id: number) => {
+    setExpandedOrders(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -159,9 +164,9 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Orders Table */}
+      {/* Orders Table - Desktop (Visible on md and up) */}
       {!isLoading && orders.length > 0 && (
-        <div className="bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-3xl overflow-hidden shadow-xl">
+        <div className="hidden md:block bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-3xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-[var(--d-text-muted)]">
               <thead className="bg-[var(--d-elevate)] text-[var(--d-text-muted)] uppercase font-semibold text-xs border-b border-[var(--d-border)]">
@@ -184,52 +189,245 @@ export default function OrdersPage() {
                   </tr>
                 ) : (
                   filteredOrders.map(order => (
-                    <tr key={order.id} className="hover:bg-[var(--d-hover)] transition-colors">
-                      <td className="px-6 py-4 font-mono text-emerald-400">#{order.id.toString().padStart(5, '0')}</td>
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-[var(--d-text)]">{order.customer_name}</div>
-                        <div className="text-xs">{order.customer_email}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="bg-[var(--d-elevate)] border border-[var(--d-border)] px-2 py-1 rounded text-xs">
-                          {order.business_card?.card_name || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-bold text-[var(--d-text)]">
-                        ₹{parseFloat(order.total_amount.toString()).toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {isUpdating === order.id ? (
-                          <div className="animate-pulse w-20 h-6 bg-[var(--d-elevate)] rounded-full"></div>
-                        ) : (
-                          <select
-                            value={order.status}
-                            onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                            className={`text-xs font-bold px-2.5 py-1 rounded-full border outline-none cursor-pointer appearance-none ${getStatusBadge(order.status)}`}
-                          >
-                            <option value="pending" className="bg-[var(--d-surface-2)] text-amber-400">Pending</option>
-                            <option value="completed" className="bg-[var(--d-surface-2)] text-emerald-400">Completed</option>
-                            <option value="cancelled" className="bg-[var(--d-surface-2)] text-red-400">Cancelled</option>
-                          </select>
+                    <>
+                      <tr key={order.id} className="hover:bg-[var(--d-hover)] transition-colors cursor-pointer" onClick={() => toggleOrderExpand(order.id)}>
+                        <td className="px-6 py-4 font-mono text-emerald-400">
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); toggleOrderExpand(order.id); }}
+                              className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500 border-2 border-[var(--d-surface)] text-white shadow-sm ring-1 ring-black/10 dark:ring-white/10 transition-transform hover:scale-110"
+                            >
+                              <svg className={`w-3.5 h-3.5 transition-transform ${expandedOrders[order.id] ? 'rotate-45' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                            </button>
+                            <span>#{order.id.toString().padStart(5, '0')}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-[var(--d-text)]">{order.customer_name}</div>
+                          <div className="text-xs">{order.customer_email}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="bg-[var(--d-elevate)] border border-[var(--d-border)] px-2 py-1 rounded text-xs">
+                            {order.business_card?.card_name || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-[var(--d-text)]">
+                          ₹{parseFloat(order.total_amount.toString()).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                          {isUpdating === order.id ? (
+                            <div className="animate-pulse w-20 h-6 bg-[var(--d-elevate)] rounded-full"></div>
+                          ) : (
+                            <select
+                              value={order.status}
+                              onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                              className={`text-xs font-bold px-2.5 py-1 rounded-full border outline-none cursor-pointer appearance-none ${getStatusBadge(order.status)}`}
+                            >
+                              <option value="pending" className="bg-[var(--d-surface-2)] text-amber-400">Pending</option>
+                              <option value="completed" className="bg-[var(--d-surface-2)] text-emerald-400">Completed</option>
+                              <option value="cancelled" className="bg-[var(--d-surface-2)] text-red-400">Cancelled</option>
+                            </select>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-xs whitespace-nowrap">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => setOrderToView(order)} className="p-2.5 text-[var(--d-text-muted)] hover:text-emerald-400 bg-[var(--d-elevate)] hover:bg-emerald-500/10 rounded-lg transition-colors border border-[var(--d-border)]" title="View Order">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          </button>
+                          <button onClick={() => deleteOrder(order.id)} className="p-2.5 text-[var(--d-text-muted)] hover:text-red-400 bg-[var(--d-elevate)] hover:bg-red-500/10 rounded-lg transition-colors border border-[var(--d-border)]" title="Delete Order">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </td>
+                      </tr>
+                      <AnimatePresence>
+                        {expandedOrders[order.id] && (
+                          <tr key={`${order.id}-expanded`} className="bg-[var(--d-surface-2)]">
+                            <td colSpan={7} className="px-6 py-4">
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden space-y-4 py-2"
+                              >
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  {/* Customer Info */}
+                                  <div className="space-y-3 bg-[var(--d-surface)] p-4 rounded-xl border border-[var(--d-border)]">
+                                    <h4 className="text-xs font-semibold text-[var(--d-text-faint)] uppercase tracking-wider">Customer Details</h4>
+                                    <div>
+                                      <p className="text-[var(--d-text)] font-semibold">{order.customer_name}</p>
+                                      <p className="text-xs text-[var(--d-text-muted)] flex items-center gap-1.5 mt-1.5">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                        {order.customer_email}
+                                      </p>
+                                      <p className="text-xs text-[var(--d-text-muted)] flex items-center gap-1.5 mt-1.5">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                        {order.customer_phone}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {/* Purchased Items */}
+                                  <div className="space-y-3">
+                                    <h4 className="text-xs font-semibold text-[var(--d-text-faint)] uppercase tracking-wider">Purchased Items ({order.cart_items?.length || 0})</h4>
+                                    <div className="bg-[var(--d-surface)] border border-[var(--d-border)] rounded-xl divide-y divide-[var(--d-border)] overflow-hidden">
+                                      {order.cart_items && order.cart_items.map((item, idx) => (
+                                        <div key={idx} className="p-3 flex justify-between items-center text-xs">
+                                          <div>
+                                            <p className="text-[var(--d-text)] font-semibold">{item.name}</p>
+                                            <p className="text-[var(--d-text-faint)] mt-0.5">Qty: {item.quantity} x ₹{parseFloat(item.price.toString()).toFixed(2)}</p>
+                                          </div>
+                                          <div className="font-bold text-[var(--d-text)]">
+                                            ₹{(item.quantity * item.price).toFixed(2)}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td className="px-6 py-4 text-xs whitespace-nowrap">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-right space-x-2">
-                        <button onClick={() => setOrderToView(order)} className="p-2.5 text-[var(--d-text-muted)] hover:text-emerald-400 bg-[var(--d-elevate)] hover:bg-emerald-500/10 rounded-lg transition-colors border border-[var(--d-border)]" title="View Order">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                        </button>
-                        <button onClick={() => deleteOrder(order.id)} className="p-2.5 text-[var(--d-text-muted)] hover:text-red-400 bg-[var(--d-elevate)] hover:bg-red-500/10 rounded-lg transition-colors border border-[var(--d-border)]" title="Delete Order">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      </td>
-                    </tr>
+                      </AnimatePresence>
+                    </>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Orders List - Mobile/Tablet (Visible below md) */}
+      {!isLoading && orders.length > 0 && (
+        <div className="md:hidden space-y-4">
+          {filteredOrders.length === 0 ? (
+            <div className="bg-[var(--d-surface)] border border-[var(--d-border)] rounded-3xl p-8 text-center text-[var(--d-text-faint)]">
+              No orders found matching your search.
+            </div>
+          ) : (
+            filteredOrders.map(order => (
+              <div 
+                key={order.id} 
+                className="bg-[var(--d-surface)] border border-[var(--d-border)] rounded-3xl p-5 shadow-lg space-y-4 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer relative"
+                onClick={() => toggleOrderExpand(order.id)}
+              >
+                {/* Header: ID, Plus icon, Date */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleOrderExpand(order.id); }}
+                      className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500 border-2 border-[var(--d-surface)] text-white shadow-sm ring-1 ring-black/10 dark:ring-white/10 transition-transform hover:scale-110"
+                    >
+                      <svg className={`w-3.5 h-3.5 transition-transform ${expandedOrders[order.id] ? 'rotate-45' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                    <span className="font-mono text-sm font-semibold text-emerald-400">#{order.id.toString().padStart(5, '0')}</span>
+                  </div>
+                  <span className="text-xs text-[var(--d-text-faint)]">{new Date(order.created_at).toLocaleDateString()}</span>
+                </div>
+
+                {/* Body Details */}
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-sm text-[var(--d-text)] truncate">{order.customer_name}</div>
+                      <div className="text-xs text-[var(--d-text-muted)] truncate mt-0.5">{order.customer_email}</div>
+                    </div>
+                    <span className="bg-[var(--d-elevate)] border border-[var(--d-border)] px-2.5 py-1 rounded text-xs shrink-0 max-w-[120px] truncate">
+                      {order.business_card?.card_name || 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-[var(--d-border)]/50">
+                    <div className="text-base font-extrabold text-[var(--d-text)]">
+                      ₹{parseFloat(order.total_amount.toString()).toFixed(2)}
+                    </div>
+                    
+                    {/* Status Dropdown */}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      {isUpdating === order.id ? (
+                        <div className="animate-pulse w-20 h-6 bg-[var(--d-elevate)] rounded-full"></div>
+                      ) : (
+                        <select
+                          value={order.status}
+                          onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                          className={`text-xs font-bold px-2.5 py-1.5 rounded-full border outline-none cursor-pointer appearance-none ${getStatusBadge(order.status)}`}
+                        >
+                          <option value="pending" className="bg-[var(--d-surface-2)] text-amber-400">Pending</option>
+                          <option value="completed" className="bg-[var(--d-surface-2)] text-emerald-400">Completed</option>
+                          <option value="cancelled" className="bg-[var(--d-surface-2)] text-red-400">Cancelled</option>
+                        </select>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--d-border)]/50" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => setOrderToView(order)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--d-text-muted)] hover:text-emerald-400 bg-[var(--d-elevate)] hover:bg-emerald-500/10 rounded-lg transition-colors border border-[var(--d-border)]" title="View Order">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    Details
+                  </button>
+                  <button onClick={() => deleteOrder(order.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--d-text-muted)] hover:text-red-400 bg-[var(--d-elevate)] hover:bg-red-500/10 rounded-lg transition-colors border border-[var(--d-border)]" title="Delete Order">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    Delete
+                  </button>
+                </div>
+
+                {/* Inline Expansion (for mobile) */}
+                <AnimatePresence>
+                  {expandedOrders[order.id] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden space-y-4 pt-4 border-t border-[var(--d-border)]/50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Customer Info */}
+                      <div className="space-y-2.5 bg-[var(--d-elevate)] p-4 rounded-2xl border border-[var(--d-border)] text-xs">
+                        <h4 className="font-bold text-[var(--d-text-faint)] uppercase tracking-wider text-[10px]">Customer Details</h4>
+                        <div>
+                          <p className="text-[var(--d-text)] font-semibold">{order.customer_name}</p>
+                          <p className="text-[var(--d-text-muted)] flex items-center gap-1.5 mt-1.5 truncate">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            {order.customer_email}
+                          </p>
+                          <p className="text-[var(--d-text-muted)] flex items-center gap-1.5 mt-1.5">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                            {order.customer_phone}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Purchased Items */}
+                      <div className="space-y-2 text-xs">
+                        <h4 className="font-bold text-[var(--d-text-faint)] uppercase tracking-wider text-[10px]">Purchased Items ({order.cart_items?.length || 0})</h4>
+                        <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-2xl divide-y divide-[var(--d-border)] overflow-hidden">
+                          {order.cart_items && order.cart_items.map((item, idx) => (
+                            <div key={idx} className="p-3 flex justify-between items-center">
+                              <div className="min-w-0 flex-1 pr-4">
+                                <p className="text-[var(--d-text)] font-semibold truncate">{item.name}</p>
+                                <p className="text-[var(--d-text-faint)] mt-0.5">Qty: {item.quantity} x ₹{parseFloat(item.price.toString()).toFixed(2)}</p>
+                              </div>
+                              <div className="font-bold text-[var(--d-text)] shrink-0">
+                                ₹{(item.quantity * item.price).toFixed(2)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))
+          )}
         </div>
       )}
 

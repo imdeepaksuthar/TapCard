@@ -444,7 +444,7 @@ export default function ProductsPage() {
       )}
 
       {!isLoading && filteredAndSortedProducts.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 mt-6">
           {filteredAndSortedProducts.map((product, index) => {
             const rawImgs = product.images || [];
             const imgs = rawImgs.map((img: string) => 
@@ -542,11 +542,11 @@ export default function ProductsPage() {
                 <div className="p-5 flex flex-col flex-1">
                   <h3 className="font-bold text-lg text-[var(--d-text)] mb-2 line-clamp-1">{product.name}</h3>
                   {product.description ? (
-                    <p className="text-sm text-[var(--d-text-muted)] line-clamp-3 mb-4 flex-1">{product.description}</p>
+                    <p className="text-sm text-[var(--d-text-muted)] line-clamp-3 mb-4">{product.description}</p>
                   ) : (
-                    <div className="mb-4 flex-1" />
+                    <div className="mb-4" />
                   )}
-                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--d-border)]">
+                  <div className="flex items-center justify-between flex-wrap gap-2 mt-auto pt-3 border-t border-[var(--d-border)]">
                     <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
                       ₹{product.price.toFixed(2)}
                     </span>

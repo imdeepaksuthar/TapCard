@@ -308,7 +308,7 @@ function SidebarLink({ href, icon, children, active, onClick }: SidebarLinkProps
 }
 
 // Unified nav iconography — Lucide-React, one visual family across the panel.
-const NAV_ICONS: Record<string, React.ElementType> = {
+const NAV_ICONS = {
   dashboard: LayoutDashboard,
   cards: CreditCard,
   services: Wrench,
@@ -321,6 +321,6 @@ const NAV_ICONS: Record<string, React.ElementType> = {
 };
 
 function SidebarIcon({ name }: { name: string }) {
-  const Icon = NAV_ICONS[name];
+  const Icon = NAV_ICONS[name as keyof typeof NAV_ICONS];
   return Icon ? <Icon className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden="true" /> : null;
 }

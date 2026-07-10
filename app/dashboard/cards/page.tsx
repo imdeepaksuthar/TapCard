@@ -221,9 +221,9 @@ function QRCodeModal({
 
               <div className="p-7 flex flex-col items-center">
                 <h3 className="text-lg font-bold text-[var(--d-text)] text-center">Scan to Connect</h3>
-                <p className="text-sm text-[var(--d-text-muted)] text-center mt-1 mb-6">
-                  Point any camera at the code to open{' '}
-                  <span className="text-blue-300 font-semibold">{card.personal_info?.name || 'this card'}</span>
+                <p className="text-sm text-[var(--d-text-muted)] text-center mt-1 mb-6 leading-relaxed">
+                  Point any camera at the code to open <br className="sm:hidden" />
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold inline-block">{card.personal_info?.name || 'this card'}</span>
                 </p>
 
                 <motion.div
@@ -251,11 +251,11 @@ function QRCodeModal({
                   </button>
                   <button
                     onClick={copy}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-200 hover:bg-blue-500/30 hover:text-blue-100 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2"
                   >
                     {copied ? (
                       <>
-                        <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                         Copied!

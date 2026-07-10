@@ -424,7 +424,7 @@ export default function ServicesPage() {
       )}
 
       {!isLoading && filteredAndSortedServices.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 mt-6">
           {filteredAndSortedServices.map((service, index) => {
             const imgs = service.images || [];
             const ci = getCarouselIdx(service.id);
@@ -514,9 +514,9 @@ export default function ServicesPage() {
                 <div className="p-5 flex flex-col flex-1">
                   <h3 className="font-bold text-lg text-[var(--d-text)] mb-2 line-clamp-1">{service.name}</h3>
                   {service.description ? (
-                    <p className="text-sm text-[var(--d-text-muted)] line-clamp-3 mb-4 flex-1">{service.description}</p>
+                    <p className="text-sm text-[var(--d-text-muted)] line-clamp-3 mb-4">{service.description}</p>
                   ) : (
-                    <div className="mb-4 flex-1" />
+                    <div className="mb-4" />
                   )}
                   <div className="flex items-center justify-between flex-wrap gap-2 mt-auto pt-3 border-t border-[var(--d-border)]">
                       <span className="text-sm font-bold text-[var(--d-text)] truncate min-w-0">{service.price !== null ? `₹${service.price.toFixed(2)}` : 'Custom Price'}</span>

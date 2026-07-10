@@ -4146,7 +4146,7 @@ export default function CardForm({ id }: CardFormProps) {
             return (
               <div 
                 id="simulated-phone-scroll"
-                className={`flex-1 overflow-y-auto pb-20 relative transition-colors duration-300 ${
+                className={`dash-scope ${isDark ? 'dark' : ''} flex-1 overflow-y-auto pb-20 relative transition-colors duration-300 ${
                   isDark ? 'bg-[#08080C] text-slate-100' : 'bg-slate-100 text-slate-900'
                 }`}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -4501,7 +4501,12 @@ export default function CardForm({ id }: CardFormProps) {
                           </span>
                         </div>
                         <div className={`mt-2 rounded-2xl divide-y text-[9px] font-medium ${isDark ? 'bg-white/[0.02] divide-[var(--d-border)] border border-[var(--d-border)]' : 'bg-white divide-slate-100 border border-slate-100'}`}>
-                          {Object.entries(openingHours).map(([day, hours]: [string, any]) => {
+                          {Object.entries(openingHours)
+                            .sort(([dayA], [dayB]) => {
+                              const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                              return order.indexOf(dayA.toLowerCase()) - order.indexOf(dayB.toLowerCase());
+                            })
+                            .map(([day, hours]: [string, any]) => {
                             const isToday = day.toLowerCase() === todayName;
                             return (
                               <div key={day} className={`flex justify-between items-center px-3 py-2.5 ${isToday ? (isDark ? 'bg-white/[0.04]' : 'bg-slate-50') : ''}`}>

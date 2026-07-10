@@ -308,6 +308,69 @@ const SOCIAL_META: Record<string, { label: string; color: string; href: (v: stri
   youtube: { label: 'YouTube', color: '#FF0000', href: (v) => `https://youtube.com/@${extractUsername(v)}`, Icon: Icon.YouTube },
 };
 
+// ─── AdSlot — AdSense-ready responsive ad container (see NEXT_PUBLIC_ADSENSE_CLIENT) ─
+// When NEXT_PUBLIC_ADSENSE_CLIENT is set, renders a real <ins.adsbygoogle> unit
+// (the AdSense loader script must be added once in the app <head>). Until then it
+// renders a labelled, space-reserving placeholder so ad positions stay visible and
+// the layout is stable — switching ads on later causes no layout shift (CLS).
+const AD_FORMATS: Record<string, { min: string; label: string }> = {
+  horizontal: { min: 'min-h-[90px]', label: 'Leaderboard · 728×90' },
+  rectangle: { min: 'min-h-[250px]', label: 'Rectangle · 300×250' },
+  vertical: { min: 'min-h-[600px]', label: 'Skyscraper · 300×600' },
+  auto: { min: 'min-h-[120px]', label: 'Responsive' },
+};
+
+function AdSlot({
+  id,
+  format = 'auto',
+  isDark = false,
+  className = '',
+}: {
+  id: string;
+  format?: 'horizontal' | 'rectangle' | 'vertical' | 'auto';
+  isDark?: boolean;
+  className?: string;
+}) {
+  const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+  const fmt = AD_FORMATS[format] || AD_FORMATS.auto;
+
+  useEffect(() => {
+    if (!client) return;
+    try {
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch { }
+  }, [client]);
+
+  // Not configured yet → reserved, labelled placeholder.
+  if (!client) {
+    return (
+      <div
+        data-ad-slot={id}
+        aria-hidden="true"
+        className={`${fmt.min} w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed ${isDark ? 'border-white/12 bg-white/[0.02] text-white/35' : 'border-slate-300/70 bg-slate-100/40 text-slate-400'} ${className}`}
+      >
+        <span className="flex flex-col items-center gap-1 px-3 text-center">
+          <span className="text-[9px] font-semibold uppercase tracking-[0.22em]">Advertisement</span>
+          <span className="text-[10px] opacity-70">{fmt.label}</span>
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div data-ad-slot={id} className={`w-full overflow-hidden ${className}`}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client={client}
+        data-ad-slot={id}
+        data-ad-format={format === 'auto' ? 'auto' : undefined}
+        data-full-width-responsive="true"
+      />
+    </div>
+  );
+}
+
 export default function PublicCardView({ data, products = [], services = [] }: { data: any, products?: any[], services?: any[] }) {
   const { card } = data;
   const isPersonal = card.card_type === 'personal' || card.template_id === 'personal';
@@ -1119,8 +1182,12 @@ export default function PublicCardView({ data, products = [], services = [] }: {
         <MeshGradient color={primaryColor} isDark={isDark} intensity={0.4} />
       </div>
 
-      <div className="relative z-10 mx-auto flex flex-1 w-full max-w-[clamp(400px,92vw,1000px)] flex-col px-1.5 pt-1.5 pb-24 sm:px-[clamp(1rem,3vw,3rem)] sm:pt-[clamp(1rem,5vh,4rem)] sm:pb-[clamp(5rem,10vh,10rem)]">
-        {/* ============ CARD ============ */}
+      <div className="relative z-10 mx-auto flex flex-1 w-full max-w-[clamp(400px,92vw,1000px)] flex-col px-1.5 pt-1.5 pb-24 sm:px-[clamp(1rem,3vw,3rem)] sm:pt-[clamp(1rem,5vh,4rem)] sm:pb-[clamp(5rem,10vh,10rem)] xl:grid xl:max-w-[1240px] xl:grid-cols-[minmax(0,1fr)_336px] xl:items-start xl:gap-6 xl:pb-[clamp(2rem,6vh,5rem)]">
+        {/* ===== MAIN COLUMN ===== */}
+        <div className="flex w-full min-w-0 flex-1 flex-col">
+          {/* Top leaderboard ad — tablet & desktop only */}
+          <AdSlot id="pub-top-leaderboard" format="horizontal" isDark={isDark} className="mb-3 hidden sm:flex" />
+          {/* ============ CARD ============ */}
         <div
           className={`relative flex-1 overflow-hidden rounded-3xl border ${borderSoft} shadow-2xl shadow-black/10 backdrop-blur`}
           style={cardSurfaceStyle}
@@ -1144,29 +1211,29 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
               {/* Bottom fade to card surface */}
               <div className="absolute inset-x-0 bottom-0 h-12" style={{ background: `linear-gradient(to bottom, transparent, ${isDark ? '#0f0f13' : '#ffffff'})` }} />
+            </div>
 
-              {/* Top action bar */}
-              <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-3 sm:p-4">
-                <div className="flex items-center gap-1.5 rounded-full bg-black/30 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur-md ring-1 ring-white/10">
-                  <Icon.Eye className="h-3.5 w-3.5" />
-                  {Number(card.views_count || 0).toLocaleString()} views
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowQrModal(true)}
-                    aria-label="Share via QR Code"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/30 hover:scale-105"
-                  >
-                    <Icon.QrCode className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setIsDark(prev => !prev)}
-                    aria-label="Toggle theme"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/30 hover:scale-105"
-                  >
-                    {isDark ? <Icon.Sun className="h-4 w-4" /> : <Icon.Moon className="h-4 w-4" />}
-                  </button>
-                </div>
+            {/* Top action bar (Placed outside Hero for high z-index stacking and hover clickability) */}
+            <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between p-3 sm:p-4">
+              <div className="flex items-center gap-1.5 rounded-full bg-black/30 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur-md ring-1 ring-white/10">
+                <Icon.Eye className="h-3.5 w-3.5" />
+                {Number(card.views_count || 0).toLocaleString()} views
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowQrModal(true)}
+                  aria-label="Share via QR Code"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/30 hover:scale-105 cursor-pointer"
+                >
+                  <Icon.QrCode className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setIsDark(prev => !prev)}
+                  aria-label="Toggle theme"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/30 hover:scale-105 cursor-pointer"
+                >
+                  {isDark ? <Icon.Sun className="h-4 w-4" /> : <Icon.Moon className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
@@ -1601,6 +1668,10 @@ export default function PublicCardView({ data, products = [], services = [] }: {
                     <div className={`rounded-2xl divide-y ${isDark ? 'divide-white/5' : 'divide-slate-200'}`}>
                       {Object.entries(openingHours)
                         .filter(([, hours]: [string, any]) => hours && (hours.closed === true || (hours.open && hours.open.trim() && hours.open !== '--:-- --')))
+                        .sort(([dayA], [dayB]) => {
+                          const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                          return order.indexOf(dayA.toLowerCase()) - order.indexOf(dayB.toLowerCase());
+                        })
                         .map(([day, hours]: [string, any]) => {
                           const isToday = day.toLowerCase() === todayName;
                           return (
@@ -2291,6 +2362,49 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             </div>
           </div>
         </div>
+          {/* In-feed ad — mobile & tablet (desktop uses the side rail) */}
+          <AdSlot id="pub-infeed" format="rectangle" isDark={isDark} className="mt-3 flex xl:hidden" />
+        </div>
+
+        {/* ===== DESKTOP SIDE RAIL (xl+) — persistent connect panel + ad ===== */}
+        <aside className="hidden self-start xl:flex xl:flex-col xl:gap-4 xl:sticky xl:top-6">
+          <div className={`rounded-3xl border ${borderSoft} p-5 ${isDark ? 'bg-white/[0.03]' : 'bg-white shadow-sm'}`}>
+            <p className={`mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] ${textMuted}`}>Quick Connect</p>
+            <div className="flex flex-col gap-2">
+              {cleanedPhone && (
+                <a href={`tel:${cleanedPhone}`} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold ${cardStyle}`}>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: primaryColor }}><Icon.Phone className="h-4 w-4" /></span>
+                  Call
+                </a>
+              )}
+              {cleanedWhatsapp && (
+                <a href={`https://wa.me/${cleanedWhatsapp}`} target="_blank" rel="noreferrer" className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold ${cardStyle}`}>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: '#25D366' }}><Icon.Whatsapp className="h-4 w-4" /></span>
+                  WhatsApp
+                </a>
+              )}
+              {email && (
+                <a href={`mailto:${email}`} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold ${cardStyle}`}>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: primaryColor }}><Icon.Mail className="h-4 w-4" /></span>
+                  Email
+                </a>
+              )}
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button onClick={handleSaveContact} disabled={saving} className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition active:scale-95 disabled:opacity-70 ${isDark ? 'bg-white text-slate-900 hover:bg-slate-100' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
+                <Icon.Save className="h-4 w-4" /> {saving ? '…' : 'Save'}
+              </button>
+              <button onClick={handleShare} className="flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold text-white transition active:scale-95 hover:opacity-90" style={{ backgroundColor: primaryColor }}>
+                {shareOk ? <Icon.Check className="h-4 w-4" /> : <Icon.Share className="h-4 w-4" />} Share
+              </button>
+              <button onClick={() => setShowQrModal(true)} className={`col-span-2 flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold ${cardStyle}`}>
+                <Icon.QrCode className="h-4 w-4" /> Show QR code
+              </button>
+            </div>
+          </div>
+          {/* Sticky side ad — desktop skyscraper */}
+          <AdSlot id="pub-rail-skyscraper" format="vertical" isDark={isDark} className="flex" />
+        </aside>
       </div>
 
       {/* ============ QR CODE MODAL ============ */}
@@ -2372,7 +2486,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
       </AnimatePresence>
 
       {/* ---- STICKY ACTION BAR ---- */}
-      <div className="gsap-sticky-bar fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[calc(1rem_+_env(safe-area-inset-bottom))] sm:pb-[calc(1.25rem_+_env(safe-area-inset-bottom))]">
+      <div className="gsap-sticky-bar fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[calc(1rem_+_env(safe-area-inset-bottom))] sm:pb-[calc(1.25rem_+_env(safe-area-inset-bottom))] xl:hidden">
         {/* Blur gradient ground shadow */}
         <div className="absolute inset-x-0 bottom-0 h-24 pointer-events-none" style={{ background: isDark ? 'linear-gradient(to top, rgba(8,8,12,0.85), transparent)' : 'linear-gradient(to top, rgba(241,245,249,0.90), transparent)' }} />
         <div
@@ -2422,11 +2536,11 @@ export default function PublicCardView({ data, products = [], services = [] }: {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className={`w-full sm:max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ring-1 ${borderSoft} grid max-h-[92vh] sm:max-h-[85vh]`}
+            className={`w-full sm:max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[92vh] sm:max-h-[85vh]`}
             style={{ 
-              backgroundColor: isDark ? '#0f0f13' : '#ffffff',
-              gridTemplateRows: 'auto auto minmax(0, 1fr) auto'
+              backgroundColor: isDark ? '#0f0f13' : '#ffffff'
             }}
+            data-lenis-prevent
           >
             {/* Header */}
             <div className={`flex items-center justify-between border-b ${borderSoft} px-5 py-4 shrink-0`}>
@@ -2824,6 +2938,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className={`relative w-full max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ring-1 ${borderSoft} flex flex-col max-h-[90vh]`}
               style={{ backgroundColor: isDark ? '#0f0f13' : '#ffffff' }}
+              data-lenis-prevent
             >
               <div className="flex flex-col items-center p-6">
                 <div className="mb-4 h-1.5 w-12 rounded-full bg-slate-200 dark:bg-white/20" />
@@ -3032,6 +3147,7 @@ export default function PublicCardView({ data, products = [], services = [] }: {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={`w-full max-w-md overflow-hidden rounded-t-[32px] sm:rounded-3xl ${isDark ? 'bg-[#1c1c1e] text-white shadow-2xl shadow-black/50 border border-white/10' : 'bg-white text-slate-900 shadow-2xl'} p-6 max-h-[85vh] overflow-y-auto`}
               onClick={(e) => e.stopPropagation()}
+              data-lenis-prevent
             >
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xl font-bold">Book Appointment</h3>
@@ -3589,11 +3705,12 @@ function ProductViewModal({
         exit={{ opacity: 0, y: 100 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         className={`relative flex w-full sm:max-w-lg flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-2xl ${isDark ? 'bg-[#12121A] border border-white/10' : 'bg-white'} max-h-[92vh] sm:max-h-[85vh]`}
+        data-lenis-prevent
       >
         {/* Image carousel */}
         <div
           ref={imageContainerRef}
-          className="relative aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800 shrink-0 select-none touch-pan-y"
+          className="relative aspect-[16/10] sm:aspect-video max-h-[35vh] sm:max-h-[40vh] w-full bg-slate-100 dark:bg-slate-800 shrink-0 select-none touch-pan-y"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -3680,20 +3797,21 @@ function ProductViewModal({
           {product.description && (
             <p className={`mt-3 text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{product.description}</p>
           )}
+        </div>
 
-          <div className={`mt-5 flex items-center justify-between border-t pt-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
-            <p className={`text-2xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? `₹${Number(product.price).toLocaleString('en-IN')}` : ''}
-            </p>
-            <button
-              onClick={onCartAction}
-              className="rounded-xl px-5 py-3 font-bold text-white shadow-md transition active:scale-95 flex items-center gap-2"
-              style={{ backgroundColor: inCart ? '#10b981' : primaryColor }}
-            >
-              {inCart ? <Icon.Check className="h-5 w-5" /> : (isProfessional ? <Icon.FileText className="h-5 w-5" /> : <Icon.ShoppingCart className="h-5 w-5" />)}
-              <span className="font-semibold">{inCart ? 'Added' : (isProfessional ? 'Add to Quote' : 'Add to Cart')}</span>
-            </button>
-          </div>
+        {/* Sticky Cart Action Row */}
+        <div className={`px-5 py-4 border-t shrink-0 flex items-center justify-between ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+          <p className={`text-2xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            {product.price !== null && product.price !== undefined && Number(product.price) > 0 ? `₹${Number(product.price).toLocaleString('en-IN')}` : ''}
+          </p>
+          <button
+            onClick={onCartAction}
+            className="rounded-xl px-5 py-3 font-bold text-white shadow-md transition active:scale-95 flex items-center gap-2"
+            style={{ backgroundColor: inCart ? '#10b981' : primaryColor }}
+          >
+            {inCart ? <Icon.Check className="h-5 w-5" /> : (isProfessional ? <Icon.FileText className="h-5 w-5" /> : <Icon.ShoppingCart className="h-5 w-5" />)}
+            <span className="font-semibold">{inCart ? 'Added' : (isProfessional ? 'Add to Quote' : 'Add to Cart')}</span>
+          </button>
         </div>
 
         {/* Product-level prev/next navigation */}

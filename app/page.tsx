@@ -1,8 +1,9 @@
 'use client';
+import Header from './components/Header';
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
 import {
@@ -12,7 +13,7 @@ import {
 import dynamic from 'next/dynamic';
 
 // Interactive 3D hero card — client-only, lazy-loaded so it never blocks first paint.
-const HeroCard3D = dynamic(() => import('./components/HeroCard3D'), { ssr: false });
+import AnimatedHeroCard from './components/AnimatedHeroCard';
 
 const features = [
   { title: 'Instant Sharing', desc: 'Share your card via link, QR, or embed — anywhere, no app required.', icon: Smartphone, span: 'sm:col-span-2' },
@@ -35,16 +36,12 @@ const faqs = [
 ];
 
 export default function Home() {
-  const { user, logout } = useAuth();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [navOpen, setNavOpen] = useState(false);
+  const { user } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [plans, setPlans] = useState<any[]>([]);
   const [stats, setStats] = useState({ users: 15420, cards: 52100 });
 
   useEffect(() => {
-    try { if (localStorage.getItem('dash-theme') === 'dark') setTheme('dark'); } catch {}
-
     (async () => {
       try {
         const d = await apiFetch<{ users: number; cards: number }>('/api/homepage-stats');
@@ -61,24 +58,8 @@ export default function Home() {
     })();
   }, []);
 
-  const isDark = theme === 'dark';
-  const toggleTheme = () =>
-    setTheme((p) => {
-      const n = p === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem('dash-theme', n); } catch {}
-      return n;
-    });
-
-  const navLinks = [
-    { label: 'Home', href: '#home' },
-    { label: 'Features', href: '#features' },
-    { label: 'How it Works', href: '#how-it-works' },
-    ...(plans.length ? [{ label: 'Pricing', href: '#pricing' }] : []),
-    { label: 'FAQ', href: '#faq' },
-  ];
-
   const fadeUp = {
-    initial: { opacity: 0, y: 24 },
+    initial: { opacity: 1, y: 0 },
     whileInView: { opacity: 1, y: 0 },
     viewport: { once: true, margin: '-60px' },
     transition: { duration: 0.5, ease: 'easeOut' as const },
@@ -90,69 +71,8 @@ export default function Home() {
   };
 
   return (
-    <div className={`dash-scope ${isDark ? 'dark' : ''} min-h-screen antialiased`}>
-      {/* ─────────────── NAV ─────────────── */}
-      <header className="sticky top-0 z-50 border-b border-[var(--d-border)] bg-[var(--d-header)] backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl text-white" style={{ background: 'linear-gradient(135deg, var(--d-accent-2), var(--d-accent))' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M5 12.55a8 8 0 0 1 14 0" /><path d="M8.5 15.5a3.5 3.5 0 0 1 7 0" /><circle cx="12" cy="19" r="1" /></svg>
-            </span>
-            <span className="text-lg font-extrabold tracking-tight">Card <span className="text-[var(--d-accent)]">Setu</span></span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((l) => (
-              <a key={l.label} href={l.href} className="rounded-full px-3.5 py-2 text-sm font-medium text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
-                {l.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <Link href="/search" aria-label="Search cards" className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
-              <Search className="h-[18px] w-[18px]" />
-            </Link>
-            <button onClick={toggleTheme} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
-              {isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
-            </button>
-
-            {user ? (
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <Link href="/dashboard" className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
-                  <LayoutDashboard className="h-4 w-4" /> Dashboard
-                </Link>
-                <button onClick={logout} className="flex items-center gap-1.5 rounded-full border border-[var(--d-border)] px-3 py-2 text-sm font-medium text-[var(--d-text-muted)] transition-colors hover:border-rose-400 hover:text-rose-500">
-                  <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Log Out</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <Link href="/login" className="hidden sm:inline rounded-full px-3 py-2 text-sm font-medium text-[var(--d-text-muted)] transition-colors hover:text-[var(--d-text)]">Sign In</Link>
-                <Link href="/register" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-px">Sign Up</Link>
-              </div>
-            )}
-
-            <button onClick={() => setNavOpen((v) => !v)} aria-label="Toggle menu" aria-expanded={navOpen} className="md:hidden flex h-9 w-9 items-center justify-center rounded-full text-[var(--d-text-muted)] hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
-              {navOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile menu */}
-        {navOpen && (
-          <nav className="md:hidden border-t border-[var(--d-border)] bg-[var(--d-surface)] px-4 py-3">
-            <div className="flex flex-col gap-1">
-              {navLinks.map((l) => (
-                <a key={l.label} href={l.href} onClick={() => setNavOpen(false)} className="rounded-xl px-4 py-3 text-base font-medium text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
-                  {l.label}
-                </a>
-              ))}
-              {!user && <Link href="/login" onClick={() => setNavOpen(false)} className="rounded-xl px-4 py-3 text-base font-medium text-[var(--d-text-muted)]">Sign In</Link>}
-            </div>
-          </nav>
-        )}
-      </header>
+    <div className="dash-scope min-h-screen antialiased">
+      <Header />
 
       <main>
         {/* ─────────────── HERO ─────────────── */}
@@ -162,89 +82,67 @@ export default function Home() {
             <div
               className="absolute inset-0 opacity-60"
               style={{
-                backgroundImage: 'linear-gradient(var(--d-border) 1px, transparent 1px), linear-gradient(90deg, var(--d-border) 1px, transparent 1px)',
-                backgroundSize: '48px 48px',
-                maskImage: 'radial-gradient(ellipse 85% 65% at 65% 35%, #000 30%, transparent 75%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 85% 65% at 65% 35%, #000 30%, transparent 75%)',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0V0zm39 39V1H1v38h38z' fill='%236366f1' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+                maskImage: 'radial-gradient(circle at center, black, transparent 80%)',
+                WebkitMaskImage: 'radial-gradient(circle at center, black, transparent 80%)',
               }}
             />
-            <div className="absolute right-[-8%] top-[6%] h-[540px] w-[760px] max-w-[110vw] rounded-full opacity-70 blur-3xl" style={{ background: 'radial-gradient(closest-side, var(--d-accent-soft), transparent)' }} />
           </div>
 
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-8 lg:py-0 lg:min-h-[calc(100vh-4rem)]">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--d-border)] bg-[var(--d-surface)] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--d-text-muted)]">
-                <Sparkles className="h-3.5 w-3.5 text-[var(--d-accent)]" /> The future of networking
+            <motion.div initial={{ opacity: 1, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
+              <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-500/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                <Sparkles className="h-3.5 w-3.5" /> The future of networking
               </span>
-              <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl text-balance">
-                Networking,
-                <span className="block bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent">reimagined.</span>
+              <h1 className="mt-6 text-5xl font-extrabold tracking-tight sm:text-7xl text-balance">
+                Networking, <br className="hidden sm:block" />
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-clip-text text-transparent ag-shimmer-text">reimagined.</span>
               </h1>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--d-text-muted)] sm:text-lg">
+              <p className="mt-6 max-w-lg text-lg text-[var(--d-text-muted)] sm:text-xl">
                 The premium digital business card for modern professionals. Share your identity instantly — backed by enterprise-grade security and analytics.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href={user ? '/dashboard' : '/register'} className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/40">
-                  Get started free
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <Link href={user ? '/dashboard' : '/register'} className="ag-glow-btn flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/30">
+                  Get started free <ArrowRight className="h-4 w-4" />
                 </Link>
-                <a href="#features" className="inline-flex items-center justify-center rounded-full border border-[var(--d-border)] bg-[var(--d-surface)] px-6 py-3.5 text-sm font-semibold text-[var(--d-text)] transition-colors hover:bg-[var(--d-hover)]">
+                <Link href="#features" className="flex items-center justify-center rounded-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 px-8 py-4 text-sm font-bold text-gray-900 dark:text-white shadow-sm transition-colors hover:bg-gray-50 dark:hover:bg-white/10">
                   Learn more
-                </a>
+                </Link>
               </div>
 
-              <div className="mt-10 flex items-center gap-8">
+              {/* Trust markers */}
+              <div className="mt-10 flex items-center gap-8 border-t border-[var(--d-border)] pt-8">
                 <div>
-                  <div className="text-2xl font-extrabold tabular-nums">{stats.users.toLocaleString()}+</div>
-                  <div className="text-xs font-medium uppercase tracking-wider text-[var(--d-text-faint)]">Professionals</div>
+                  <p className="text-2xl font-black text-[var(--d-text)]">12,005+</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--d-text-muted)] mt-1">Professionals</p>
                 </div>
-                <div className="h-9 w-px bg-[var(--d-border)]" />
+                <div className="h-10 w-px bg-[var(--d-border)]" />
                 <div>
-                  <div className="text-2xl font-extrabold tabular-nums">{stats.cards.toLocaleString()}+</div>
-                  <div className="text-xs font-medium uppercase tracking-wider text-[var(--d-text-faint)]">Cards created</div>
+                  <p className="text-2xl font-black text-[var(--d-text)]">45,002+</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--d-text-muted)] mt-1">Cards created</p>
                 </div>
               </div>
             </motion.div>
 
-            {/* Hero visual — interactive 3D card on desktop, fast CSS mockup on mobile/tablet */}
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }} className="relative">
-              {/* Desktop: real-time 3D model (mouse-parallax, floating) */}
-              <div className="relative hidden h-[520px] w-full lg:block">
-                <HeroCard3D />
-                <div className="absolute right-4 top-10 flex items-center gap-1.5 rounded-full bg-[var(--d-surface)] px-3 py-1.5 text-xs font-semibold shadow-[var(--d-shadow)] ring-1 ring-[var(--d-border)]">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" /> Live
+            {/* Hero visual — Interactive 3D CSS Card */}
+            <motion.div initial={{ opacity: 1, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }} className="relative">
+              <div className="relative h-[520px] w-full hidden lg:block">
+                <AnimatedHeroCard />
+                <div className="absolute right-4 top-10 z-30 flex items-center gap-2 rounded-full bg-white/90 dark:bg-black/50 backdrop-blur-md px-3 py-1.5 text-xs font-semibold shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" /> Live
                 </div>
               </div>
 
-              {/* Mobile & tablet: lightweight CSS card (no WebGL) */}
-              <div className="relative mx-auto w-full max-w-sm lg:hidden">
-                <div className="relative rounded-3xl border border-[var(--d-border)] bg-[var(--d-surface)] p-6 shadow-[var(--d-shadow)]">
-                  <div className="h-24 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600" />
-                  <div className="-mt-10 flex flex-col items-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[var(--d-surface)] bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl font-bold text-white shadow-lg">DS</div>
-                    <h3 className="mt-3 text-lg font-bold">Deepak Suthar</h3>
-                    <p className="text-sm text-[var(--d-text-muted)]">Product Engineer</p>
-                  </div>
-                  <div className="mt-5 grid grid-cols-4 gap-2.5">
-                    {[Smartphone, QrCode, Users, CreditCard].map((Ic, i) => (
-                      <div key={i} className="flex aspect-square items-center justify-center rounded-xl bg-[var(--d-surface-2)] text-[var(--d-accent)]"><Ic className="h-5 w-5" /></div>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex items-center justify-between rounded-xl bg-[var(--d-surface-2)] px-4 py-3">
-                    <span className="text-xs font-medium text-[var(--d-text-muted)]">cardsetu.com/deepak</span>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--d-surface)] text-[var(--d-text-muted)]"><QrCode className="h-4 w-4" /></span>
-                  </div>
-                </div>
-                <div className="absolute -right-3 -top-3 flex items-center gap-1.5 rounded-full bg-[var(--d-surface)] px-3 py-1.5 text-xs font-semibold shadow-[var(--d-shadow)] ring-1 ring-[var(--d-border)]">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Live
-                </div>
+              {/* Mobile & tablet fallback (can still use the AnimatedHeroCard since it's lightweight!) */}
+              <div className="relative mx-auto w-full max-w-sm lg:hidden h-[520px]">
+                 <AnimatedHeroCard />
               </div>
             </motion.div>
           </div>
         </section>
 
         {/* ─────────────── FEATURES ─────────────── */}
-        <section id="features" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+        <section id="features" className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
           <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-wider text-[var(--d-accent)]">Everything you need</p>
             <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">One card. Every connection.</h2>
@@ -264,7 +162,7 @@ export default function Home() {
 
         {/* ─────────────── HOW IT WORKS ─────────────── */}
         <section id="how-it-works" className="border-y border-[var(--d-border)] bg-[var(--d-surface-2)]">
-          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+          <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
             <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
               <p className="text-sm font-semibold uppercase tracking-wider text-[var(--d-accent)]">How it works</p>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">Live in three steps</h2>
@@ -284,7 +182,7 @@ export default function Home() {
 
         {/* ─────────────── PRICING (only when plans exist) ─────────────── */}
         {plans.length > 0 && (
-          <section id="pricing" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+          <section id="pricing" className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
             <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
               <p className="text-sm font-semibold uppercase tracking-wider text-[var(--d-accent)]">Pricing</p>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">Simple, honest plans</h2>
@@ -321,7 +219,7 @@ export default function Home() {
 
         {/* ─────────────── FAQ ─────────────── */}
         <section id="faq" className="border-t border-[var(--d-border)] bg-[var(--d-surface-2)]">
-          <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
+          <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
             <motion.div {...fadeUp} className="text-center">
               <p className="text-sm font-semibold uppercase tracking-wider text-[var(--d-accent)]">FAQ</p>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">Questions, answered</h2>
@@ -347,22 +245,12 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─────────────── CTA ─────────────── */}
-        <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <motion.div {...fadeUp} className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 px-6 py-14 text-center shadow-2xl sm:px-12">
-            <div className="pointer-events-none absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, white 0, transparent 40%)' }} />
-            <h2 className="relative text-3xl font-extrabold tracking-tight text-white sm:text-4xl text-balance">Ready to share smarter?</h2>
-            <p className="relative mx-auto mt-3 max-w-xl text-indigo-100">Join thousands of professionals networking with a single tap.</p>
-            <Link href={user ? '/dashboard' : '/register'} className="relative mt-8 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-indigo-700 shadow-lg transition-transform hover:-translate-y-0.5">
-              {user ? 'Go to dashboard' : 'Create your card'} <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
-        </section>
+
       </main>
 
       {/* ─────────────── FOOTER ─────────────── */}
       <footer className="border-t border-[var(--d-border)] bg-[var(--d-surface)]">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-xl text-white" style={{ background: 'linear-gradient(135deg, var(--d-accent-2), var(--d-accent))' }}>
