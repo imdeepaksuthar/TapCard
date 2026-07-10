@@ -8,7 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 
 import { useRouter } from 'next/navigation';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 import { apiFetch } from '../../../lib/api';
 import { compressProfileImage, compressImage, compressGalleryImage } from '../../../lib/compressImage';
@@ -18,6 +18,10 @@ const Hero3DBackground = dynamic(() => import('../../components/Hero3DBackground
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-black/50 backdrop-blur-xl" />
 });
+
+// Module-level cache for reference data. Categories & designations rarely change,
+// so we fetch them once per session instead of on every CardForm mount / navigation.
+const refDataCache: { categories?: any[]; designations?: any[] } = {};
 
 const THEME_HEX: Record<string, string> = {
   blue: '#3b82f6',
@@ -167,6 +171,8 @@ export default function CardForm({ id }: CardFormProps) {
   const [isGstVerified, setIsGstVerified] = useState(false);
 
   const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const cardFetchedRef = useRef(false);
 
 
 
@@ -360,32 +366,43 @@ export default function CardForm({ id }: CardFormProps) {
 
 
   useEffect(() => {
+    let cancelled = false;
 
-    const fetchCategories = async () => {
-      try {
-        const res = await apiFetch<{ categories: any[] }>('/api/categories');
-        if (res.categories) {
-          setCategories(res.categories);
-        }
-      } catch (err) {
-        console.error('Failed to fetch categories:', err);
+    // Serve instantly from the session cache when we already have the data.
+    if (refDataCache.categories) setCategories(refDataCache.categories);
+    if (refDataCache.designations) setDesignations(refDataCache.designations);
+    if (refDataCache.categories && refDataCache.designations) return;
+
+    const loadReferenceData = async () => {
+      // Fetch both in parallel; allSettled so one failing doesn't block the other.
+      const [cats, desigs] = await Promise.allSettled([
+        refDataCache.categories
+          ? Promise.resolve({ categories: refDataCache.categories })
+          : apiFetch<{ categories: any[] }>('/api/categories'),
+        refDataCache.designations
+          ? Promise.resolve({ designations: refDataCache.designations })
+          : apiFetch<{ designations: any[] }>('/api/designations'),
+      ]);
+
+      if (cancelled) return;
+
+      if (cats.status === 'fulfilled' && cats.value.categories) {
+        refDataCache.categories = cats.value.categories;
+        setCategories(cats.value.categories);
+      } else if (cats.status === 'rejected') {
+        console.error('Failed to fetch categories:', cats.reason);
+      }
+
+      if (desigs.status === 'fulfilled' && desigs.value.designations) {
+        refDataCache.designations = desigs.value.designations;
+        setDesignations(desigs.value.designations);
+      } else if (desigs.status === 'rejected') {
+        console.error('Failed to fetch designations:', desigs.reason);
       }
     };
 
-    const fetchDesignations = async () => {
-      try {
-        const res = await apiFetch<{ designations: any[] }>('/api/designations');
-        if (res.designations) {
-          setDesignations(res.designations);
-        }
-      } catch (err) {
-        console.error('Failed to fetch designations:', err);
-      }
-    };
-
-    fetchCategories();
-    fetchDesignations();
-
+    loadReferenceData();
+    return () => { cancelled = true; };
   }, []);
 
 
@@ -508,7 +525,12 @@ export default function CardForm({ id }: CardFormProps) {
 
       if (id) {
 
-        fetchCard();
+        // Guard against a duplicate card fetch if this effect re-runs (e.g. the
+        // auth user object changes identity) — the card only needs loading once.
+        if (!cardFetchedRef.current) {
+          cardFetchedRef.current = true;
+          fetchCard();
+        }
 
       } else {
 
@@ -1320,7 +1342,7 @@ export default function CardForm({ id }: CardFormProps) {
 
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
 
               {[
 
@@ -3521,7 +3543,23 @@ export default function CardForm({ id }: CardFormProps) {
 
                   { id: 'yellow', primary: '#eab308', secondary: '#fefce8' },
 
-                  { id: 'dark', primary: '#1f2937', secondary: '#f3f4f6' },
+                  { id: 'fuchsia', primary: '#d946ef', secondary: '#fdf4ff' },
+
+                  { id: 'lavender', primary: '#a78bfa', secondary: '#f5f3ff' },
+
+                  { id: 'pink', primary: '#ec4899', secondary: '#fdf2f8' },
+
+                  { id: 'amber', primary: '#f59e0b', secondary: '#fffbeb' },
+
+                  { id: 'lime', primary: '#84cc16', secondary: '#f7fee7' },
+
+                  { id: 'emerald', primary: '#10b981', secondary: '#ecfdf5' },
+
+                  { id: 'sky', primary: '#0ea5e9', secondary: '#f0f9ff' },
+
+                  { id: 'slate', primary: '#64748b', secondary: '#f8fafc' },
+
+                  { id: 'midnight', primary: '#1e293b', secondary: '#f1f5f9' },
 
                 ].map((pair) => (
 
@@ -3696,7 +3734,7 @@ export default function CardForm({ id }: CardFormProps) {
     <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-[var(--d-surface)]">
 
       <div className="w-full lg:w-3/5 flex flex-col h-full border-r border-[var(--d-border)] overflow-y-auto no-scrollbar">
-        <div className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
+        <div className="p-4 sm:p-6 pb-24 lg:pb-6 max-w-4xl mx-auto w-full">
 
           <div className="mb-8">
 
@@ -3833,8 +3871,30 @@ export default function CardForm({ id }: CardFormProps) {
         </div>
       </div>
 
-      {/* RIGHT PANEL: Live Preview */}
-      <div className="hidden lg:flex lg:w-2/5 bg-black/50 items-center justify-center p-4 lg:p-8 overflow-hidden">
+      {/* Floating preview toggle — mobile & tablet only (hidden once the sheet is open) */}
+      {!showMobilePreview && (
+        <button
+          type="button"
+          onClick={() => setShowMobilePreview(true)}
+          aria-label="Show live preview"
+          className="lg:hidden fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold text-sm px-5 py-3 shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          Preview
+        </button>
+      )}
+
+      {/* RIGHT PANEL: Live Preview — a fixed side panel on desktop; on mobile/tablet
+          (where it would otherwise be hidden) it opens as a full-screen sheet. */}
+      <div className={`${showMobilePreview ? 'fixed inset-0 z-[60] flex' : 'hidden'} lg:static lg:z-auto lg:flex lg:w-2/5 bg-black/50 items-center justify-center p-4 lg:p-8 overflow-hidden`}>
+        <button
+          type="button"
+          onClick={() => setShowMobilePreview(false)}
+          aria-label="Close preview"
+          className="lg:hidden absolute top-4 right-4 z-[70] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
         <div className="w-[320px] h-[650px] bg-black rounded-[48px] border-[3.5px] border-neutral-800/80 ring-1 ring-white/15 overflow-hidden shadow-2xl relative flex flex-col scale-[0.85] lg:scale-100 origin-center">
           {/* Dynamic Island Notch */}
           <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-full z-40 flex items-center justify-center border border-neutral-800/50 shadow-inner">

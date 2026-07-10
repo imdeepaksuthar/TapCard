@@ -7,6 +7,10 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationBell from '../../components/NotificationBell';
 import { Toaster } from '../../components/toast';
+import {
+  LayoutDashboard, CreditCard, Wrench, Package, ShoppingCart, Users,
+  ChartColumn, CalendarDays, Settings as SettingsIcon, Menu, X, LogOut, Sun, Moon,
+} from 'lucide-react';
 
 
 export default function DashboardLayout({
@@ -127,11 +131,10 @@ export default function DashboardLayout({
           <BrandLogo />
           <button
             onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close menu"
             className="text-[var(--d-text-faint)] hover:text-[var(--d-text)] transition-colors lg:hidden w-8 h-8 rounded-lg hover:bg-[var(--d-hover)] flex items-center justify-center"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
         <nav className="flex-1 px-fluid-md space-y-fluid-xs overflow-y-auto custom-scrollbar">
@@ -192,9 +195,7 @@ export default function DashboardLayout({
             onClick={logout}
             className="w-full bg-[var(--d-elevate)] hover:bg-[var(--d-danger-soft)] hover:text-[var(--d-danger)] border border-[var(--d-border)] hover:border-[var(--d-danger)] py-2.5 rounded-xl font-medium text-sm text-[var(--d-text-muted)] transition-all duration-300 flex items-center justify-center gap-2"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
+            <LogOut className="w-4 h-4" aria-hidden="true" />
             Logout
           </button>
         </div>
@@ -207,11 +208,11 @@ export default function DashboardLayout({
           <div className="flex items-center gap-fluid-sm min-w-0">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Open menu"
+              aria-expanded={isSidebarOpen}
               className="text-[var(--d-text-muted)] hover:text-[var(--d-text)] lg:hidden w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[var(--d-hover)] transition-colors shrink-0"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="w-5 h-5" aria-hidden="true" />
             </button>
             <h2 className="text-fluid-xl font-bold truncate">
               {pathname === '/dashboard' ? 'Dashboard' :
@@ -232,16 +233,7 @@ export default function DashboardLayout({
               title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--d-text-muted)] hover:text-[var(--d-text)] hover:bg-[var(--d-hover)] transition-colors"
             >
-              {isDark ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              )}
+              {isDark ? <Sun className="w-5 h-5" aria-hidden="true" /> : <Moon className="w-5 h-5" aria-hidden="true" />}
             </button>
             <NotificationBell />
             <div className="flex items-center gap-2.5">
@@ -315,65 +307,20 @@ function SidebarLink({ href, icon, children, active, onClick }: SidebarLinkProps
   );
 }
 
+// Unified nav iconography — Lucide-React, one visual family across the panel.
+const NAV_ICONS: Record<string, React.ElementType> = {
+  dashboard: LayoutDashboard,
+  cards: CreditCard,
+  services: Wrench,
+  products: Package,
+  orders: ShoppingCart,
+  leads: Users,
+  analytics: ChartColumn,
+  appointments: CalendarDays,
+  settings: SettingsIcon,
+};
+
 function SidebarIcon({ name }: { name: string }) {
-  const baseClasses = "w-5 h-5";
-  switch (name) {
-    case 'dashboard':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path>
-        </svg>
-      );
-    case 'cards':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-        </svg>
-      );
-    case 'services':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-        </svg>
-      );
-    case 'products':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-        </svg>
-      );
-    case 'orders':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-        </svg>
-      );
-    case 'leads':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-        </svg>
-      );
-    case 'analytics':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0h6v-4a2 2 0 00-2-2h-2a2 2 0 00-2 2v4zm0 0h6v-2a2 2 0 00-2-2h-2a2 2 0 00-2 2v2z"></path>
-        </svg>
-      );
-    case 'appointments':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-        </svg>
-      );
-    case 'settings':
-      return (
-        <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-        </svg>
-      );
-    default:
-      return null;
-  }
+  const Icon = NAV_ICONS[name];
+  return Icon ? <Icon className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden="true" /> : null;
 }

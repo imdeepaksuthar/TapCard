@@ -376,6 +376,75 @@ function ConfirmDeleteModal({
   );
 }
 
+// ─── Desktop contact chip ────────────────────────────────────────────────────
+function DeskChip({ href, icon, value, color }: { href: string; icon: string; value: string; color: string }) {
+  return (
+    <a
+      href={href}
+      target={href.startsWith('http') ? '_blank' : undefined}
+      rel="noopener noreferrer"
+      className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[var(--d-border)] bg-[var(--d-surface-2)] px-3 py-2 text-[13px] font-medium text-[var(--d-text-muted)] transition-colors hover:border-[var(--d-accent)] hover:text-[var(--d-text)]"
+    >
+      <span className="shrink-0" style={{ color }}>
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">{ContactIcons[icon]}</svg>
+      </span>
+      <span className="truncate">{value}</span>
+    </a>
+  );
+}
+
+// ─── Shared card controls (used by both mobile & desktop layouts) ────────────
+function StatusToggle({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <button
+        onClick={onClick}
+        role="switch"
+        aria-checked={active}
+        aria-label="Toggle card active status"
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${active ? 'bg-emerald-500' : 'bg-[var(--d-elevate)] border border-[var(--d-border)]'}`}
+      >
+        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-300 ${active ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+      </button>
+      <span className={`text-[11px] font-bold uppercase tracking-widest ${active ? 'text-emerald-500' : 'text-[var(--d-text-faint)]'}`}>
+        {active ? 'Active' : 'Inactive'}
+      </span>
+    </div>
+  );
+}
+
+function CardActions({ slug, cardId, isCopied, onQr, onCopy, onDelete }: {
+  slug: string; cardId: number; isCopied: boolean;
+  onQr: () => void; onCopy: () => void; onDelete: () => void;
+}) {
+  const iconBtn = 'flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] border border-[var(--d-border)] text-[var(--d-text-muted)] hover:text-[var(--d-text)] transition-all hover:-translate-y-0.5';
+  return (
+    <div className="flex items-center gap-2">
+      <Link href={`/${slug}`} target="_blank" className="flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-3.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 hover:from-blue-600 hover:to-indigo-600">
+        Live
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+      </Link>
+      <Link href={`/dashboard/cards/edit/${cardId}`} className="flex h-9 items-center gap-1.5 rounded-xl border border-[var(--d-border)] bg-[var(--d-elevate)] px-3.5 text-[11px] font-bold uppercase tracking-wider text-[var(--d-text)] transition-all hover:-translate-y-0.5 hover:bg-[var(--d-hover)]">
+        Edit
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+      </Link>
+      <button onClick={onQr} title="QR Code" aria-label="Show QR code" className={iconBtn}>
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16h.01M20 16h.01M14 20h.01M18 20h.01M20 20h.01" /></svg>
+      </button>
+      <button onClick={onCopy} title="Copy Link" aria-label="Copy card link" className={iconBtn}>
+        {isCopied ? (
+          <svg className="h-4 w-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+        ) : (
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5" /></svg>
+        )}
+      </button>
+      <button onClick={onDelete} title="Delete" aria-label="Delete card" className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--d-border)] bg-[var(--d-elevate)] text-[var(--d-text-muted)] transition-all hover:-translate-y-0.5 hover:border-rose-500/30 hover:bg-rose-500/15 hover:text-rose-500">
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+      </button>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function MyCards() {
   const { user, isLoading: authLoading } = useAuth();
@@ -576,6 +645,7 @@ export default function MyCards() {
               const pR = parseInt(hexClean.slice(0,2), 16) || 59;
               const pG = parseInt(hexClean.slice(2,4), 16) || 130;
               const pB = parseInt(hexClean.slice(4,6), 16) || 246;
+              const brandGradient = `linear-gradient(135deg, rgba(${pR},${pG},${pB},0.96) 0%, rgba(${Math.max(0, pR - 48)},${Math.max(0, pG - 48)},${Math.max(0, pB - 48)},1) 100%)`;
 
               return (
                 <motion.div
@@ -586,161 +656,148 @@ export default function MyCards() {
                   }}
                   className="w-full group/card"
                 >
-                  {/* ═══ VISITING CARD ═══ */}
-                  <div className="relative w-full rounded-[28px] overflow-hidden shadow-2xl" style={{ minHeight: '200px' }}>
-                    {/* Card background gradient */}
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: `linear-gradient(135deg, rgba(${pR},${pG},${pB},0.92) 0%, rgba(${Math.max(0,pR-40)},${Math.max(0,pG-40)},${Math.max(0,pB-40)},0.98) 100%)`,
-                      }}
-                    />
-                    {/* Dot pattern overlay */}
-                    <div
-                      className="absolute inset-0 opacity-[0.05]"
-                      style={{ backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`, backgroundSize: '28px 28px' }}
-                    />
-                    {/* Glowing orbs */}
-                    <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[80px] opacity-30 pointer-events-none" style={{ background: 'rgba(255,255,255,0.4)' }} />
-                    <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full blur-[60px] opacity-15 pointer-events-none" style={{ background: 'rgba(255,255,255,0.5)' }} />
+                  {/* ══════════ DESKTOP — landscape management card ══════════ */}
+                  <div className="hidden md:block">
+                    <div className="relative overflow-hidden rounded-3xl border border-[var(--d-border)] bg-[var(--d-surface)] shadow-[var(--d-shadow)] transition-all duration-300 group-hover/card:-translate-y-1 group-hover/card:shadow-2xl group-hover/card:shadow-black/10">
+                      {/* Brand accent band */}
+                      <div className="relative h-24 overflow-hidden" style={{ background: brandGradient }}>
+                        <div className="absolute inset-0 opacity-[0.09]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #fff 1px, transparent 0)', backgroundSize: '22px 22px' }} />
+                        <div className="pointer-events-none absolute -top-14 right-16 h-44 w-44 rounded-full opacity-40 blur-[70px]" style={{ background: 'rgba(255,255,255,0.5)' }} />
+                        {companyName && (
+                          <p className="absolute left-7 top-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/75">{companyName}</p>
+                        )}
+                        <div className="absolute right-6 top-5 flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">
+                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            {card.views_count}
+                          </span>
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold backdrop-blur ${isActive ? 'bg-emerald-500 text-white' : 'bg-black/30 text-white/80'}`}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-white/90" /> {isActive ? 'Live' : 'Off'}
+                          </span>
+                        </div>
+                      </div>
 
-                    {/* Card Content */}
-                    <div className="relative z-10 flex flex-col sm:flex-row items-stretch min-h-[200px]">
-
-                      {/* ── LEFT PANEL: Main Identity ── */}
-                      <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between">
-                        <div>
-                          {companyName && (
-                            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-white/60 mb-3">{companyName}</p>
-                          )}
-                          <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none mb-2">
-                            {card.personal_info?.name || 'Untitled Card'}
-                          </h3>
-                          {designation && (
-                            <p className="text-sm font-semibold text-white/70 tracking-widest uppercase">{designation}</p>
-                          )}
-                          <div className="mt-4 mb-4 h-px w-16 bg-white/30 rounded-full" />
-                          {card.category?.name && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-white/15 text-white border border-white/20 backdrop-blur">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                              </svg>
-                              {card.category.name}
-                              {card.subcategory?.name && ` · ${card.subcategory.name}`}
-                            </span>
+                      {/* Identity + inline contacts */}
+                      <div className="relative z-10 px-7 pb-6">
+                        <div className="-mt-9 flex items-end gap-4">
+                          <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl border-4 border-[var(--d-surface)] shadow-lg" style={{ boxShadow: `0 10px 28px rgba(${pR},${pG},${pB},0.35)` }}>
+                            {profileImage ? (
+                              <img src={profileImage} alt={card.personal_info?.name || 'Profile'} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-2xl font-black text-white" style={{ background: brandGradient }}>
+                                {(card.personal_info?.name || 'U').charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1 pb-1">
+                            <h3 className="truncate text-xl font-bold text-[var(--d-text)]">{card.personal_info?.name || 'Untitled Card'}</h3>
+                            <p className="truncate text-sm text-[var(--d-text-muted)]">{[designation, companyName].filter(Boolean).join(' · ') || 'Digital business card'}</p>
+                          </div>
+                          {socials.length > 0 && (
+                            <div className="hidden items-center gap-1.5 pb-1 lg:flex">
+                              {socials.slice(0, 4).map((s) => (
+                                <a key={s.k} href={s.href} target="_blank" rel="noopener noreferrer" title={s.label} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--d-border)] bg-[var(--d-surface-2)] text-[var(--d-text-muted)] transition-colors hover:border-[var(--d-accent)] hover:text-[var(--d-accent)]">
+                                  <SocialIcon name={s.k} className="h-4 w-4" />
+                                </a>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        {/* Social Icons */}
+
+                        {card.category?.name && (
+                          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-[var(--d-border)] bg-[var(--d-surface-2)] px-3 py-1 text-[11px] font-semibold text-[var(--d-text-muted)]">
+                            <svg className="h-3 w-3" style={{ color: primaryColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" /></svg>
+                            {card.category.name}{card.subcategory?.name && ` · ${card.subcategory.name}`}
+                          </span>
+                        )}
+
+                        {hasContact && (
+                          <div className="mt-4 grid grid-cols-2 gap-2">
+                            {phone && <DeskChip href={`tel:${cleanPhone}`} icon="phone" value={phone} color={primaryColor} />}
+                            {email && <DeskChip href={`mailto:${email}`} icon="email" value={email} color={primaryColor} />}
+                            {website && <DeskChip href={websiteHref} icon="website" value={websiteLabel} color={primaryColor} />}
+                            {address && <DeskChip href={mapHref} icon="location" value={address} color={primaryColor} />}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer action bar */}
+                      <div className="flex items-center justify-between gap-3 border-t border-[var(--d-border)] bg-[var(--d-surface-2)] px-7 py-3.5">
+                        <StatusToggle active={isActive} onClick={() => handleToggleStatus(card.id, card.status)} />
+                        <CardActions slug={card.slug} cardId={card.id} isCopied={isCopied} onQr={() => setQrCard(card)} onCopy={() => copyLink(card.slug)} onDelete={() => setDeleteTargetId(card.id)} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ══════════ MOBILE — immersive portrait card ══════════ */}
+                  <div className="md:hidden">
+                    <div className="relative overflow-hidden rounded-[28px] shadow-xl" style={{ background: brandGradient }}>
+                      <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #fff 1px, transparent 0)', backgroundSize: '26px 26px' }} />
+                      <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-30 blur-[70px]" style={{ background: 'rgba(255,255,255,0.5)' }} />
+                      <div className="relative z-10 p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            {companyName && <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">{companyName}</p>}
+                            <h3 className="text-2xl font-black leading-tight text-white">{card.personal_info?.name || 'Untitled Card'}</h3>
+                            {designation && <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-white/70">{designation}</p>}
+                          </div>
+                          <div className="relative shrink-0">
+                            <div className="h-16 w-16 overflow-hidden rounded-2xl border-2 border-white/30 shadow-lg">
+                              {profileImage ? (
+                                <img src={profileImage} alt={card.personal_info?.name || 'Profile'} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-2xl font-black text-white" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                                  {(card.personal_info?.name || 'U').charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <span className="absolute -right-2 -top-2 flex items-center gap-1 rounded-full border border-white/20 bg-black/50 px-2 py-0.5 text-[9px] font-bold text-white backdrop-blur">
+                              <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                              {card.views_count}
+                            </span>
+                          </div>
+                        </div>
+
+                        {card.category?.name && (
+                          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[10px] font-bold text-white backdrop-blur">
+                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" /></svg>
+                            {card.category.name}{card.subcategory?.name && ` · ${card.subcategory.name}`}
+                          </span>
+                        )}
+
+                        {(phone || email) && <div className="my-4 h-px bg-white/20" />}
+
+                        <div className="space-y-2.5">
+                          {phone && (
+                            <a href={`tel:${cleanPhone}`} className="flex items-center gap-3 text-sm text-white/85">
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15"><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">{ContactIcons.phone}</svg></span>
+                              <span className="truncate font-medium">{phone}</span>
+                            </a>
+                          )}
+                          {email && (
+                            <a href={`mailto:${email}`} className="flex items-center gap-3 text-sm text-white/85">
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15"><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">{ContactIcons.email}</svg></span>
+                              <span className="truncate font-medium">{email}</span>
+                            </a>
+                          )}
+                        </div>
+
                         {socials.length > 0 && (
-                          <div className="flex gap-2 mt-5">
+                          <div className="mt-4 flex flex-wrap gap-2">
                             {socials.map((s) => (
-                              <a
-                                key={s.k} href={s.href} target="_blank" rel="noopener noreferrer" title={s.label}
-                                className="h-8 w-8 rounded-xl flex items-center justify-center bg-white/15 hover:bg-white/30 border border-white/20 text-white transition-all duration-300 hover:scale-110 hover:shadow-lg"
-                              >
-                                <SocialIcon name={s.k} className="w-3.5 h-3.5" />
+                              <a key={s.k} href={s.href} target="_blank" rel="noopener noreferrer" title={s.label} className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-white/15 text-white transition-transform hover:scale-110">
+                                <SocialIcon name={s.k} className="h-4 w-4" />
                               </a>
                             ))}
                           </div>
                         )}
                       </div>
-
-                      {/* ── RIGHT PANEL: Photo + Contact ── */}
-                      <div
-                        className="sm:w-[270px] flex flex-col items-center justify-center gap-4 p-6 sm:p-8"
-                        style={{ background: 'rgba(0,0,0,0.18)', borderLeft: '1px solid rgba(255,255,255,0.12)' }}
-                      >
-                        {/* Avatar */}
-                        <div className="relative">
-                          <div
-                            className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl"
-                            style={{ boxShadow: `0 8px 32px rgba(${pR},${pG},${pB},0.5)` }}
-                          >
-                            {profileImage ? (
-                              <img src={profileImage} alt={card.personal_info?.name || 'Profile'} className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white" style={{ background: 'rgba(255,255,255,0.15)' }}>
-                                {(card.personal_info?.name || 'U').charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
-                          {/* Views badge */}
-                          <div className="absolute -top-2 -right-2 flex items-center gap-1 bg-black/50 backdrop-blur-sm border border-white/20 text-white text-[9px] font-bold px-2 py-1 rounded-full">
-                            <svg className="w-3 h-3 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            {card.views_count}
-                          </div>
-                        </div>
-                        {/* Quick contact info */}
-                        <div className="w-full space-y-1.5">
-                          {phone && (
-                            <a href={`tel:${cleanPhone}`} className="flex items-center gap-2 text-white/80 hover:text-white text-xs transition-colors group/ct">
-                              <span className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0 group-hover/ct:bg-white/25 transition-colors">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                              </span>
-                              <span className="truncate font-medium">{phone}</span>
-                            </a>
-                          )}
-                          {email && (
-                            <a href={`mailto:${email}`} className="flex items-center gap-2 text-white/80 hover:text-white text-xs transition-colors group/ct">
-                              <span className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0 group-hover/ct:bg-white/25 transition-colors">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                              </span>
-                              <span className="truncate font-medium">{email}</span>
-                            </a>
-                          )}
-                          {website && (
-                            <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/80 hover:text-white text-xs transition-colors group/ct">
-                              <span className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0 group-hover/ct:bg-white/25 transition-colors">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" strokeWidth="2" /><path strokeWidth="2" strokeLinecap="round" d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18" /></svg>
-                              </span>
-                              <span className="truncate font-medium">{websiteLabel}</span>
-                            </a>
-                          )}
-                        </div>
-                      </div>
                     </div>
-                  </div>
 
-                  {/* ═══ ACTION STRIP ═══ */}
-                  <div className="mt-3 flex items-center justify-between gap-2 px-1">
-                    {/* Status toggle */}
-                    <div className="flex items-center gap-2.5">
-                      <button
-                        onClick={() => handleToggleStatus(card.id, card.status)}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${isActive ? 'bg-emerald-500' : 'bg-[var(--d-elevate)] border border-[var(--d-border)]'}`}
-                      >
-                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out ${isActive ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </button>
-                      <span className={`text-[11px] font-bold tracking-widest uppercase ${isActive ? 'text-emerald-500' : 'text-[var(--d-text-faint)]'}`}>
-                        {isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-2">
-                      <Link href={`/${card.slug}`} target="_blank" className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white text-[11px] font-black tracking-widest uppercase transition-all duration-300 shadow-lg shadow-blue-500/25 hover:-translate-y-0.5">
-                        Live
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      </Link>
-                      <Link href={`/dashboard/cards/edit/${card.id}`} className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] border border-[var(--d-border)] text-[var(--d-text)] text-[11px] font-black tracking-widest uppercase transition-all duration-300 hover:-translate-y-0.5">
-                        Edit
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                      </Link>
-                      <button onClick={() => setQrCard(card)} title="QR Code" className="h-9 w-9 rounded-xl bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] border border-[var(--d-border)] flex items-center justify-center text-[var(--d-text-muted)] hover:text-[var(--d-text)] transition-all hover:-translate-y-0.5">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16h.01M20 16h.01M14 20h.01M18 20h.01M20 20h.01" /></svg>
-                      </button>
-                      <button onClick={() => copyLink(card.slug)} title="Copy Link" className="h-9 w-9 rounded-xl bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] border border-[var(--d-border)] flex items-center justify-center text-[var(--d-text-muted)] hover:text-[var(--d-text)] transition-all hover:-translate-y-0.5">
-                        {isCopied ? (
-                          <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5" /></svg>
-                        )}
-                      </button>
-                      <button onClick={() => setDeleteTargetId(card.id)} title="Delete" className="h-9 w-9 rounded-xl bg-[var(--d-elevate)] hover:bg-rose-500/15 border border-[var(--d-border)] hover:border-rose-500/30 flex items-center justify-center text-[var(--d-text-muted)] hover:text-rose-500 transition-all hover:-translate-y-0.5">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                    {/* Mobile action strip */}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-1">
+                      <StatusToggle active={isActive} onClick={() => handleToggleStatus(card.id, card.status)} />
+                      <CardActions slug={card.slug} cardId={card.id} isCopied={isCopied} onQr={() => setQrCard(card)} onCopy={() => copyLink(card.slug)} onDelete={() => setDeleteTargetId(card.id)} />
                     </div>
                   </div>
                 </motion.div>

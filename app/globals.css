@@ -21,6 +21,43 @@
   --text-fluid-2xl: clamp(1.5rem, 5vw, 2rem);
   --text-fluid-3xl: clamp(1.75rem, 6vw, 2.5rem);
 
+  /* ─── Modular type scale — 1.25 "major third", 16px base. H1–H6 + body.
+     Generates utilities text-h1 … text-h6, text-body, text-caption, each with
+     its own line-height + letter-spacing (tighter tracking as size grows). ─── */
+  --text-caption: 0.8rem;
+  --text-caption--line-height: 1.5;
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+  --text-h6: 1rem;
+  --text-h6--line-height: 1.5;
+  --text-h5: 1.25rem;
+  --text-h5--line-height: 1.4;
+  --text-h5--letter-spacing: -0.01em;
+  --text-h4: 1.563rem;
+  --text-h4--line-height: 1.3;
+  --text-h4--letter-spacing: -0.014em;
+  --text-h3: 1.953rem;
+  --text-h3--line-height: 1.25;
+  --text-h3--letter-spacing: -0.017em;
+  --text-h2: 2.441rem;
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h1: 3.052rem;
+  --text-h1--line-height: 1.1;
+  --text-h1--letter-spacing: -0.022em;
+
+  /* ─── Semantic brand palette — every fill below clears WCAG 2.1 AA (≥4.5:1)
+     for white text, and the same value as text-on-white. Generates utilities
+     bg-primary, text-secondary, border-error, etc. Neutrals reuse Tailwind slate. ─── */
+  --color-primary: #4f46e5;        /* indigo-600  · on white 6.3:1  AA  */
+  --color-primary-hover: #4338ca;  /* indigo-700  · on white 7.6:1  AAA */
+  --color-primary-soft: #eef2ff;   /* indigo-50 surface tint            */
+  --color-secondary: #0f766e;      /* teal-700    · on white 5.5:1  AA  */
+  --color-success: #047857;        /* emerald-700 · on white 5.5:1  AA  */
+  --color-warning: #b45309;        /* amber-700   · on white 4.9:1  AA  */
+  --color-error: #dc2626;          /* red-600     · on white 4.8:1  AA  */
+  --color-on-accent: #ffffff;
+
   /* Fluid Component Sizes */
   --width-fluid-sidebar: clamp(240px, 20vw, 300px);
   --width-fluid-sidebar-mobile: clamp(260px, 85vw, 320px);
@@ -60,6 +97,20 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* ─── Accessibility: a visible keyboard-focus ring for every interactive
+   element. This is unlayered, so it overrides the app's pervasive Tailwind
+   `outline-none`, and :focus-visible means it only appears for keyboard/AT
+   users — never on mouse click. A major WCAG 2.4.7 (Focus Visible) win. ─── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+/* Respect users who explicitly hide the ring, but keep the default on. */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 @layer utilities {

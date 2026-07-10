@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { Bell } from 'lucide-react';
 
 interface NotificationData {
   id: string;
@@ -108,13 +109,13 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+        aria-expanded={isOpen}
         className="text-[var(--d-text-muted)] hover:text-[var(--d-text)] relative p-2 rounded-full hover:bg-[var(--d-hover)] transition-colors"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"></path>
-        </svg>
+        <Bell className="w-6 h-6" aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-[var(--d-header)]" />
         )}
@@ -127,7 +128,7 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-1rem))] bg-[var(--d-surface)] rounded-2xl shadow-2xl border border-[var(--d-border)] overflow-hidden z-50"
+            className="fixed left-4 right-4 top-[4.5rem] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 bg-[var(--d-surface)] rounded-2xl shadow-2xl border border-[var(--d-border)] overflow-hidden z-[100] sm:origin-top-right"
           >
             <div className="p-4 border-b border-[var(--d-border)] flex items-center justify-between bg-[var(--d-surface-2)]">
               <h3 className="font-semibold text-[var(--d-text)]">Notifications</h3>

@@ -227,7 +227,6 @@ class BusinessCardController extends Controller
     {
         $card = BusinessCard::with(['category', 'subcategory'])
             ->where('slug', $slug)
-            ->where('status', 'active')
             ->firstOrFail();
 
         // View counting is handled by recordView() via a client beacon, so it is

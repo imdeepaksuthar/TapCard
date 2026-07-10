@@ -1,624 +1,406 @@
 'use client';
 
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
-import Header from './components/Header';
-import { ArrowRight, Smartphone, Zap, Shield, Users, QrCode, CheckCircle2, ChevronDown, CreditCard, Palette } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import {
+  ArrowRight, Smartphone, Zap, Shield, Users, QrCode, CreditCard, Palette,
+  Check, ChevronDown, Menu, X, Sun, Moon, Search, Sparkles, LogOut, LayoutDashboard,
+} from 'lucide-react';
+import dynamic from 'next/dynamic';
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
+// Interactive 3D hero card — client-only, lazy-loaded so it never blocks first paint.
+const HeroCard3D = dynamic(() => import('./components/HeroCard3D'), { ssr: false });
 
-const Scene3D = dynamic(() => import('./components/Scene3D'), { ssr: false });
-
-const bentoFeatures = [
-  {
-    title: "Instant Sharing",
-    desc: "Share your digital business card via link, QR code, or embed it anywhere. No app required.",
-    icon: <Smartphone className="w-6 h-6" />,
-    colSpan: "md:col-span-2",
-  },
-  {
-    title: "QR Ready",
-    desc: "For older phones, simply scan the dynamic QR code.",
-    icon: <QrCode className="w-6 h-6" />,
-    colSpan: "",
-  },
-  {
-    title: "Bank-Level Security",
-    desc: "Your data is encrypted and securely stored. Total control over what you share.",
-    icon: <Shield className="w-6 h-6" />,
-    colSpan: "",
-  },
-  {
-    title: "Lead Generation",
-    desc: "Capture incoming leads automatically. Export directly to your CRM.",
-    icon: <Users className="w-6 h-6" />,
-    colSpan: "md:col-span-2",
-  },
+const features = [
+  { title: 'Instant Sharing', desc: 'Share your card via link, QR, or embed — anywhere, no app required.', icon: Smartphone, span: 'sm:col-span-2' },
+  { title: 'QR Ready', desc: 'Any phone can scan your dynamic QR code in a tap.', icon: QrCode, span: '' },
+  { title: 'Bank-Level Security', desc: 'Encrypted and stored securely. You control exactly what you share.', icon: Shield, span: '' },
+  { title: 'Lead Generation', desc: 'Capture incoming leads automatically and export straight to your CRM.', icon: Users, span: 'sm:col-span-2' },
 ];
 
 const steps = [
-  { num: "01", title: "Create Your Profile", desc: "Sign up and build your digital identity in minutes. Add links, socials, and payment methods.", icon: <CreditCard className="w-7 h-7" /> },
-  { num: "02", title: "Customize Design", desc: "Choose from premium templates. Add your logo, colors, and completely own the look.", icon: <Palette className="w-7 h-7" /> },
-  { num: "03", title: "Share Instantly", desc: "Share your unique link or QR code anywhere. Connections are saved immediately.", icon: <Zap className="w-7 h-7" /> },
+  { num: '01', title: 'Create your profile', desc: 'Sign up and build your digital identity in minutes — links, socials, and payment methods.', icon: CreditCard },
+  { num: '02', title: 'Customize the design', desc: 'Pick a premium template, add your logo and colors, and own the look completely.', icon: Palette },
+  { num: '03', title: 'Share instantly', desc: 'Send your unique link or QR anywhere. Every connection is saved immediately.', icon: Zap },
 ];
 
 const faqs = [
-  { q: 'How does the digital business card work?', a: 'You create a personalized profile with all your contact info, social links, and portfolio. Share it via a unique URL or QR code — anyone can view it instantly on any device, no app needed.' },
-  { q: 'Can I update my info after sharing?', a: 'Yes! Your card links to your live digital profile. Any updates you make in your dashboard are instantly reflected for everyone who has your link.' },
-  { q: 'Is there a monthly fee?', a: 'The basic digital profile is 100% free forever. We offer a Pro plan for $5/month that includes advanced analytics, custom colors, and lead capture features.' },
-  { q: 'Can I use my card offline?', a: 'Your digital profile comes with a dynamic QR code that you can save or print. Anyone can scan it from your phone screen or printed materials, even without internet on your end.' },
+  { q: 'How does the digital business card work?', a: 'You build a personalized profile with your contact info, social links, and portfolio, then share it via a unique URL or QR code. Anyone can view it instantly on any device — no app needed.' },
+  { q: 'Can I update my info after sharing?', a: 'Yes. Your card links to your live profile, so any change you make in the dashboard is instantly reflected for everyone who has your link.' },
+  { q: 'Is there a monthly fee?', a: 'The basic digital profile is free forever. Paid plans add advanced analytics, custom branding, and lead-capture features.' },
+  { q: 'Can I use my card offline?', a: 'Your profile includes a dynamic QR code you can save or print. Anyone can scan it from your screen or printed materials, even without internet on your end.' },
 ];
 
 export default function Home() {
-  const [stats, setStats] = useState({ users: 0, cards: 0 });
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const mainRef = useRef<HTMLElement>(null);
-  const sceneWrapRef = useRef<HTMLDivElement>(null);
-  const scrollProgressRef = useRef({ value: 0 });
-
+  const { user, logout } = useAuth();
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [navOpen, setNavOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [plans, setPlans] = useState<any[]>([]);
-
-
+  const [stats, setStats] = useState({ users: 15420, cards: 52100 });
 
   useEffect(() => {
-    const fetchStats = async () => {
+    try { if (localStorage.getItem('dash-theme') === 'dark') setTheme('dark'); } catch {}
+
+    (async () => {
       try {
-        const data = await apiFetch<{ users: number; cards: number }>('/api/homepage-stats', { method: 'GET' });
-        setStats(data);
-      } catch {
-        setStats({ users: 15420, cards: 52100 });
-      }
-    };
-    fetchStats();
+        const d = await apiFetch<{ users: number; cards: number }>('/api/homepage-stats');
+        if (d && (d.users || d.cards)) setStats(d);
+      } catch {}
+    })();
 
-
-
-    // Fetch pricing plans
-    const fetchPlans = async () => {
+    (async () => {
       try {
         const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const res = await fetch(`${API}/api/plans`);
         if (res.ok) setPlans(await res.json());
-      } catch { /* ignore */ }
-    };
-    fetchPlans();
-
-    // Drive scroll progress for the 3D scene (hero height only)
-    const onScroll = () => {
-      const heroH = window.innerHeight;
-      scrollProgressRef.current.value = Math.min(1, window.scrollY / heroH);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-    };
+      } catch {}
+    })();
   }, []);
 
-  // ── GSAP Animations ──
-  useGSAP(() => {
-    const mm = gsap.matchMedia();
-
-    // Hero entrance timeline
-    const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    heroTl
-      .from('.hero-badge', { opacity: 0, scale: 0.85, duration: 0.7, delay: 0.2 })
-      .from('.hero-title', { opacity: 0, y: 60, duration: 1 }, '-=0.4')
-      .from('.hero-subtitle', { opacity: 0, y: 40, duration: 0.8 }, '-=0.6')
-      .from('.hero-cta', { opacity: 0, y: 30, duration: 0.7 }, '-=0.5')
-      .from('.hero-scroll-cue', { opacity: 0, duration: 0.8 }, '-=0.3');
-
-
-
-    // 3D scene — fade out as user scrolls past hero
-    if (sceneWrapRef.current) {
-      gsap.to(sceneWrapRef.current, {
-        scrollTrigger: {
-          trigger: '.hero-section',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: 0.5,
-        },
-        opacity: 0,
-        ease: 'none',
-      });
-    }
-
-    // Section titles
-    gsap.utils.toArray<HTMLElement>('.gsap-section-title').forEach((el) => {
-      gsap.from(el, {
-        scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' },
-        opacity: 0,
-        y: 50,
-        duration: 0.9,
-        ease: 'power3.out',
-      });
+  const isDark = theme === 'dark';
+  const toggleTheme = () =>
+    setTheme((p) => {
+      const n = p === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('dash-theme', n); } catch {}
+      return n;
     });
 
-    // Bento feature cards — staggered
-    gsap.from('.bento-card', {
-      scrollTrigger: { trigger: '.bento-grid', start: 'top 80%', toggleActions: 'play none none none' },
-      opacity: 0,
-      y: 40,
-      duration: 0.7,
-      stagger: 0.12,
-      ease: 'power2.out',
-    });
+  const navLinks = [
+    { label: 'Home', href: '#home' },
+    { label: 'Features', href: '#features' },
+    { label: 'How it Works', href: '#how-it-works' },
+    ...(plans.length ? [{ label: 'Pricing', href: '#pricing' }] : []),
+    { label: 'FAQ', href: '#faq' },
+  ];
 
-    // Steps
-    gsap.from('.step-card', {
-      scrollTrigger: { trigger: '.steps-container', start: 'top 80%', toggleActions: 'play none none none' },
-      opacity: 0,
-      y: 50,
-      duration: 0.7,
-      stagger: 0.15,
-      ease: 'power2.out',
-    });
+  const fadeUp = {
+    initial: { opacity: 0, y: 24 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: '-60px' },
+    transition: { duration: 0.5, ease: 'easeOut' as const },
+  };
 
-    // Pricing cards
-    gsap.from('.pricing-card', {
-      scrollTrigger: { trigger: '.pricing-grid', start: 'top 80%', toggleActions: 'play none none none' },
-      opacity: 0,
-      y: 40,
-      scale: 0.95,
-      duration: 0.7,
-      stagger: 0.12,
-      ease: 'power2.out',
-    });
-
-    // FAQ items
-    gsap.from('.faq-item', {
-      scrollTrigger: { trigger: '.faq-list', start: 'top 80%', toggleActions: 'play none none none' },
-      opacity: 0,
-      x: -30,
-      duration: 0.6,
-      stagger: 0.1,
-      ease: 'power2.out',
-    });
-
-    // CTA section
-    gsap.from('.cta-content', {
-      scrollTrigger: { trigger: '.cta-section', start: 'top 75%', toggleActions: 'play none none none' },
-      opacity: 0,
-      y: 60,
-      scale: 0.96,
-      duration: 1,
-      ease: 'power3.out',
-    });
-
-    // Parallax background glows
-    mm.add('(min-width: 768px)', () => {
-      gsap.to('.hero-glow', {
-        scrollTrigger: { trigger: '.hero-section', start: 'top top', end: 'bottom top', scrub: 1 },
-        y: 200,
-        opacity: 0,
-      });
-    });
-
-  }, { scope: mainRef });
+  const fmtPrice = (p: string | number) => {
+    const n = Number(p);
+    return n > 0 ? `₹${n.toLocaleString('en-IN')}` : 'Free';
+  };
 
   return (
-    <main ref={mainRef} className="relative min-h-screen bg-black text-white selection:bg-blue-500/30 font-sans overflow-x-hidden">
-      <Header />
+    <div className={`dash-scope ${isDark ? 'dark' : ''} min-h-screen antialiased`}>
+      {/* ─────────────── NAV ─────────────── */}
+      <header className="sticky top-0 z-50 border-b border-[var(--d-border)] bg-[var(--d-header)] backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl text-white" style={{ background: 'linear-gradient(135deg, var(--d-accent-2), var(--d-accent))' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M5 12.55a8 8 0 0 1 14 0" /><path d="M8.5 15.5a3.5 3.5 0 0 1 7 0" /><circle cx="12" cy="19" r="1" /></svg>
+            </span>
+            <span className="text-lg font-extrabold tracking-tight">Card <span className="text-[var(--d-accent)]">Setu</span></span>
+          </Link>
 
-      {/* Fixed 3D scene — renders behind hero, fades on scroll via GSAP */}
-      <div ref={sceneWrapRef} className="fixed inset-0 z-0 pointer-events-none hidden lg:block">
-        <Scene3D scrollProgress={scrollProgressRef} />
-      </div>
+          <nav className="hidden md:flex items-center gap-1">
+            {navLinks.map((l) => (
+              <a key={l.label} href={l.href} className="rounded-full px-3.5 py-2 text-sm font-medium text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
+                {l.label}
+              </a>
+            ))}
+          </nav>
 
-      {/* ─── Hero Section ─── */}
-      <section id="home" className="hero-section relative pt-[clamp(7rem,12vh,11rem)] pb-[clamp(5rem,8vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] max-w-[1440px] mx-auto min-h-[100dvh] flex flex-col justify-center overflow-hidden">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <Link href="/search" aria-label="Search cards" className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
+              <Search className="h-[18px] w-[18px]" />
+            </Link>
+            <button onClick={toggleTheme} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
+              {isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+            </button>
 
-        {/* Background grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+            {user ? (
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Link href="/dashboard" className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
+                  <LayoutDashboard className="h-4 w-4" /> Dashboard
+                </Link>
+                <button onClick={logout} className="flex items-center gap-1.5 rounded-full border border-[var(--d-border)] px-3 py-2 text-sm font-medium text-[var(--d-text-muted)] transition-colors hover:border-rose-400 hover:text-rose-500">
+                  <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Log Out</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Link href="/login" className="hidden sm:inline rounded-full px-3 py-2 text-sm font-medium text-[var(--d-text-muted)] transition-colors hover:text-[var(--d-text)]">Sign In</Link>
+                <Link href="/register" className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-px">Sign Up</Link>
+              </div>
+            )}
 
-        {/* Background glow */}
-        <div className="hero-glow absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none" />
+            <button onClick={() => setNavOpen((v) => !v)} aria-label="Toggle menu" aria-expanded={navOpen} className="md:hidden flex h-9 w-9 items-center justify-center rounded-full text-[var(--d-text-muted)] hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
+              {navOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
 
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between w-full gap-[clamp(2rem,5vw,4rem)]">
-          {/* Left */}
-          <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:w-1/2 max-w-2xl">
-            <div className="hero-badge inline-flex items-center gap-2.5 bg-zinc-900/60 border border-zinc-800 px-4 py-2 rounded-full text-[11px] font-semibold tracking-widest text-zinc-400 mb-8 backdrop-blur-xl uppercase">
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+        {/* Mobile menu */}
+        {navOpen && (
+          <nav className="md:hidden border-t border-[var(--d-border)] bg-[var(--d-surface)] px-4 py-3">
+            <div className="flex flex-col gap-1">
+              {navLinks.map((l) => (
+                <a key={l.label} href={l.href} onClick={() => setNavOpen(false)} className="rounded-xl px-4 py-3 text-base font-medium text-[var(--d-text-muted)] transition-colors hover:bg-[var(--d-hover)] hover:text-[var(--d-text)]">
+                  {l.label}
+                </a>
+              ))}
+              {!user && <Link href="/login" onClick={() => setNavOpen(false)} className="rounded-xl px-4 py-3 text-base font-medium text-[var(--d-text-muted)]">Sign In</Link>}
+            </div>
+          </nav>
+        )}
+      </header>
+
+      <main>
+        {/* ─────────────── HERO ─────────────── */}
+        <section id="home" className="relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            {/* faint blueprint grid, masked to fade at the edges */}
+            <div
+              className="absolute inset-0 opacity-60"
+              style={{
+                backgroundImage: 'linear-gradient(var(--d-border) 1px, transparent 1px), linear-gradient(90deg, var(--d-border) 1px, transparent 1px)',
+                backgroundSize: '48px 48px',
+                maskImage: 'radial-gradient(ellipse 85% 65% at 65% 35%, #000 30%, transparent 75%)',
+                WebkitMaskImage: 'radial-gradient(ellipse 85% 65% at 65% 35%, #000 30%, transparent 75%)',
+              }}
+            />
+            <div className="absolute right-[-8%] top-[6%] h-[540px] w-[760px] max-w-[110vw] rounded-full opacity-70 blur-3xl" style={{ background: 'radial-gradient(closest-side, var(--d-accent-soft), transparent)' }} />
+          </div>
+
+          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-8 lg:py-0 lg:min-h-[calc(100vh-4rem)]">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
+              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--d-border)] bg-[var(--d-surface)] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--d-text-muted)]">
+                <Sparkles className="h-3.5 w-3.5 text-[var(--d-accent)]" /> The future of networking
               </span>
-              The Future of Networking
-            </div>
+              <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl text-balance">
+                Networking,
+                <span className="block bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent">reimagined.</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--d-text-muted)] sm:text-lg">
+                The premium digital business card for modern professionals. Share your identity instantly — backed by enterprise-grade security and analytics.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href={user ? '/dashboard' : '/register'} className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/40">
+                  Get started free
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+                <a href="#features" className="inline-flex items-center justify-center rounded-full border border-[var(--d-border)] bg-[var(--d-surface)] px-6 py-3.5 text-sm font-semibold text-[var(--d-text)] transition-colors hover:bg-[var(--d-hover)]">
+                  Learn more
+                </a>
+              </div>
 
-            <h1 className="hero-title text-[clamp(2.75rem,5vw+1rem,4.5rem)] font-black tracking-tighter mb-[clamp(1rem,3vh,1.5rem)] leading-[1.05] drop-shadow-2xl">
-              <span className="text-white">Networking.</span>
-              <br />
-              <span className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-lg">Reimagined.</span>
-            </h1>
-
-            <p className="hero-subtitle text-[clamp(1rem,1vw+0.75rem,1.25rem)] text-zinc-300 font-medium max-w-lg mb-[clamp(2rem,4vh,2.5rem)] leading-relaxed">
-              The premium digital business card for modern professionals. Share your identity instantly, backed by enterprise-grade security and analytics.
-            </p>
-
-            <div className="hero-cta flex flex-col sm:flex-row gap-[clamp(0.75rem,2vw,1rem)] w-full sm:w-auto">
-              <Link
-                href="/register"
-                className="group ag-glow-btn relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 bg-[size:200%_100%] text-white px-8 py-4 rounded-full font-semibold flex items-center justify-center gap-2 shadow-[0_4px_32px_rgba(59,130,246,0.45),0_0_60px_rgba(99,102,241,0.15)] hover:shadow-[0_8px_48px_rgba(59,130,246,0.6),0_0_80px_rgba(99,102,241,0.25)] transition-all duration-300"
-                style={{ backgroundPosition: 'left center', transition: 'background-position 0.5s ease, box-shadow 0.3s ease, transform 0.3s ease' }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundPosition = 'right center')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundPosition = 'left center')}
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  Get Started Free
-                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-300" />
-                </span>
-              </Link>
-              <Link
-                href="#features"
-                className="group px-8 py-4 rounded-full font-semibold ag-glass-card text-zinc-200 hover:text-white flex items-center justify-center gap-2"
-              >
-                Learn More
-              </Link>
-            </div>
-
-
-          </div>
-
-          {/* Right spacer — 3D scene renders in the fixed layer behind */}
-          <div className="hidden lg:block lg:w-1/2 h-[clamp(350px,40vw,500px)] pointer-events-none" />
-        </div>
-
-        {/* Scroll cue */}
-        <div className="hero-scroll-cue absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-600 text-[10px] tracking-[0.25em] font-semibold z-10">
-          <span>SCROLL</span>
-          <div className="scroll-line w-px h-8 bg-gradient-to-b from-zinc-600 to-transparent" />
-        </div>
-      </section>
-
-      <div className="relative z-10 bg-black w-full">
-
-
-
-      {/* ─── Scale / Metrics ─── */}
-      <section className="relative z-10 py-[clamp(6rem,12vh,10rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900 bg-black overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)] pointer-events-none" />
-        <div className="max-w-[1440px] mx-auto text-center relative z-10">
-          <div className="gsap-section-title">
-            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">By the numbers</p>
-            <h2 className="text-[clamp(2.5rem,5vw+1rem,4.5rem)] font-black tracking-tighter mb-4 text-white">Scale with confidence.</h2>
-            <p className="text-[clamp(1rem,2vw,1.25rem)] text-zinc-400 mb-16 max-w-2xl mx-auto">Enterprise-grade infrastructure powering real connections worldwide.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-            {/* Metric — Users */}
-            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl ag-float-card overflow-hidden">
-              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.10)_0%,transparent_70%)]" />
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
-              {/* Glow orb behind number */}
-              <div className="absolute w-32 h-32 rounded-full bg-blue-500/10 blur-2xl group-hover:bg-blue-500/20 transition-all duration-700" />
-              <div className="relative z-10 text-center">
-                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-300 to-blue-600 mb-2 leading-none group-hover:scale-105 transition-transform duration-500">
-                  {stats.users > 0 ? `${(stats.users / 1000).toFixed(stats.users >= 1000 ? 0 : 1)}k+` : '15k+'}
+              <div className="mt-10 flex items-center gap-8">
+                <div>
+                  <div className="text-2xl font-extrabold tabular-nums">{stats.users.toLocaleString()}+</div>
+                  <div className="text-xs font-medium uppercase tracking-wider text-[var(--d-text-faint)]">Professionals</div>
                 </div>
-                <div className="text-zinc-400 font-semibold tracking-[0.15em] uppercase text-xs">Registered Users</div>
-              </div>
-            </div>
-            {/* Metric — Cards */}
-            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl ag-float-card overflow-hidden">
-              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.10)_0%,transparent_70%)]" />
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
-              <div className="absolute w-32 h-32 rounded-full bg-emerald-500/10 blur-2xl group-hover:bg-emerald-500/20 transition-all duration-700" />
-              <div className="relative z-10 text-center">
-                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-emerald-300 to-emerald-600 mb-2 leading-none group-hover:scale-105 transition-transform duration-500">
-                  {stats.cards > 0 ? `${(stats.cards / 1000).toFixed(stats.cards >= 1000 ? 0 : 1)}k+` : '52k+'}
+                <div className="h-9 w-px bg-[var(--d-border)]" />
+                <div>
+                  <div className="text-2xl font-extrabold tabular-nums">{stats.cards.toLocaleString()}+</div>
+                  <div className="text-xs font-medium uppercase tracking-wider text-[var(--d-text-faint)]">Cards created</div>
                 </div>
-                <div className="text-zinc-400 font-semibold tracking-[0.15em] uppercase text-xs">Cards Created</div>
               </div>
-            </div>
-            {/* Metric — Uptime */}
-            <div className="group relative flex flex-col items-center justify-center p-8 rounded-3xl ag-float-card overflow-hidden">
-              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.10)_0%,transparent_70%)]" />
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-400/40 to-transparent" />
-              <div className="absolute w-32 h-32 rounded-full bg-purple-500/10 blur-2xl group-hover:bg-purple-500/20 transition-all duration-700" />
-              <div className="relative z-10 text-center">
-                <div className="text-[clamp(3rem,6vw,5rem)] font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-300 to-purple-600 mb-2 leading-none group-hover:scale-105 transition-transform duration-500">99.9%</div>
-                <div className="text-zinc-400 font-semibold tracking-[0.15em] uppercase text-xs">Uptime SLA</div>
+            </motion.div>
+
+            {/* Hero visual — interactive 3D card on desktop, fast CSS mockup on mobile/tablet */}
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }} className="relative">
+              {/* Desktop: real-time 3D model (mouse-parallax, floating) */}
+              <div className="relative hidden h-[520px] w-full lg:block">
+                <HeroCard3D />
+                <div className="absolute right-4 top-10 flex items-center gap-1.5 rounded-full bg-[var(--d-surface)] px-3 py-1.5 text-xs font-semibold shadow-[var(--d-shadow)] ring-1 ring-[var(--d-border)]">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" /> Live
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ─── Bento Grid Features ─── */}
-      <section id="features" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] bg-zinc-950/50">
-        <div className="max-w-[1440px] mx-auto">
-          <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,5rem)]">
-            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">Features</p>
-            <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight leading-tight">
-              Designed for <span className="text-zinc-500">seamless connection.</span>
-            </h2>
-          </div>
-
-          <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
-            {bentoFeatures.map((f, i) => (
-              <div
-                key={i}
-                className={`bento-card group relative overflow-hidden rounded-2xl sm:rounded-3xl p-7 sm:p-9 ${f.colSpan} ag-float-card`}
-              >
-                {/* Top highlight */}
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
-                {/* Hover glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/8 via-indigo-500/4 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl sm:rounded-3xl" />
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mb-8 text-blue-400 group-hover:bg-blue-500/20 group-hover:border-blue-400/40 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all duration-300">
-                    {f.icon}
+              {/* Mobile & tablet: lightweight CSS card (no WebGL) */}
+              <div className="relative mx-auto w-full max-w-sm lg:hidden">
+                <div className="relative rounded-3xl border border-[var(--d-border)] bg-[var(--d-surface)] p-6 shadow-[var(--d-shadow)]">
+                  <div className="h-24 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600" />
+                  <div className="-mt-10 flex flex-col items-center">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[var(--d-surface)] bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl font-bold text-white shadow-lg">DS</div>
+                    <h3 className="mt-3 text-lg font-bold">Deepak Suthar</h3>
+                    <p className="text-sm text-[var(--d-text-muted)]">Product Engineer</p>
                   </div>
-                  <h3 className="text-xl font-bold mb-2 tracking-tight">{f.title}</h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed">{f.desc}</p>
+                  <div className="mt-5 grid grid-cols-4 gap-2.5">
+                    {[Smartphone, QrCode, Users, CreditCard].map((Ic, i) => (
+                      <div key={i} className="flex aspect-square items-center justify-center rounded-xl bg-[var(--d-surface-2)] text-[var(--d-accent)]"><Ic className="h-5 w-5" /></div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex items-center justify-between rounded-xl bg-[var(--d-surface-2)] px-4 py-3">
+                    <span className="text-xs font-medium text-[var(--d-text-muted)]">cardsetu.com/deepak</span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--d-surface)] text-[var(--d-text-muted)]"><QrCode className="h-4 w-4" /></span>
+                  </div>
+                </div>
+                <div className="absolute -right-3 -top-3 flex items-center gap-1.5 rounded-full bg-[var(--d-surface)] px-3 py-1.5 text-xs font-semibold shadow-[var(--d-shadow)] ring-1 ring-[var(--d-border)]">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Live
                 </div>
               </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ─────────────── FEATURES ─────────────── */}
+        <section id="features" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+          <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-wider text-[var(--d-accent)]">Everything you need</p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">One card. Every connection.</h2>
+            <p className="mt-4 text-[var(--d-text-muted)]">Purpose-built for the way professionals actually network today.</p>
+          </motion.div>
+
+          <div className="mt-12 grid gap-4 sm:grid-cols-3">
+            {features.map((f, i) => (
+              <motion.div key={f.title} {...fadeUp} transition={{ ...fadeUp.transition, delay: i * 0.06 }} className={`rounded-2xl border border-[var(--d-border)] bg-[var(--d-surface)] p-6 shadow-[var(--d-shadow)] transition-transform hover:-translate-y-1 ${f.span}`}>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--d-accent-soft)] text-[var(--d-accent)]"><f.icon className="h-6 w-6" /></span>
+                <h3 className="mt-4 text-lg font-bold">{f.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[var(--d-text-muted)]">{f.desc}</p>
+              </motion.div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── How It Works ─── */}
-      <section id="how-it-works" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
-        <div className="max-w-[1440px] mx-auto">
-          <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,5rem)]">
-            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">How it works</p>
-            <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight leading-tight">
-              Three simple steps.
-            </h2>
-          </div>
-
-          <div className="steps-container grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {steps.map((step, i) => (
-              <div key={i} className="step-card relative group">
-                <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl ag-float-card p-7 sm:p-8 h-full flex flex-col">
-                  {/* Top shimmer line */}
-                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/30 to-transparent" />
-                  {/* Step watermark number */}
-                  <div className="absolute top-4 right-5 text-[5rem] font-black leading-none select-none text-transparent bg-clip-text bg-gradient-to-b from-zinc-700/60 to-transparent">{step.num}</div>
-                  {/* Hover glow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/6 to-indigo-500/4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl sm:rounded-3xl" />
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/15 to-indigo-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6 group-hover:from-blue-500/25 group-hover:to-indigo-500/25 group-hover:shadow-[0_0_24px_rgba(59,130,246,0.25)] transition-all duration-300 relative z-10">
-                    {step.icon}
-                  </div>
-                  <h3 className="text-xl font-bold tracking-tight mb-3 relative z-10">{step.title}</h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed flex-1 relative z-10">{step.desc}</p>
-                  {/* Connector line */}
-                  {i < steps.length - 1 && (
-                    <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-[1px] bg-gradient-to-r from-indigo-500/40 to-transparent z-20" />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Pricing ─── */}
-      {plans && plans.length > 0 && (
-        <section id="pricing" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
-          <div className="max-w-[1440px] mx-auto">
-            <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,5rem)]">
-              <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">Pricing</p>
-              <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight leading-tight">
-                Simple, transparent <span className="text-zinc-500">pricing.</span>
-              </h2>
+        {/* ─────────────── HOW IT WORKS ─────────────── */}
+        <section id="how-it-works" className="border-y border-[var(--d-border)] bg-[var(--d-surface-2)]">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+            <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-semibold uppercase tracking-wider text-[var(--d-accent)]">How it works</p>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">Live in three steps</h2>
+            </motion.div>
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              {steps.map((s, i) => (
+                <motion.div key={s.num} {...fadeUp} transition={{ ...fadeUp.transition, delay: i * 0.08 }} className="relative rounded-2xl border border-[var(--d-border)] bg-[var(--d-surface)] p-7 shadow-[var(--d-shadow)]">
+                  <span className="absolute right-6 top-6 font-mono text-4xl font-extrabold text-[var(--d-border)]">{s.num}</span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25"><s.icon className="h-6 w-6" /></span>
+                  <h3 className="mt-5 text-lg font-bold">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--d-text-muted)]">{s.desc}</p>
+                </motion.div>
+              ))}
             </div>
+          </div>
+        </section>
 
-            <div className="pricing-grid grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-              {plans.map((plan, index) => {
-                const isPopular = index === 1;
-                const formatPrice = (price: string | number) => {
-                  const num = Number(price);
-                  return num > 0 ? `₹${num.toFixed(2).replace(/\.00$/, '')}` : 'Free';
-                };
-                const periodLabel = plan.billing_period === 'monthly' ? '/mo' : (plan.billing_period === 'yearly' ? '/yr' : '');
-
-                if (isPopular) {
-                  return (
-                    <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl ag-glass-premium p-7 sm:p-8 flex flex-col relative overflow-hidden transition-all duration-500 hover:-translate-y-2">
-                      {/* Top shimmer */}
-                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
-                      {/* Glow orb */}
-                      <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-32 bg-blue-500/12 blur-3xl rounded-full" />
-                      {/* Popular badge */}
-                      <div className="absolute top-3.5 right-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-wider shadow-lg shadow-blue-500/30">POPULAR</div>
-                      <h3 className="text-lg font-bold mb-1 relative z-10">{plan.name}</h3>
-                      <p className="text-zinc-400 text-sm mb-6 relative z-10">For active professionals.</p>
-                      <div className="text-4xl font-extrabold mb-8 relative z-10 text-white">{formatPrice(plan.price)}<span className="text-lg text-zinc-400 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
-                      <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm relative z-10">
-                        {plan.features?.map((f: string, i: number) => (
-                          <li key={i} className="flex gap-2.5 items-center">
-                            <CheckCircle2 size={16} className="text-blue-400 shrink-0" /> {f}
-                          </li>
-                        ))}
-                      </ul>
-                      <Link href="/register" className="ag-glow-btn block text-center w-full py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-blue-600/30 relative z-10">
-                        Upgrade to {plan.name.replace(' Plan', '')}
-                      </Link>
-                    </div>
-                  );
-                }
-
+        {/* ─────────────── PRICING (only when plans exist) ─────────────── */}
+        {plans.length > 0 && (
+          <section id="pricing" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+            <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-semibold uppercase tracking-wider text-[var(--d-accent)]">Pricing</p>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">Simple, honest plans</h2>
+              <p className="mt-4 text-[var(--d-text-muted)]">Start free. Upgrade when you're ready.</p>
+            </motion.div>
+            <div className="mx-auto mt-12 grid max-w-4xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {plans.map((plan: any, i: number) => {
+                const popular = plan.is_popular || i === 1;
+                const period = plan.billing_period === 'monthly' ? '/mo' : plan.billing_period === 'yearly' ? '/yr' : '';
                 return (
-                  <div key={plan.id} className="pricing-card rounded-2xl sm:rounded-3xl ag-float-card p-7 sm:p-8 flex flex-col relative overflow-hidden">
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-600/40 to-transparent" />
-                    <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-                    <p className="text-zinc-500 text-sm mb-6">{index === 0 ? 'Perfect for individuals.' : 'For teams and companies.'}</p>
-                    <div className="text-4xl font-extrabold mb-8">{formatPrice(plan.price)}<span className="text-lg text-zinc-500 font-normal">{Number(plan.price) > 0 ? periodLabel : ''}</span></div>
-                    <ul className="space-y-3 mb-8 flex-grow text-zinc-300 text-sm">
-                      {plan.features?.map((f: string, i: number) => (
-                        <li key={i} className="flex gap-2.5 items-center">
-                          <CheckCircle2 size={16} className="text-blue-500/80 shrink-0" /> {f}
+                  <div key={plan.id ?? i} className={`flex flex-col rounded-2xl border bg-[var(--d-surface)] p-7 shadow-[var(--d-shadow)] ${popular ? 'border-[var(--d-accent)] ring-1 ring-[var(--d-accent)]' : 'border-[var(--d-border)]'}`}>
+                    {popular && <span className="mb-3 w-max rounded-full bg-[var(--d-accent-soft)] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[var(--d-accent)]">Most popular</span>}
+                    <h3 className="text-lg font-bold">{plan.name}</h3>
+                    <div className="mt-2 text-4xl font-extrabold">
+                      {fmtPrice(plan.price)}
+                      {Number(plan.price) > 0 && <span className="text-base font-normal text-[var(--d-text-muted)]">{period}</span>}
+                    </div>
+                    <ul className="mt-6 flex flex-1 flex-col gap-3">
+                      {(plan.features || []).map((f: string, fi: number) => (
+                        <li key={fi} className="flex items-start gap-2.5 text-sm text-[var(--d-text-muted)]">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> {f}
                         </li>
                       ))}
                     </ul>
-                    <Link href="/register" className="block text-center w-full py-3.5 rounded-full ag-glass-card border border-white/10 hover:border-white/20 text-zinc-200 hover:text-white font-semibold text-sm transition-all duration-300">
-                      {index === 0 ? 'Get Started' : 'Contact Sales'}
+                    <Link href="/register" className={`mt-7 rounded-xl px-5 py-3 text-center text-sm font-semibold transition-all ${popular ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg hover:shadow-indigo-500/30' : 'border border-[var(--d-border)] text-[var(--d-text)] hover:bg-[var(--d-hover)]'}`}>
+                      Get started
                     </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ─────────────── FAQ ─────────────── */}
+        <section id="faq" className="border-t border-[var(--d-border)] bg-[var(--d-surface-2)]">
+          <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
+            <motion.div {...fadeUp} className="text-center">
+              <p className="text-sm font-semibold uppercase tracking-wider text-[var(--d-accent)]">FAQ</p>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">Questions, answered</h2>
+            </motion.div>
+            <div className="mt-10 flex flex-col gap-3">
+              {faqs.map((f, i) => {
+                const open = openFaq === i;
+                return (
+                  <div key={i} className="overflow-hidden rounded-2xl border border-[var(--d-border)] bg-[var(--d-surface)]">
+                    <button onClick={() => setOpenFaq(open ? null : i)} aria-expanded={open} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold sm:text-base">
+                      {f.q}
+                      <ChevronDown className={`h-5 w-5 shrink-0 text-[var(--d-text-muted)] transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+                    </button>
+                    <div className={`grid transition-all duration-300 ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                      <div className="overflow-hidden">
+                        <p className="px-5 pb-5 text-sm leading-relaxed text-[var(--d-text-muted)]">{f.a}</p>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
         </section>
-      )}
 
-      {/* ─── FAQ ─── */}
-      <section id="faq" className="relative z-10 py-[clamp(5rem,10vh,8rem)] px-[clamp(1.25rem,3vw,3rem)] border-t border-zinc-900">
-        <div className="max-w-[1024px] mx-auto">
-          <div className="gsap-section-title text-center mb-[clamp(3rem,6vh,4rem)]">
-            <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-4">FAQ</p>
-            <h2 className="text-[clamp(2rem,4vw+1rem,3.5rem)] font-bold tracking-tight mb-4 leading-tight">Frequently Asked Questions</h2>
-            <p className="text-[clamp(0.875rem,1.5vw,1rem)] text-zinc-500">Everything you need to know about the product.</p>
-          </div>
+        {/* ─────────────── CTA ─────────────── */}
+        <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <motion.div {...fadeUp} className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 px-6 py-14 text-center shadow-2xl sm:px-12">
+            <div className="pointer-events-none absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, white 0, transparent 40%)' }} />
+            <h2 className="relative text-3xl font-extrabold tracking-tight text-white sm:text-4xl text-balance">Ready to share smarter?</h2>
+            <p className="relative mx-auto mt-3 max-w-xl text-indigo-100">Join thousands of professionals networking with a single tap.</p>
+            <Link href={user ? '/dashboard' : '/register'} className="relative mt-8 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-indigo-700 shadow-lg transition-transform hover:-translate-y-0.5">
+              {user ? 'Go to dashboard' : 'Create your card'} <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+        </section>
+      </main>
 
-          <div className="faq-list space-y-3">
-            {faqs.map((faq, i) => (
-              <div key={i} className={`faq-item rounded-2xl overflow-hidden transition-all duration-400 ${
-                openFaq === i
-                  ? 'ag-glass-card border-indigo-500/20 shadow-[0_0_30px_rgba(99,102,241,0.08)]'
-                  : 'ag-float-card hover:border-zinc-600/50'
-              }`}>
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full text-left px-6 py-5 font-medium flex justify-between items-center focus:outline-none gap-4 min-h-[52px]"
-                >
-                  <span className={`text-sm sm:text-base transition-colors duration-300 ${openFaq === i ? 'text-white' : 'text-zinc-200'}`}>{faq.q}</span>
-                  <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    openFaq === i
-                      ? 'bg-indigo-500/20 border border-indigo-500/30 rotate-180'
-                      : 'bg-zinc-800/60 border border-zinc-700/50'
-                  }`}>
-                    <ChevronDown className={`text-zinc-400 transition-colors ${openFaq === i ? 'text-indigo-300' : ''}`} size={14} />
-                  </div>
-                </button>
-                <div
-                  className={`overflow-hidden transition-all duration-400 ease-in-out ${openFaq === i ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}
-                >
-                  <div className="px-6 pb-5 text-zinc-400 text-sm leading-relaxed border-t border-white/5 pt-3">{faq.a}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── CTA ─── */}
-      <section className="cta-section relative z-10 py-[clamp(6rem,12vh,10rem)] px-[clamp(1.25rem,3vw,3rem)] text-center overflow-hidden border-t border-zinc-900">
-        {/* Multi-layer glow orbs */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(400px,60vw,900px)] h-[clamp(300px,40vw,500px)] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(200px,30vw,500px)] h-[clamp(150px,20vw,300px)] bg-indigo-500/8 blur-[80px] rounded-full pointer-events-none" />
-        {/* Ring decoration */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-white/[0.03] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border border-white/[0.04] pointer-events-none" />
-        <div className="cta-content max-w-3xl mx-auto relative z-10">
-          <p className="text-blue-400 text-[clamp(0.75rem,1vw,0.875rem)] font-semibold tracking-widest uppercase mb-5">Start for free</p>
-          <h2 className="text-[clamp(2.5rem,5vw+1rem,4rem)] font-black tracking-tight mb-6 leading-tight">Elevate your brand.<br /><span className="ag-shimmer-text">Start today.</span></h2>
-          <p className="text-[clamp(1rem,1.5vw+0.5rem,1.25rem)] text-zinc-400 mb-[clamp(2rem,4vh,2.5rem)] max-w-xl mx-auto leading-relaxed">
-            Join {stats.users.toLocaleString()}+ professionals already using Card Setu to make lasting impressions.
-          </p>
-          <Link
-            href="/register"
-            className="group ag-glow-btn inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-10 py-4 sm:px-12 sm:py-5 rounded-full font-bold text-base sm:text-lg shadow-[0_4px_32px_rgba(59,130,246,0.4)] hover:shadow-[0_8px_48px_rgba(59,130,246,0.55)]"
-          >
-            Create Your Card Now
-            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
-          </Link>
-        </div>
-      </section>
-      </div>
-
-      {/* ─── Footer ─── */}
-      <footer className="border-t border-zinc-900/60 bg-black pt-[clamp(4rem,8vh,6rem)] pb-[clamp(2rem,4vh,3rem)] px-[clamp(1.25rem,3vw,3rem)] relative overflow-hidden">
-        {/* Subtle footer glow */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-blue-600/5 blur-[80px] rounded-full pointer-events-none" />
-        <div className="max-w-[1440px] mx-auto grid grid-cols-2 md:grid-cols-5 gap-[clamp(2rem,4vw,3rem)] mb-[clamp(3rem,6vh,4rem)] relative z-10">
-          <div className="col-span-2">
-            <img src="/logo-dark.png" alt="Card Setu" className="h-7 sm:h-8 mb-5 opacity-90 hover:opacity-100 transition-opacity" />
-            <p className="text-zinc-500 text-sm max-w-sm leading-relaxed mb-6">
-              The premium digital business card for modern professionals. Networking reimagined for the digital age.
-            </p>
-            {/* Social icons */}
-            <div className="flex gap-3">
-              {['Twitter', 'LinkedIn', 'Instagram'].map((s) => (
-                <Link key={s} href="#"
-                  className="w-9 h-9 rounded-xl ag-glass-card flex items-center justify-center text-zinc-500 hover:text-white transition-colors text-xs font-semibold"
-                  aria-label={s}
-                >
-                  {s[0]}
-                </Link>
-              ))}
-            </div>
+      {/* ─────────────── FOOTER ─────────────── */}
+      <footer className="border-t border-[var(--d-border)] bg-[var(--d-surface)]">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+          <div className="lg:col-span-2">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl text-white" style={{ background: 'linear-gradient(135deg, var(--d-accent-2), var(--d-accent))' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M5 12.55a8 8 0 0 1 14 0" /><path d="M8.5 15.5a3.5 3.5 0 0 1 7 0" /><circle cx="12" cy="19" r="1" /></svg>
+              </span>
+              <span className="text-lg font-extrabold tracking-tight">Card <span className="text-[var(--d-accent)]">Setu</span></span>
+            </Link>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-[var(--d-text-muted)]">The premium digital business card for modern professionals. Networking reimagined for the digital age.</p>
           </div>
           <div>
-            <h4 className="text-zinc-300 font-semibold text-sm mb-5 uppercase tracking-wider text-xs">Product</h4>
-            <ul className="space-y-3 text-sm text-zinc-500">
-              {[{label:'Features',href:'#features'},{label:'How it Works',href:'#how-it-works'},{label:'Pricing',href:'#pricing'},{label:'FAQ',href:'#faq'}].filter(l => l.label !== 'Pricing' || (plans && plans.length > 0)).map(l => (
-                <li key={l.label}>
-                  <Link href={l.href} className="hover:text-zinc-200 transition-colors duration-200 relative group">
-                    {l.label}
-                    <span className="absolute -bottom-px left-0 w-0 h-px bg-blue-400/50 group-hover:w-full transition-all duration-300" />
-                  </Link>
-                </li>
-              ))}
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--d-text-faint)]">Product</h4>
+            <ul className="mt-4 flex flex-col gap-2.5 text-sm text-[var(--d-text-muted)]">
+              <li><a href="#features" className="hover:text-[var(--d-text)]">Features</a></li>
+              <li><a href="#how-it-works" className="hover:text-[var(--d-text)]">How it Works</a></li>
+              {plans.length > 0 && <li><a href="#pricing" className="hover:text-[var(--d-text)]">Pricing</a></li>}
+              <li><a href="#faq" className="hover:text-[var(--d-text)]">FAQ</a></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-zinc-300 font-semibold text-sm mb-5 uppercase tracking-wider text-xs">Company</h4>
-            <ul className="space-y-3 text-sm text-zinc-500">
-              {['About Us','Careers','Contact','Blog'].map(l => (
-                <li key={l}>
-                  <Link href="#" className="hover:text-zinc-200 transition-colors duration-200 relative group">
-                    {l}
-                    <span className="absolute -bottom-px left-0 w-0 h-px bg-blue-400/50 group-hover:w-full transition-all duration-300" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-zinc-300 font-semibold text-sm mb-5 uppercase tracking-wider text-xs">Legal</h4>
-            <ul className="space-y-3 text-sm text-zinc-500">
-              {[{label:'Privacy Policy',href:'/privacy'},{label:'Terms of Service',href:'/terms'},{label:'Refund Policy',href:'/refund'}].map(l => (
-                <li key={l.label}>
-                  <Link href={l.href} className="hover:text-zinc-200 transition-colors duration-200 relative group">
-                    {l.label}
-                    <span className="absolute -bottom-px left-0 w-0 h-px bg-blue-400/50 group-hover:w-full transition-all duration-300" />
-                  </Link>
-                </li>
-              ))}
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--d-text-faint)]">Legal</h4>
+            <ul className="mt-4 flex flex-col gap-2.5 text-sm text-[var(--d-text-muted)]">
+              <li><Link href="/privacy" className="hover:text-[var(--d-text)]">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="hover:text-[var(--d-text)]">Terms of Service</Link></li>
+              <li><Link href="/refund" className="hover:text-[var(--d-text)]">Refund Policy</Link></li>
             </ul>
           </div>
         </div>
-        <div className="max-w-[1440px] mx-auto border-t border-zinc-900/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-zinc-600 text-sm relative z-10">
-          <p className="text-zinc-600">&copy; {new Date().getFullYear()} Card Setu. All rights reserved.</p>
-          <div className="flex items-center gap-2 text-xs text-zinc-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60 inline-block" />
-            All systems operational
+        <div className="border-t border-[var(--d-border)]">
+          <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-[var(--d-text-faint)] sm:px-6">
+            &copy; {new Date().getFullYear()} Card Setu. All rights reserved.
           </div>
         </div>
       </footer>
 
-      {/* WhatsApp Widget */}
-      <a
-        href="https://wa.me/+919983878055"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-[99] flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-[0_4px_14px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform"
-        aria-label="Chat on WhatsApp"
-      >
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
-          <path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z" />
-        </svg>
+      {/* WhatsApp float */}
+      <a href="https://wa.me/919999999999" target="_blank" rel="noreferrer" aria-label="Chat on WhatsApp" className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-emerald-500/30 transition-transform hover:scale-105 active:scale-95">
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z" /></svg>
       </a>
-    </main>
+    </div>
   );
 }
