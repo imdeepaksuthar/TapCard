@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../../../lib/api';
 import { toast } from '@/components/toast';
@@ -189,8 +189,8 @@ export default function OrdersPage() {
                   </tr>
                 ) : (
                   filteredOrders.map(order => (
-                    <>
-                      <tr key={order.id} className="hover:bg-[var(--d-hover)] transition-colors cursor-pointer" onClick={() => toggleOrderExpand(order.id)}>
+                    <Fragment key={order.id}>
+                      <tr className="hover:bg-[var(--d-hover)] transition-colors cursor-pointer" onClick={() => toggleOrderExpand(order.id)}>
                         <td className="px-6 py-4 font-mono text-emerald-400">
                           <div className="flex items-center gap-3">
                             <button 
@@ -292,7 +292,7 @@ export default function OrdersPage() {
                           </tr>
                         )}
                       </AnimatePresence>
-                    </>
+                    </Fragment>
                   ))
                 )}
               </tbody>

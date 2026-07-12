@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PlanController;
-use App\Http\Controllers\Admin\NfcController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\DesignationController;
 
@@ -33,9 +32,8 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\RoleMiddleware::class . '
         Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
         Route::post('/users/{user}/impersonate', [UserController::class, 'impersonate'])->name('users.impersonate');
         Route::post('/users/{user}/send-verification', [UserController::class, 'sendVerification'])->name('users.send-verification');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::resource('plans', PlanController::class);
-        Route::get('/nfc', [NfcController::class, 'index'])->name('nfc.index');
-        Route::put('/nfc/{nfcCard}', [NfcController::class, 'update'])->name('nfc.update');
         
         Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
         Route::resource('designations', DesignationController::class);

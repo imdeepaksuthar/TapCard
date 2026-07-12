@@ -27,6 +27,17 @@ class UserController extends Controller
             });
         }
 
+        // Handle Role Filter
+        $role = $request->input('role', 'user');
+        if ($role !== 'all') {
+            $query->where('role', $role);
+        }
+
+        // Handle Status Filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
         // Handle Sorting
         $sortField = $request->input('sort', 'created_at');
         $sortDirection = $request->input('direction', 'desc');
@@ -120,5 +131,24 @@ class UserController extends Controller
         $user->sendEmailVerificationNotification();
 
         return back()->with('success', 'Verification email sent successfully to ' . $user->email);
+    }
+
+    /**
+     * Remove the specified user from storage.
+     */
+    public function destroy(User $user)
+    {
+        // Prevent users from deleting themselves
+        if (auth()->id() === $user->id) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        // Delete associated business cards first
+        $user->businessCards()->delete();
+
+        // Delete the user
+        $user->delete();
+
+        return back()->with('success', 'User and associated cards deleted successfully.');
     }
 }

@@ -73,6 +73,11 @@ class SocialAuthController extends Controller
             }
         }
 
+        if ($user->role !== 'user') {
+            $frontendUrl = env('FRONTEND_URL', 'http://127.0.0.1:3000');
+            return redirect()->away($frontendUrl . '/login?error=Admin users must use the admin portal to log in.');
+        }
+
         // Generate Sanctum token
         $token = $user->createToken('card-setu-token')->plainTextToken;
 

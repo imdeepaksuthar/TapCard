@@ -36,22 +36,6 @@
             </div>
         </div>
 
-        <!-- Metric Item 3: NFC Queue -->
-        <div class="rounded-sm border border-stroke bg-white py-6 px-7.5 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900">
-                <svg class="fill-orange-600 dark:fill-orange-300 w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 4H5C3.89543 4 3 4.89543 3 6V18C3 19.1046 3.89543 20 5 20H19C20.1046 20 21 19.1046 21 18V6C21 4.89543 20.1046 4 19 4Z" fill="currentColor"/>
-                    <path d="M3 10H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <div class="mt-4 flex items-end justify-between">
-                <div>
-                    <h4 class="text-title-md font-bold text-black dark:text-white">{{ number_format($pendingNfcCount) }}</h4>
-                    <span class="text-sm font-medium">Pending NFC Orders</span>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <!-- Global SaaS Plan Creation Settings (Placeholder) -->

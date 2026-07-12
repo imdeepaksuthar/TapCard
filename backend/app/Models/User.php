@@ -56,7 +56,6 @@ class User extends Authenticatable implements MustVerifyEmail
         // Example simple permission mapping
         $permissions = [
             'manage_plans' => ['super_admin', 'admin'],
-            'manage_nfc' => ['super_admin', 'admin'],
             'manage_users' => ['super_admin'],
             'manage_admins' => ['super_admin'],
         ];

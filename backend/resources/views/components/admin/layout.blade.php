@@ -8,27 +8,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Alpine.js for lightweight state management -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3C50E0',
-                        boxdark: '#24303F',
-                        'boxdark-2': '#1A222C',
-                        bodydark: '#AEB7C0',
-                        bodydark1: '#DEE4EE',
-                        bodydark2: '#8A99AF',
-                        strokedark: '#2E3A47',
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="bg-gray-50 dark:bg-boxdark-2 dark:text-bodydark font-sans antialiased text-gray-800">
+<body class="bg-slate-50 dark:bg-boxdark-2 dark:text-bodydark font-sans antialiased text-gray-800">
     <div class="flex h-screen overflow-hidden">
         
         <!-- Sidebar -->
@@ -45,41 +26,34 @@
                 <nav class="mt-5 py-4 px-4 lg:mt-9 lg:px-6">
                     <ul class="mb-6 flex flex-col gap-1.5">
                         <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.dashboard') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.dashboard') }}">
+                            <a class="group relative flex items-center gap-2.5 rounded-lg py-2.5 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.dashboard') ? 'bg-primary/90 dark:bg-primary text-white shadow-lg' : 'text-gray-300' }}" href="{{ route('admin.dashboard') }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                                 Dashboard
                             </a>
                         </li>
                         <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.users.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.users.index') }}">
+                            <a class="group relative flex items-center gap-2.5 rounded-lg py-2.5 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.users.*') ? 'bg-primary/90 dark:bg-primary text-white shadow-lg' : 'text-gray-300' }}" href="{{ route('admin.users.index') }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                 Registered Users
                             </a>
                         </li>
                         <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.categories.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.categories.index') }}">
+                            <a class="group relative flex items-center gap-2.5 rounded-lg py-2.5 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.categories.*') ? 'bg-primary/90 dark:bg-primary text-white shadow-lg' : 'text-gray-300' }}" href="{{ route('admin.categories.index') }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                                 Categories
                             </a>
                         </li>
                         <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.designations.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.designations.index') }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            <a class="group relative flex items-center gap-2.5 rounded-lg py-2.5 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.designations.*') ? 'bg-primary/90 dark:bg-primary text-white shadow-lg' : 'text-gray-300' }}" href="{{ route('admin.designations.index') }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 Designations
                             </a>
                         </li>
                         <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.plans.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.plans.index') }}">
+                            <a class="group relative flex items-center gap-2.5 rounded-lg py-2.5 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.plans.*') ? 'bg-primary/90 dark:bg-primary text-white shadow-lg' : 'text-gray-300' }}" href="{{ route('admin.plans.index') }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 SaaS Plans
                             </a>
-                        </li>
-                        <li>
-                            <a class="group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.nfc.*') ? 'bg-gray-800 dark:bg-strokedark text-white' : 'text-gray-300' }}" href="{{ route('admin.nfc.index') }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                                NFC Queue
-                            </a>
-                        </li>
                     </ul>
                 </nav>
             </div>
@@ -88,8 +62,8 @@
         <!-- Content Area -->
         <div class="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
             <!-- Header -->
-            <header class="sticky top-0 z-40 flex w-full bg-white shadow-sm dark:bg-boxdark dark:border-b dark:border-strokedark">
-                <div class="flex flex-grow items-center justify-between py-4 px-4 shadow-sm md:px-6 2xl:px-11">
+            <header class="sticky top-0 z-40 flex w-full bg-white/80 backdrop-blur-md shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] border-b border-gray-100 dark:bg-boxdark/90 dark:border-b dark:border-strokedark transition-all">
+                <div class="flex flex-grow items-center justify-between py-4 px-4 md:px-6 2xl:px-11">
                     <div class="flex items-center gap-2 sm:gap-4 lg:hidden">
                         <button @click="sidebarToggle = !sidebarToggle" class="block rounded-sm border border-gray-200 bg-white p-1.5 shadow-sm dark:border-strokedark dark:bg-boxdark">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>

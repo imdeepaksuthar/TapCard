@@ -102,6 +102,12 @@ class OTPAuthController extends Controller
             ], 404);
         }
 
+        if ($user->role !== 'user') {
+            return response()->json([
+                'message' => 'Admin users must use the admin portal to log in.'
+            ], 403);
+        }
+
         // Receiving the OTP proves control of the inbox, so treat a first OTP
         // login as email verification (keeps parity with the password flow's
         // verified-email requirement instead of silently bypassing it).

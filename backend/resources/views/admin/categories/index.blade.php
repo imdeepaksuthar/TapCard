@@ -6,7 +6,7 @@
             Categories Management
         </h2>
 
-        <a href="{{ route('admin.categories.create') }}" class="inline-flex items-center justify-center gap-2.5 rounded-md bg-primary py-2 px-6 text-center font-medium text-white hover:bg-opacity-90 transition-all duration-300 shadow-sm lg:px-8 xl:px-10">
+        <a href="{{ route('admin.categories.create') }}" class="inline-flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-primary to-indigo-600 py-2.5 px-6 text-center font-medium text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 lg:px-8 xl:px-10">
             <span>
                 <svg class="fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
@@ -41,14 +41,14 @@
         </div>
     @endif
 
-    <div class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+    <div class="rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-strokedark dark:bg-boxdark overflow-hidden">
         <div class="py-6 px-4 md:px-6 xl:px-7.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h4 class="text-xl font-bold text-black dark:text-white">
                 Category List
             </h4>
             
             <form action="{{ route('admin.categories.index') }}" method="GET" class="w-full sm:w-1/3 relative">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, slug, or type..." class="w-full rounded border-[1.5px] border-stroke bg-transparent py-2 pl-10 pr-4 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, slug, or type..." class="w-full rounded-xl border-[1.5px] border-stroke bg-transparent py-2.5 pl-10 pr-4 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary">
                 @if(request('sort')) <input type="hidden" name="sort" value="{{ request('sort') }}"> @endif
                 @if(request('direction')) <input type="hidden" name="direction" value="{{ request('direction') }}"> @endif
                 <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors">
@@ -60,8 +60,8 @@
         <div class="max-w-full overflow-x-auto">
             <table class="w-full table-auto">
                 <thead>
-                    <tr class="bg-gray-2 text-left dark:bg-meta-4">
-                        <th class="py-4 px-4 font-medium text-black dark:text-white xl:px-7.5">
+                    <tr class="bg-slate-50 border-b border-gray-100 text-left dark:bg-meta-4 dark:border-strokedark">
+                        <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider xl:px-7.5">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'name', 'direction' => $sortField === 'name' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 Name
                                 <svg class="w-3 h-3 {{ $sortField === 'name' ? 'text-primary' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +69,7 @@
                                 </svg>
                             </a>
                         </th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">
+                        <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'slug', 'direction' => $sortField === 'slug' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 Slug
                                 <svg class="w-3 h-3 {{ $sortField === 'slug' ? 'text-primary' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +77,7 @@
                                 </svg>
                             </a>
                         </th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">
+                        <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'type', 'direction' => $sortField === 'type' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 Type
                                 <svg class="w-3 h-3 {{ $sortField === 'type' ? 'text-primary' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,25 +85,25 @@
                                 </svg>
                             </a>
                         </th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">Hierarchy</th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">Actions</th>
+                        <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Hierarchy</th>
+                        <th class="py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($categories as $category)
-                        <tr>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark xl:px-7.5">
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-meta-4/20 transition-colors">
+                            <td class="border-b border-gray-100 py-4 px-4 dark:border-strokedark xl:px-7.5">
                                 <p class="text-black dark:text-white font-medium">{{ $category->name }}</p>
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
+                            <td class="border-b border-gray-100 py-4 px-4 dark:border-strokedark">
                                 <p class="text-black dark:text-white">{{ $category->slug }}</p>
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
-                                <span class="inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium bg-primary text-primary">
+                            <td class="border-b border-gray-100 py-4 px-4 dark:border-strokedark">
+                                <span class="inline-flex rounded-full py-1 px-3 text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
                                     {{ $category->type ? ucfirst($category->type) : 'Generic' }}
                                 </span>
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
+                            <td class="border-b border-gray-100 py-4 px-4 dark:border-strokedark">
                                 @if($category->parent)
                                     <span class="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
@@ -116,7 +116,7 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
+                            <td class="border-b border-gray-100 py-4 px-4 dark:border-strokedark">
                                 <div class="flex items-center space-x-3.5">
                                     <a href="{{ route('admin.categories.edit', $category) }}" class="hover:text-primary transition-colors flex items-center justify-center rounded-full border border-stroke bg-gray-100 p-2 dark:border-strokedark dark:bg-meta-4" title="Edit Category">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -132,6 +132,47 @@
                                 </div>
                             </td>
                         </tr>
+
+                        {{-- Render Tree Children --}}
+                        @if(!request()->filled('search') && $category->children->count() > 0)
+                            @foreach($category->children as $child)
+                                <tr class="hover:bg-slate-50/50 bg-gray-50/50 dark:bg-meta-4/10 dark:hover:bg-meta-4/30 transition-colors">
+                                    <td class="border-b border-gray-100 py-3 px-4 dark:border-strokedark xl:px-7.5 pl-12 relative">
+                                        <div class="absolute left-6 top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600"></div>
+                                        <div class="absolute left-6 top-1/2 w-4 h-px bg-gray-300 dark:bg-gray-600"></div>
+                                        <p class="text-gray-700 dark:text-gray-300 font-medium text-sm">{{ $child->name }}</p>
+                                    </td>
+                                    <td class="border-b border-gray-100 py-3 px-4 dark:border-strokedark">
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $child->slug }}</p>
+                                    </td>
+                                    <td class="border-b border-gray-100 py-3 px-4 dark:border-strokedark">
+                                        <span class="inline-flex rounded-full py-1 px-3 text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                                            {{ $child->type ? ucfirst($child->type) : 'Generic' }}
+                                        </span>
+                                    </td>
+                                    <td class="border-b border-gray-100 py-3 px-4 dark:border-strokedark">
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                                            Subcategory
+                                        </span>
+                                    </td>
+                                    <td class="border-b border-gray-100 py-3 px-4 dark:border-strokedark">
+                                        <div class="flex items-center space-x-2">
+                                            <a href="{{ route('admin.categories.edit', $child) }}" class="hover:text-primary transition-colors flex items-center justify-center rounded-full border border-stroke bg-white p-1.5 dark:border-strokedark dark:bg-meta-4" title="Edit Category">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                            </a>
+                                            <form action="{{ route('admin.categories.destroy', $child) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this subcategory?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="hover:text-[#EB5757] transition-colors flex items-center justify-center rounded-full border border-stroke bg-white p-1.5 dark:border-strokedark dark:bg-meta-4" title="Delete Category">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @endif
                     @empty
                         <tr>
                             <td colspan="5" class="py-5 px-4 text-center text-gray-500 dark:text-gray-400">

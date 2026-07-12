@@ -63,6 +63,13 @@ class AuthController extends Controller
         /** @var User $user */
         $user = auth()->user();
 
+        if ($user->role !== 'user') {
+            auth()->logout();
+            return response()->json([
+                'message' => 'Admin users must use the admin portal to log in.'
+            ], 403);
+        }
+
         if (!$user->hasVerifiedEmail()) {
             auth()->logout();
             return response()->json([

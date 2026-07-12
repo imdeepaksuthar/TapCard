@@ -84,11 +84,4 @@ class BusinessCard extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the NFC cards associated with this business card.
-     */
-    public function nfcCards()
-    {
-        return $this->hasMany(NfcCard::class, 'card_id');
-    }
 }

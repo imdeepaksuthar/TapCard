@@ -17,8 +17,6 @@ class DashboardController extends Controller
         $totalUsers = 0;
         $activeUsers = 0;
         $totalEarnings = 0;
-        $pendingNfcCount = 0;
-
         try {
             $totalUsers = DB::table('users')->where('role', 'user')->count();
             $activeUsers = DB::table('users')->where('role', 'user')->where('status', 'active')->count();
@@ -29,10 +27,6 @@ class DashboardController extends Controller
                     ->where('subscriptions.status', 'active')
                     ->sum('plans.price');
             }
-
-            if (DB::getSchemaBuilder()->hasTable('nfc_cards')) {
-                $pendingNfcCount = DB::table('nfc_cards')->where('order_status', 'pending')->count();
-            }
         } catch (\Exception $e) {
             // Ignored if tables are not fully migrated
         }
@@ -40,8 +34,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact(
             'totalUsers',
             'activeUsers',
-            'totalEarnings',
-            'pendingNfcCount'
+            'totalEarnings'
         ));
     }
 }
