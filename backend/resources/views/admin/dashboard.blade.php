@@ -1,4 +1,13 @@
 <x-admin.layout title="Dashboard | Card Setu">
+    
+    @if($dashboardAds->isNotEmpty())
+        <div class="mb-6 rounded-sm overflow-hidden border border-stroke shadow-default dark:border-strokedark flex justify-center bg-gray-50 dark:bg-meta-4">
+            <a href="{{ route('admin.advertisings.click', $dashboardAds->first()) }}" target="_blank" class="block w-full text-center">
+                <img src="{{ asset('storage/' . $dashboardAds->first()->image_path) }}" alt="{{ $dashboardAds->first()->title }}" class="max-h-[120px] w-full object-cover">
+            </a>
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3 2xl:gap-7.5">
         
         <!-- Metric Item 1: User Growth -->
@@ -38,22 +47,39 @@
 
     </div>
 
-    <!-- Global SaaS Plan Creation Settings (Placeholder) -->
-    <div class="mt-8 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-        <div class="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
-            <h3 class="font-medium text-black dark:text-white">
-                Global SaaS Plans
-            </h3>
-        </div>
-        <div class="p-6.5">
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                Manage global subscription plans and tier configurations here.
-            </p>
-            <div class="mt-4">
-                <a href="{{ route('admin.plans.index') }}" class="inline-flex items-center justify-center rounded-md bg-primary px-10 py-3 text-center font-medium text-white bg-blue-600 hover:bg-blue-700">
-                    Manage Plans
-                </a>
+    <!-- Bottom Grid for SaaS Plans and Sidebar Ad -->
+    <div class="mt-8 grid grid-cols-1 xl:grid-cols-4 gap-4 md:gap-6 2xl:gap-7.5">
+        
+        <!-- Main Content Column -->
+        <div class="xl:col-span-3">
+            <!-- Global SaaS Plan Creation Settings (Placeholder) -->
+            <div class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark h-full">
+                <div class="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
+                    <h3 class="font-medium text-black dark:text-white">
+                        Global SaaS Plans
+                    </h3>
+                </div>
+                <div class="p-6.5">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Manage global subscription plans and tier configurations here.
+                    </p>
+                    <div class="mt-4">
+                        <a href="{{ route('admin.plans.index') }}" class="inline-flex items-center justify-center rounded-md bg-primary px-10 py-3 text-center font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            Manage Plans
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Sidebar Column (For 300x600 Ads) -->
+        @if($sidebarAds->isNotEmpty())
+            <div class="xl:col-span-1 rounded-sm overflow-hidden border border-stroke shadow-default dark:border-strokedark flex justify-center items-center bg-gray-50 dark:bg-meta-4 min-h-[400px]">
+                <a href="{{ route('admin.advertisings.click', $sidebarAds->first()) }}" target="_blank" class="block text-center w-full h-full relative">
+                    <img src="{{ asset('storage/' . $sidebarAds->first()->image_path) }}" alt="{{ $sidebarAds->first()->title }}" class="absolute inset-0 w-full h-full object-cover">
+                </a>
+            </div>
+        @endif
+
     </div>
 </x-admin.layout>

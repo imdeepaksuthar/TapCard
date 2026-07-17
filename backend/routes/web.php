@@ -37,4 +37,6 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\RoleMiddleware::class . '
         
         Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
         Route::resource('designations', DesignationController::class);
+        Route::get('advertisings/{advertising}/click', [\App\Http\Controllers\Admin\AdvertisingController::class, 'click'])->name('advertisings.click');
+        Route::resource('advertisings', \App\Http\Controllers\Admin\AdvertisingController::class);
 });

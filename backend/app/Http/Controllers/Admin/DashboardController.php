@@ -31,10 +31,43 @@ class DashboardController extends Controller
             // Ignored if tables are not fully migrated
         }
 
+        $dashboardAds = \App\Models\Advertising::where('status', 'active')
+            ->where('position', 'dashboard')
+            ->where(function($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->inRandomOrder()
+            ->limit(1)
+            ->get();
+
+        $sidebarAds = \App\Models\Advertising::where('status', 'active')
+            ->where('position', 'sidebar')
+            ->where(function($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->inRandomOrder()
+            ->limit(1)
+            ->get();
+
+        foreach ($dashboardAds as $ad) {
+            $ad->increment('views');
+        }
+        foreach ($sidebarAds as $ad) {
+            $ad->increment('views');
+        }
+
         return view('admin.dashboard', compact(
             'totalUsers',
             'activeUsers',
-            'totalEarnings'
+            'totalEarnings',
+            'dashboardAds',
+            'sidebarAds'
         ));
     }
 }
