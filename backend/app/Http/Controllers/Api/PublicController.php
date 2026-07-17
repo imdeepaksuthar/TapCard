@@ -174,4 +174,22 @@ class PublicController extends Controller
 
         return response()->json(['designations' => $designations]);
     }
+
+    /**
+     * Lightweight list of active card slugs for the frontend sitemap.
+     */
+    public function sitemap(): JsonResponse
+    {
+        $cards = Cache::remember('sitemap_cards', 900, function () {
+            return BusinessCard::where('status', 'active')
+                ->orderBy('updated_at', 'desc')
+                ->get(['slug', 'updated_at'])
+                ->map(fn ($c) => [
+                    'slug' => $c->slug,
+                    'updated_at' => optional($c->updated_at)->toIso8601String(),
+                ]);
+        });
+
+        return response()->json($cards);
+    }
 }

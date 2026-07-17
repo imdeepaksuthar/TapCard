@@ -59,39 +59,52 @@ class OrderController extends Controller
             'whatsapp' => $contactButtons['whatsapp'] ?? $socialLinks['whatsapp'] ?? null,
         ];
 
-        // Calculate total securely using DB prices
+        // Calculate the total securely from DB prices, scoping every line item to
+        // THIS card's owner so a cart can't reference another vendor's product,
+        // and dropping items that don't resolve (prevents ghost / ₹0 orders).
         $totalAmount = 0;
-        foreach ($cartItems as &$item) {
-            $dbPrice = 0;
-            if (isset($item['type']) && $item['type'] === 'product') {
-                $product = \App\Models\Product::find($item['id']);
+        $validItems = [];
+        foreach ($cartItems as $item) {
+            $dbPrice = null;
+            $resolvedType = $item['type'] ?? null;
+
+            if ($resolvedType === 'product' || $resolvedType === null) {
+                $product = \App\Models\Product::where('id', $item['id'])
+                    ->where('user_id', $card->user_id)->first();
                 if ($product) {
                     $dbPrice = (float) $product->price;
-                }
-            } elseif (isset($item['type']) && $item['type'] === 'service') {
-                $service = \App\Models\Service::find($item['id']);
-                if ($service) {
-                    $dbPrice = (float) $service->price;
-                }
-            } else {
-                // Fallback if type is missing, try product then service
-                $product = \App\Models\Product::find($item['id']);
-                if ($product) {
-                    $dbPrice = (float) $product->price;
-                    $item['type'] = 'product';
-                } else {
-                    $service = \App\Models\Service::find($item['id']);
-                    if ($service) {
-                        $dbPrice = (float) $service->price;
-                        $item['type'] = 'service';
-                    }
+                    $resolvedType = 'product';
                 }
             }
-            
-            // Overwrite price with DB price to save correct price in order history
+            if ($dbPrice === null && ($resolvedType === 'service' || $resolvedType === null)) {
+                $service = \App\Models\Service::where('id', $item['id'])
+                    ->where('user_id', $card->user_id)->first();
+                if ($service) {
+                    $dbPrice = (float) $service->price;
+                    $resolvedType = 'service';
+                }
+            }
+
+            // Skip anything that doesn't belong to this card's owner.
+            if ($dbPrice === null) {
+                continue;
+            }
+
+            $qty = max(1, (int) ($item['quantity'] ?? 1));
+            $item['type'] = $resolvedType;
             $item['price'] = $dbPrice;
-            $totalAmount += $dbPrice * ($item['quantity'] ?? 1);
+            $item['quantity'] = $qty;
+            $totalAmount += $dbPrice * $qty;
+            $validItems[] = $item;
         }
+
+        if (empty($validItems)) {
+            return response()->json([
+                'message' => 'Your cart has no valid items for this card.',
+            ], 422);
+        }
+
+        $cartItems = $validItems;
 
         // Save Order to Database
         $order = Order::create([

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --color-blue-600: #2563eb;
@@ -20,6 +21,43 @@
   --text-fluid-xl: clamp(1.25rem, 4vw, 1.5rem);
   --text-fluid-2xl: clamp(1.5rem, 5vw, 2rem);
   --text-fluid-3xl: clamp(1.75rem, 6vw, 2.5rem);
+
+  /* ─── Modular type scale — 1.25 "major third", 16px base. H1–H6 + body.
+     Generates utilities text-h1 … text-h6, text-body, text-caption, each with
+     its own line-height + letter-spacing (tighter tracking as size grows). ─── */
+  --text-caption: 0.8rem;
+  --text-caption--line-height: 1.5;
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+  --text-h6: 1rem;
+  --text-h6--line-height: 1.5;
+  --text-h5: 1.25rem;
+  --text-h5--line-height: 1.4;
+  --text-h5--letter-spacing: -0.01em;
+  --text-h4: 1.563rem;
+  --text-h4--line-height: 1.3;
+  --text-h4--letter-spacing: -0.014em;
+  --text-h3: 1.953rem;
+  --text-h3--line-height: 1.25;
+  --text-h3--letter-spacing: -0.017em;
+  --text-h2: 2.441rem;
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h1: 3.052rem;
+  --text-h1--line-height: 1.1;
+  --text-h1--letter-spacing: -0.022em;
+
+  /* ─── Semantic brand palette — every fill below clears WCAG 2.1 AA (≥4.5:1)
+     for white text, and the same value as text-on-white. Generates utilities
+     bg-primary, text-secondary, border-error, etc. Neutrals reuse Tailwind slate. ─── */
+  --color-primary: #4f46e5;        /* indigo-600  · on white 6.3:1  AA  */
+  --color-primary-hover: #4338ca;  /* indigo-700  · on white 7.6:1  AAA */
+  --color-primary-soft: #eef2ff;   /* indigo-50 surface tint            */
+  --color-secondary: #0f766e;      /* teal-700    · on white 5.5:1  AA  */
+  --color-success: #047857;        /* emerald-700 · on white 5.5:1  AA  */
+  --color-warning: #b45309;        /* amber-700   · on white 4.9:1  AA  */
+  --color-error: #dc2626;          /* red-600     · on white 4.8:1  AA  */
+  --color-on-accent: #ffffff;
 
   /* Fluid Component Sizes */
   --width-fluid-sidebar: clamp(240px, 20vw, 300px);
@@ -53,6 +91,7 @@
 /* ─── Base ─── */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 4rem;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -62,9 +101,35 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* ─── Accessibility: a visible keyboard-focus ring for every interactive
+   element. This is unlayered, so it overrides the app's pervasive Tailwind
+   `outline-none`, and :focus-visible means it only appears for keyboard/AT
+   users — never on mouse click. A major WCAG 2.4.7 (Focus Visible) win. ─── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+/* Respect users who explicitly hide the ring, but keep the default on. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* Safe-area helpers for notched / foldable devices (requires
+     viewport-fit=cover, set in app/layout.tsx). */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
@@ -360,6 +425,68 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ─── Dashboard theme tokens (scoped to .dash-scope; LIGHT is the default,
+   .dark on the same element switches to dark). Every dashboard surface reads
+   these vars via arbitrary utilities, e.g. bg-[var(--d-surface)], so a single
+   class works in both themes and the whole palette lives here. ─── */
+.dash-scope {
+  --d-bg: #eef1f8;
+  --d-surface: #ffffff;
+  --d-surface-2: #f5f7fc;
+  --d-sidebar: #ffffff;
+  --d-header: rgba(255, 255, 255, 0.85);
+  --d-text: #0f172a;
+  --d-text-muted: #64748b;
+  --d-text-faint: #94a3b8;
+  --d-border: #e6e9f2;
+  --d-border-strong: #d4dae8;
+  --d-hover: #eef2f9;
+  --d-elevate: rgba(15, 23, 42, 0.04);
+  --d-accent: #4f46e5;
+  --d-accent-2: #3b82f6;
+  --d-accent-soft: #eef2ff;
+  --d-danger: #e11d48;
+  --d-danger-soft: #fff1f2;
+  --d-success: #059669;
+  --d-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 30px rgba(15, 23, 42, 0.06);
+
+  color: var(--d-text);
+  background-color: var(--d-bg);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.dark .dash-scope, .dash-scope.dark {
+  --d-bg: #030712;
+  --d-surface: #0b1528;
+  --d-surface-2: #0f1c35;
+  --d-sidebar: rgba(5, 8, 20, 0.72);
+  --d-header: rgba(0, 0, 0, 0.4);
+  --d-text: #f1f5f9;
+  --d-text-muted: #94a3b8;
+  --d-text-faint: #64748b;
+  --d-border: rgba(255, 255, 255, 0.10);
+  --d-border-strong: rgba(255, 255, 255, 0.18);
+  --d-hover: rgba(255, 255, 255, 0.05);
+  --d-elevate: rgba(255, 255, 255, 0.05);
+  --d-accent: #6366f1;
+  --d-accent-2: #3b82f6;
+  --d-accent-soft: rgba(99, 102, 241, 0.15);
+  --d-danger: #f43f5e;
+  --d-danger-soft: rgba(244, 63, 94, 0.12);
+  --d-success: #34d399;
+  --d-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Legal / policy pages ─── */
+.legal-prose h2 { color: #fff; font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 2rem; }
+.legal-prose h2:first-child { margin-top: 0; }
+.legal-prose p { color: #a1a1aa; margin-top: 0.75rem; }
+.legal-prose ul { list-style: disc; padding-left: 1.25rem; margin-top: 0.75rem; color: #a1a1aa; }
+.legal-prose li { margin-top: 0.35rem; }
+.legal-prose a { color: #60a5fa; }
+.legal-prose a:hover { text-decoration: underline; }
+.legal-prose strong { color: #d4d4d8; font-weight: 600; }
 
 /* ─── Reduce motion ─── */
 @media (prefers-reduced-motion: reduce) {

@@ -10,6 +10,7 @@ interface AuthContextType {
   login: (credentials: any) => Promise<void>;
   register: (data: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -45,6 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Re-fetch the current user so context-driven UI (sidebar, header) reflects
+  // profile edits without a full page reload.
+  const refreshUser = async () => {
+    try {
+      const data = await apiFetch<{ user: User }>('/api/user');
+      setUser(data.user);
+    } catch {
+      // Leave the existing user in place on a transient failure.
     }
   };
 
@@ -85,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, refreshUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

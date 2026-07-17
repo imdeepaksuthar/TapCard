@@ -6,7 +6,7 @@
             Registered Users
         </h2>
 
-        <a href="{{ route('admin.users.create') }}" class="inline-flex items-center justify-center gap-2.5 rounded-md bg-primary py-2 px-6 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10">
+        <a href="{{ route('admin.users.create') }}" class="inline-flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-primary to-indigo-600 py-2.5 px-6 text-center font-medium text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 lg:px-8 xl:px-10">
             <span>
                 <svg class="fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
@@ -42,46 +42,54 @@
     @endif
 
     <!-- Users Table -->
-    <div class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+    <div class="rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-strokedark dark:bg-boxdark overflow-hidden">
         <div class="py-6 px-4 md:px-6 xl:px-7.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h4 class="text-xl font-bold text-black dark:text-white">
                 User List
             </h4>
             
-            <!-- Search Form -->
-            <form action="{{ route('admin.users.index') }}" method="GET" class="w-full sm:w-1/3 relative">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, email, or phone..." class="w-full rounded border-[1.5px] border-stroke bg-transparent py-2 pl-10 pr-4 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary">
-                <!-- Keep sort params when searching -->
+            <!-- Filters & Search Form -->
+            <form action="{{ route('admin.users.index') }}" method="GET" class="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
+                <!-- Keep sort params when filtering/searching -->
                 @if(request('sort')) <input type="hidden" name="sort" value="{{ request('sort') }}"> @endif
                 @if(request('direction')) <input type="hidden" name="direction" value="{{ request('direction') }}"> @endif
                 
-                <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </button>
+                <select name="role" onchange="this.form.submit()" class="rounded-xl border-[1.5px] border-stroke bg-transparent py-2.5 px-4 text-sm font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary cursor-pointer">
+                    <option value="all" {{ request('role') == 'all' ? 'selected' : '' }}>All Roles</option>
+                    <option value="user" {{ request('role', 'user') == 'user' ? 'selected' : '' }}>User</option>
+                    <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                    <option value="super_admin" {{ request('role') == 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                </select>
+
+                <select name="status" onchange="this.form.submit()" class="rounded-xl border-[1.5px] border-stroke bg-transparent py-2.5 px-4 text-sm font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary cursor-pointer">
+                    <option value="">All Statuses</option>
+                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                </select>
+
+                <div class="relative w-full sm:w-64">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search users..." class="w-full rounded-xl border-[1.5px] border-stroke bg-transparent py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary">
+                    <button type="submit" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </button>
+                </div>
             </form>
         </div>
 
         <div class="max-w-full overflow-x-auto">
-            <table class="w-full table-auto">
+            <table class="w-full table-auto" x-data="{ expandedRow: null }">
                 <thead>
-                    <tr class="bg-gray-2 text-left dark:bg-meta-4">
-                        <th class="py-4 px-4 font-medium text-black dark:text-white xl:px-7.5">
+                    <tr class="bg-slate-50 border-b border-gray-100 text-left dark:bg-meta-4 dark:border-strokedark whitespace-nowrap">
+                        <th class="w-10 py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"></th>
+                        <th class="py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'name', 'direction' => $sortField === 'name' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1.5 hover:text-primary transition-colors">
-                                Name
+                                User Profile
                                 <svg class="w-3 h-3 {{ $sortField === 'name' ? 'text-primary' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     {!! $sortField === 'name' && $sortDirection === 'desc' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>' !!}
                                 </svg>
                             </a>
                         </th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">
-                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'email', 'direction' => $sortField === 'email' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1.5 hover:text-primary transition-colors">
-                                Email
-                                <svg class="w-3 h-3 {{ $sortField === 'email' ? 'text-primary' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    {!! $sortField === 'email' && $sortDirection === 'desc' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>' !!}
-                                </svg>
-                            </a>
-                        </th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">
+                        <th class="py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'role', 'direction' => $sortField === 'role' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 Role
                                 <svg class="w-3 h-3 {{ $sortField === 'role' ? 'text-primary' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,9 +97,9 @@
                                 </svg>
                             </a>
                         </th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">Email Verified</th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">Card Status</th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">
+                        <th class="py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Verified</th>
+                        <th class="py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Card Status</th>
+                        <th class="py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'created_at', 'direction' => $sortField === 'created_at' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 Joined
                                 <svg class="w-3 h-3 {{ $sortField === 'created_at' ? 'text-primary' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +107,7 @@
                                 </svg>
                             </a>
                         </th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">
+                        <th class="py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'status', 'direction' => $sortField === 'status' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 Status
                                 <svg class="w-3 h-3 {{ $sortField === 'status' ? 'text-primary' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,38 +115,45 @@
                                 </svg>
                             </a>
                         </th>
-                        <th class="py-4 px-4 font-medium text-black dark:text-white">Actions</th>
+                        <th class="py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse($users as $user)
-                        <tr>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark xl:px-7.5">
-                                <div class="flex items-center gap-3">
+                @forelse($users as $user)
+                    <tbody>
+                        <tr @click="expandedRow = expandedRow === {{ $user->id }} ? null : {{ $user->id }}" class="hover:bg-indigo-50/40 dark:hover:bg-meta-4/40 transition-all cursor-pointer group">
+                            <td class="border-b border-gray-100 py-3 px-3 dark:border-strokedark">
+                                <div class="flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 bg-white shadow-sm transition-colors group-hover:border-indigo-300 dark:border-strokedark dark:bg-meta-4">
+                                    <div class="flex items-center justify-center w-6 h-6 rounded-full text-white transition-colors" :class="expandedRow === {{ $user->id }} ? 'bg-gray-400 dark:bg-gray-600' : 'bg-indigo-500 group-hover:bg-indigo-600'">
+                                        <svg x-show="expandedRow !== {{ $user->id }}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v12m-6-6h12"></path></svg>
+                                        <svg x-show="expandedRow === {{ $user->id }}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"></path></svg>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="border-b border-gray-100 py-3 px-3 dark:border-strokedark whitespace-nowrap">
+                                <div class="flex items-center gap-3.5">
                                     <div class="flex-shrink-0">
                                         @if($user->avatar)
-                                            <img src="{{ $user->avatar }}" alt="{{ $user->name }}" class="h-10 w-10 rounded-full object-cover">
+                                            <img src="{{ str_starts_with($user->avatar, 'http') ? $user->avatar : asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm" referrerpolicy="no-referrer">
                                         @else
-                                            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold dark:bg-meta-4 dark:text-white">
+                                            <div class="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold dark:bg-meta-4 dark:text-white ring-2 ring-white shadow-sm">
                                                 {{ strtoupper(substr($user->name, 0, 1)) }}
                                             </div>
                                         @endif
                                     </div>
-                                    <p class="text-black dark:text-white">{{ $user->name }}</p>
+                                    <div class="flex flex-col">
+                                        <p class="text-black dark:text-white font-semibold">{{ $user->name }}</p>
+                                        <p class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                            {{ $user->email }}
+                                        </p>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
-                                <p class="text-black dark:text-white">{{ $user->email }}</p>
-                                @if($user->phone)
-                                    <p class="text-sm text-gray-500">{{ $user->phone }}</p>
-                                @endif
-                            </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
-                                <span class="inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium {{ $user->role === 'super_admin' || $user->role === 'admin' ? 'bg-primary text-primary' : 'bg-success text-success' }}">
+                            <td class="border-b border-gray-100 py-3 px-3 dark:border-strokedark whitespace-nowrap">
+                                <span class="inline-flex rounded-full py-1 px-2.5 text-[11px] font-semibold {{ $user->role === 'super_admin' || $user->role === 'admin' ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' : 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400' }}">
                                     {{ ucfirst(str_replace('_', ' ', $user->role)) }}
                                 </span>
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
+                            <td class="border-b border-gray-100 py-3 px-3 dark:border-strokedark whitespace-nowrap">
                                 @if($user->email_verified_at)
                                     <span class="inline-flex items-center gap-1.5 text-sm font-medium text-[#219653]">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -150,17 +165,17 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                             Unverified
                                         </span>
-                                        <form action="{{ route('admin.users.send-verification', $user) }}" method="POST">
+                                        <form action="{{ route('admin.users.send-verification', $user) }}" method="POST" @click.stop>
                                             @csrf
-                                            <button type="submit" class="mt-1 inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 dark:bg-primary/20 dark:text-white dark:hover:bg-primary/30" title="Send Verification Email">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                            <button type="submit" class="mt-1 inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-600 transition-colors hover:bg-indigo-100 border border-indigo-100 dark:bg-meta-4 dark:border-strokedark dark:text-white dark:hover:bg-meta-3" title="Send Verification Email">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                                 Send Link
                                             </button>
                                         </form>
                                     </div>
                                 @endif
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
+                            <td class="border-b border-gray-100 py-3 px-3 dark:border-strokedark whitespace-nowrap">
                                 @if($user->businessCards->isNotEmpty())
                                     <div class="flex flex-col gap-1">
                                         <span class="inline-flex items-center gap-1.5 text-sm font-medium text-black dark:text-white mb-1">
@@ -168,8 +183,8 @@
                                             Created ({{ $user->businessCards->count() }})
                                         </span>
                                         @foreach($user->businessCards as $card)
-                                            <a href="{{ env('FRONTEND_URL', 'http://127.0.0.1:3000') }}/{{ $card->slug }}" target="_blank" class="text-xs text-primary hover:underline flex items-center gap-1 truncate max-w-[150px]" title="View {{ $card->slug }}">
-                                                <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                            <a href="{{ env('FRONTEND_URL', 'http://127.0.0.1:3000') }}/{{ $card->slug }}" target="_blank" @click.stop class="text-xs font-medium text-indigo-500 hover:text-indigo-700 hover:underline flex items-center gap-1 truncate max-w-[150px] transition-colors" title="View {{ $card->slug }}">
+                                                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                                                 /{{ $card->slug }}
                                             </a>
                                         @endforeach
@@ -181,50 +196,143 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
+                            <td class="border-b border-gray-100 py-3 px-3 dark:border-strokedark whitespace-nowrap">
                                 <p class="text-sm text-black dark:text-white" title="{{ $user->created_at->format('d M, Y h:i A') }}">
                                     {{ $user->created_at->diffForHumans() }}
                                 </p>
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
-                                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="inline-block relative">
+                            <td class="border-b border-gray-100 py-3 px-3 dark:border-strokedark">
+                                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="inline-block relative" @click.stop>
                                     @csrf
                                     @method('PATCH')
                                     <label for="toggle-{{ $user->id }}" class="flex cursor-pointer select-none items-center">
                                         <div class="relative">
                                             <input type="checkbox" id="toggle-{{ $user->id }}" class="sr-only" onchange="this.form.submit()" {{ $user->status === 'active' ? 'checked' : '' }} {{ ($user->isSuperAdmin() && auth()->id() === $user->id) ? 'disabled' : '' }} />
-                                            <div class="block h-8 w-14 rounded-full transition-colors {{ $user->status === 'active' ? 'bg-[#219653]' : 'bg-[#EB5757]' }}"></div>
-                                            <div class="dot absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 transition-transform duration-300 {{ $user->status === 'active' ? 'translate-x-6' : '' }}">
+                                            <div class="block h-6 w-11 rounded-full transition-colors {{ $user->status === 'active' ? 'bg-[#219653]' : 'bg-[#EB5757]' }}"></div>
+                                            <div class="dot absolute left-1 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 transition-transform duration-300 {{ $user->status === 'active' ? 'translate-x-4' : '' }}">
                                                 <span class="{{ $user->status === 'active' ? 'hidden' : '' }}">
-                                                    <svg class="h-4 w-4 stroke-[#EB5757]" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <svg class="h-3 w-3 stroke-[#EB5757]" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                                 </span>
                                                 <span class="{{ $user->status === 'active' ? '' : 'hidden' }}">
-                                                    <svg class="h-4 w-4 stroke-[#219653]" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    <svg class="h-3 w-3 stroke-[#219653]" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                                 </span>
                                             </div>
                                         </div>
                                     </label>
                                 </form>
                             </td>
-                            <td class="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
-                                <div class="flex items-center space-x-3.5">
-                                    <form action="{{ route('admin.users.impersonate', $user) }}" method="POST">
+                            <td class="border-b border-gray-100 py-3 px-3 dark:border-strokedark text-right">
+                                <div class="flex items-center justify-end space-x-3.5">
+                                    <form action="{{ route('admin.users.impersonate', $user) }}" method="POST" target="_blank" @click.stop>
                                         @csrf
-                                        <button type="submit" class="hover:text-primary transition-colors flex items-center justify-center rounded-full border border-stroke bg-gray-100 p-2 dark:border-strokedark dark:bg-meta-4" title="Login as User">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                                        <button type="submit" class="flex items-center justify-center w-8 h-8 rounded border border-gray-200 bg-white shadow-sm text-gray-500 hover:text-indigo-600 hover:border-indigo-300 transition-all dark:border-strokedark dark:bg-meta-4 dark:hover:bg-meta-3" title="Login as User">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                                        </button>
+                                    </form>
+                                    
+                                    <form action="{{ route('admin.users.destroy', $user) }}" method="POST" @click.stop onsubmit="return confirm('Are you sure you want to delete this user and all their associated business cards? This action cannot be undone.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="flex items-center justify-center w-8 h-8 rounded border border-gray-200 bg-white shadow-sm text-gray-500 hover:text-red-600 hover:border-red-300 transition-all dark:border-strokedark dark:bg-meta-4 dark:hover:bg-meta-3" title="Delete User" {{ auth()->id() === $user->id ? 'disabled' : '' }}>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         </button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
-                    @empty
+                        <!-- Expanded Details Row -->
+                        <tr x-show="expandedRow === {{ $user->id }}" class="bg-slate-50/50 dark:bg-meta-4/10" style="display: none;">
+                            <td colspan="8" class="border-b border-gray-100 dark:border-strokedark p-0">
+                                <div x-show="expandedRow === {{ $user->id }}" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-[-10px]" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+                                    <div class="px-6 py-8 bg-slate-50/80 shadow-inner border-y border-gray-100 dark:bg-meta-4/20 dark:border-strokedark">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                            
+                                            <!-- Contact Details -->
+                                            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 dark:bg-boxdark dark:border-strokedark">
+                                                <div class="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                                    <h5 class="font-bold text-black dark:text-white">Contact Info</h5>
+                                                </div>
+                                                <div class="space-y-3">
+                                                    <div>
+                                                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Email</p>
+                                                        <p class="text-sm text-gray-700 dark:text-gray-300">{{ $user->email }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Phone</p>
+                                                        <p class="text-sm text-gray-700 dark:text-gray-300">{{ $user->phone ?? 'Not provided' }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Account Overview -->
+                                            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 dark:bg-boxdark dark:border-strokedark">
+                                                <div class="flex items-center gap-2 mb-4 text-emerald-600 dark:text-emerald-400">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.95 11.95 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                                    <h5 class="font-bold text-black dark:text-white">Account Overview</h5>
+                                                </div>
+                                                <div class="space-y-3">
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">User ID</p>
+                                                            <p class="text-sm font-mono text-gray-700 dark:text-gray-300">#{{ str_pad($user->id, 5, '0', STR_PAD_LEFT) }}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">System Role</p>
+                                                            <p class="text-sm text-gray-700 dark:text-gray-300">{{ ucfirst(str_replace('_', ' ', $user->role)) }}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Created At</p>
+                                                            <p class="text-sm text-gray-700 dark:text-gray-300">{{ $user->created_at->format('M j, Y') }}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Verified On</p>
+                                                            <p class="text-sm text-gray-700 dark:text-gray-300">{{ $user->email_verified_at ? $user->email_verified_at->format('M j, Y') : 'N/A' }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Business Cards Summary -->
+                                            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 dark:bg-boxdark dark:border-strokedark">
+                                                <div class="flex items-center gap-2 mb-4 text-orange-500 dark:text-orange-400">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                                    <h5 class="font-bold text-black dark:text-white">Cards Usage</h5>
+                                                </div>
+                                                <div class="flex items-center gap-6">
+                                                    <div>
+                                                        <p class="text-3xl font-bold text-black dark:text-white">{{ $user->businessCards->count() }}</p>
+                                                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-1">Total Cards</p>
+                                                    </div>
+                                                    @if($user->businessCards->isNotEmpty())
+                                                    <div class="flex-1 border-l border-gray-100 pl-6 dark:border-strokedark">
+                                                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Most Recent</p>
+                                                        <a href="{{ env('FRONTEND_URL', 'http://127.0.0.1:3000') }}/{{ $user->businessCards->sortByDesc('created_at')->first()->slug }}" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-500 hover:text-indigo-700 hover:underline transition-colors">
+                                                            /{{ $user->businessCards->sortByDesc('created_at')->first()->slug }}
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                                        </a>
+                                                    </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                @empty
+                    <tbody>
                         <tr>
-                            <td colspan="8" class="py-5 px-4 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="9" class="py-5 px-4 text-center text-gray-500 dark:text-gray-400">
                                 No registered users found.
                             </td>
                         </tr>
-                    @endforelse
-                </tbody>
+                    </tbody>
+                @endforelse
             </table>
         </div>
         

@@ -1,23 +1,22 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Next.js 16 "proxy" convention (the renamed successor to "middleware").
+// Server-side guard for the dashboard — runs before the page renders.
 export function proxy(request: NextRequest) {
   const token = request.cookies.get('card-setu-token')?.value;
   const { pathname } = request.nextUrl;
 
-  // Protect /dashboard routes
-  if (pathname.startsWith('/dashboard')) {
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+  // Bounce unauthenticated users away from the dashboard.
+  if (pathname.startsWith('/dashboard') && !token) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('next', pathname);
+    return NextResponse.redirect(loginUrl);
   }
-
-  // Redirect already-authenticated users away from auth pages
-  // REMOVED to prevent infinite loops when token is expired but still present in browser cookies
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/register'],
+  matcher: ['/dashboard/:path*'],
 };

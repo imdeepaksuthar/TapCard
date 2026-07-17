@@ -17,8 +17,6 @@ class DashboardController extends Controller
         $totalUsers = 0;
         $activeUsers = 0;
         $totalEarnings = 0;
-        $pendingNfcCount = 0;
-
         try {
             $totalUsers = DB::table('users')->where('role', 'user')->count();
             $activeUsers = DB::table('users')->where('role', 'user')->where('status', 'active')->count();
@@ -29,19 +27,47 @@ class DashboardController extends Controller
                     ->where('subscriptions.status', 'active')
                     ->sum('plans.price');
             }
-
-            if (DB::getSchemaBuilder()->hasTable('nfc_cards')) {
-                $pendingNfcCount = DB::table('nfc_cards')->where('order_status', 'pending')->count();
-            }
         } catch (\Exception $e) {
             // Ignored if tables are not fully migrated
+        }
+
+        $dashboardAds = \App\Models\Advertising::where('status', 'active')
+            ->where('position', 'dashboard')
+            ->where(function($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->inRandomOrder()
+            ->limit(1)
+            ->get();
+
+        $sidebarAds = \App\Models\Advertising::where('status', 'active')
+            ->where('position', 'sidebar')
+            ->where(function($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->inRandomOrder()
+            ->limit(1)
+            ->get();
+
+        foreach ($dashboardAds as $ad) {
+            $ad->increment('views');
+        }
+        foreach ($sidebarAds as $ad) {
+            $ad->increment('views');
         }
 
         return view('admin.dashboard', compact(
             'totalUsers',
             'activeUsers',
             'totalEarnings',
-            'pendingNfcCount'
+            'dashboardAds',
+            'sidebarAds'
         ));
     }
 }

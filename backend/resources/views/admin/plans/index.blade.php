@@ -14,32 +14,33 @@
     <div class="grid grid-cols-1 gap-9 lg:grid-cols-2">
         
         <!-- Plans List -->
-        <div class="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
-            <h4 class="mb-6 text-xl font-semibold text-black dark:text-white">
-                Existing Plans
-            </h4>
+        <div class="rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-strokedark dark:bg-boxdark overflow-hidden">
+            <div class="p-5 pt-6 sm:p-7.5">
+                <h4 class="mb-6 text-xl font-semibold text-black dark:text-white">
+                    Existing Plans
+                </h4>
 
             <div class="flex flex-col">
-                <div class="grid grid-cols-4 rounded-sm bg-gray-2 dark:bg-meta-4 sm:grid-cols-5">
+                <div class="grid grid-cols-4 bg-slate-50 border-y border-gray-100 dark:bg-meta-4 dark:border-strokedark sm:grid-cols-5">
                     <div class="p-2.5 xl:p-5">
-                        <h5 class="text-sm font-medium uppercase xsm:text-base">Name</h5>
+                        <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</h5>
                     </div>
                     <div class="p-2.5 text-center xl:p-5">
-                        <h5 class="text-sm font-medium uppercase xsm:text-base">Price</h5>
+                        <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</h5>
                     </div>
                     <div class="p-2.5 text-center xl:p-5">
-                        <h5 class="text-sm font-medium uppercase xsm:text-base">Billing</h5>
+                        <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Billing</h5>
                     </div>
                     <div class="hidden p-2.5 text-center sm:block xl:p-5">
-                        <h5 class="text-sm font-medium uppercase xsm:text-base">Features</h5>
+                        <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Features</h5>
                     </div>
                     <div class="p-2.5 text-center xl:p-5">
-                        <h5 class="text-sm font-medium uppercase xsm:text-base">Actions</h5>
+                        <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</h5>
                     </div>
                 </div>
 
                 @forelse($plans as $plan)
-                    <div class="grid grid-cols-4 border-b border-stroke dark:border-strokedark sm:grid-cols-5">
+                    <div class="grid grid-cols-4 border-b border-gray-100 dark:border-strokedark sm:grid-cols-5 hover:bg-slate-50/50 transition-colors">
                         <div class="flex items-center gap-3 p-2.5 xl:p-5">
                             <p class="text-black dark:text-white">{{ $plan->name }}</p>
                         </div>
@@ -77,11 +78,12 @@
                     </div>
                 @endforelse
             </div>
+            </div>
         </div>
 
         <!-- Create Plan Form -->
-        <div class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div class="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
+        <div class="rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-strokedark dark:bg-boxdark overflow-hidden">
+            <div class="border-b border-gray-100 py-4 px-6.5 dark:border-strokedark">
                 <h3 class="font-medium text-black dark:text-white">
                     Create New Plan
                 </h3>
@@ -94,7 +96,7 @@
                             Plan Name <span class="text-meta-1">*</span>
                         </label>
                         <input type="text" name="name" required placeholder="e.g. Pro Plan"
-                            class="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" />
+                            class="w-full rounded-xl border border-gray-200 shadow-sm bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" />
                     </div>
 
                     <div class="mb-4.5">
@@ -102,7 +104,7 @@
                             Price (₹) <span class="text-meta-1">*</span>
                         </label>
                         <input type="number" name="price" step="0.01" required placeholder="e.g. 29.99"
-                            class="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" />
+                            class="w-full rounded-xl border border-gray-200 shadow-sm bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" />
                     </div>
 
                     <div class="mb-4.5">
@@ -111,7 +113,7 @@
                         </label>
                         <div class="relative z-20 bg-transparent dark:bg-form-input">
                             <select name="billing_period" required
-                                class="relative z-20 w-full appearance-none rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary">
+                                class="relative z-20 w-full appearance-none rounded-xl border border-gray-200 shadow-sm bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary">
                                 <option value="monthly">Monthly</option>
                                 <option value="yearly">Yearly</option>
                                 <option value="lifetime">Lifetime</option>
@@ -124,10 +126,10 @@
                             Features (One per line)
                         </label>
                         <textarea rows="5" name="features" placeholder="Unlimited Cards&#10;Custom Domain&#10;Analytics Dashboard"
-                            class="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"></textarea>
+                            class="w-full rounded-xl border border-gray-200 shadow-sm bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"></textarea>
                     </div>
 
-                    <button type="submit" class="flex w-full justify-center rounded bg-primary p-3 font-medium text-white hover:bg-opacity-90">
+                    <button type="submit" class="flex w-full justify-center rounded-xl bg-gradient-to-r from-primary to-indigo-600 p-3.5 font-medium text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
                         Create Plan
                     </button>
                 </div>

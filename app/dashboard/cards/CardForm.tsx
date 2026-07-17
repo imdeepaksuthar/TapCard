@@ -8,7 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 
 import { useRouter } from 'next/navigation';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 import { apiFetch } from '../../../lib/api';
 import { compressProfileImage, compressImage, compressGalleryImage } from '../../../lib/compressImage';
@@ -18,6 +18,10 @@ const Hero3DBackground = dynamic(() => import('../../components/Hero3DBackground
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-black/50 backdrop-blur-xl" />
 });
+
+// Module-level cache for reference data. Categories & designations rarely change,
+// so we fetch them once per session instead of on every CardForm mount / navigation.
+const refDataCache: { categories?: any[]; designations?: any[] } = {};
 
 const THEME_HEX: Record<string, string> = {
   blue: '#3b82f6',
@@ -167,6 +171,8 @@ export default function CardForm({ id }: CardFormProps) {
   const [isGstVerified, setIsGstVerified] = useState(false);
 
   const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const cardFetchedRef = useRef(false);
 
 
 
@@ -360,32 +366,43 @@ export default function CardForm({ id }: CardFormProps) {
 
 
   useEffect(() => {
+    let cancelled = false;
 
-    const fetchCategories = async () => {
-      try {
-        const res = await apiFetch<{ categories: any[] }>('/api/categories');
-        if (res.categories) {
-          setCategories(res.categories);
-        }
-      } catch (err) {
-        console.error('Failed to fetch categories:', err);
+    // Serve instantly from the session cache when we already have the data.
+    if (refDataCache.categories) setCategories(refDataCache.categories);
+    if (refDataCache.designations) setDesignations(refDataCache.designations);
+    if (refDataCache.categories && refDataCache.designations) return;
+
+    const loadReferenceData = async () => {
+      // Fetch both in parallel; allSettled so one failing doesn't block the other.
+      const [cats, desigs] = await Promise.allSettled([
+        refDataCache.categories
+          ? Promise.resolve({ categories: refDataCache.categories })
+          : apiFetch<{ categories: any[] }>('/api/categories'),
+        refDataCache.designations
+          ? Promise.resolve({ designations: refDataCache.designations })
+          : apiFetch<{ designations: any[] }>('/api/designations'),
+      ]);
+
+      if (cancelled) return;
+
+      if (cats.status === 'fulfilled' && cats.value.categories) {
+        refDataCache.categories = cats.value.categories;
+        setCategories(cats.value.categories);
+      } else if (cats.status === 'rejected') {
+        console.error('Failed to fetch categories:', cats.reason);
+      }
+
+      if (desigs.status === 'fulfilled' && desigs.value.designations) {
+        refDataCache.designations = desigs.value.designations;
+        setDesignations(desigs.value.designations);
+      } else if (desigs.status === 'rejected') {
+        console.error('Failed to fetch designations:', desigs.reason);
       }
     };
 
-    const fetchDesignations = async () => {
-      try {
-        const res = await apiFetch<{ designations: any[] }>('/api/designations');
-        if (res.designations) {
-          setDesignations(res.designations);
-        }
-      } catch (err) {
-        console.error('Failed to fetch designations:', err);
-      }
-    };
-
-    fetchCategories();
-    fetchDesignations();
-
+    loadReferenceData();
+    return () => { cancelled = true; };
   }, []);
 
 
@@ -508,7 +525,12 @@ export default function CardForm({ id }: CardFormProps) {
 
       if (id) {
 
-        fetchCard();
+        // Guard against a duplicate card fetch if this effect re-runs (e.g. the
+        // auth user object changes identity) — the card only needs loading once.
+        if (!cardFetchedRef.current) {
+          cardFetchedRef.current = true;
+          fetchCard();
+        }
 
       } else {
 
@@ -1314,13 +1336,13 @@ export default function CardForm({ id }: CardFormProps) {
 
             <div>
 
-              <h2 className="text-2xl font-bold mb-2">Choose Card Type</h2>
+              <h2 className="text-xl font-bold mb-2">Choose Card Type</h2>
 
-              <p className="text-gray-400 mb-6">Select the foundation for your digital identity.</p>
+              <p className="text-sm text-[var(--d-text-muted)] mb-4">Select the foundation for your digital identity.</p>
 
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
 
               {[
 
@@ -1339,29 +1361,29 @@ export default function CardForm({ id }: CardFormProps) {
 
                   onClick={() => setFormData({ ...formData, card_type: type.id })}
 
-                  className={`group cursor-pointer rounded-2xl p-5 sm:p-6 border-2 transition-all duration-300 relative overflow-hidden ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-xl shadow-blue-500/10 scale-[1.02]' : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06] hover:scale-[1.01]'
+                  className={`group cursor-pointer rounded-2xl p-4 sm:p-5 border-2 transition-all duration-300 relative overflow-hidden ${isSelected ? 'border-blue-500 bg-blue-500/10 shadow-xl shadow-blue-500/10 scale-[1.02]' : 'border-[var(--d-border)] bg-white/[0.03] hover:border-[var(--d-border)] hover:bg-white/[0.06] hover:scale-[1.01]'
                     }`}
 
                 >
                   {/* Selection glow */}
                   {isSelected && <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 pointer-events-none" />}
 
-                  <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 ${isSelected ? `bg-gradient-to-br ${type.gradient} text-white shadow-lg` : 'bg-white/[0.07] text-gray-400 group-hover:bg-white/10'}`}>
+                  <div className={`relative w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-all duration-300 ${isSelected ? `bg-gradient-to-br ${type.gradient} text-white shadow-lg` : 'bg-white/[0.07] text-[var(--d-text-muted)] group-hover:bg-[var(--d-hover)]'}`}>
 
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={type.icon} /></svg>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={type.icon} /></svg>
 
                   </div>
 
                   <div className="relative">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <h3 className="text-lg font-bold">{type.title}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-base font-bold">{type.title}</h3>
                       {isSelected && (
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white">
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-400 leading-relaxed">{type.desc}</p>
+                    <p className="text-xs text-[var(--d-text-muted)] leading-relaxed">{type.desc}</p>
                   </div>
 
                 </div>
@@ -1382,20 +1404,20 @@ export default function CardForm({ id }: CardFormProps) {
 
             <div>
 
-              <h2 className="text-2xl font-bold mb-2">Basic Information</h2>
+              <h2 className="text-xl font-bold mb-2">Basic Information</h2>
 
-              <p className="text-gray-400 mb-6">Your profile picture and identity.</p>
+              <p className="text-sm text-[var(--d-text-muted)] mb-4">Your profile picture and identity.</p>
 
             </div>
 
             <div className="space-y-4">
 
-              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
+              <div className="flex items-center gap-4 p-4 bg-[var(--d-elevate)] rounded-xl border border-[var(--d-border)]">
 
                 {profileImagePreviewUrl ? (
 
                   <div className="relative group rounded-full w-16 h-16 shrink-0">
-                    <img src={profileImagePreviewUrl} alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-white/10 group-hover:opacity-50 transition-opacity" />
+                    <img src={profileImagePreviewUrl} alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-[var(--d-border)] group-hover:opacity-50 transition-opacity" />
                     <button
                       type="button"
                       onClick={() => {
@@ -1416,15 +1438,15 @@ export default function CardForm({ id }: CardFormProps) {
 
                 ) : (
 
-                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-gray-500 border-2 border-dashed border-white/20 shrink-0">Img</div>
+                  <div className="w-16 h-16 rounded-full bg-[var(--d-elevate)] flex items-center justify-center text-[var(--d-text-faint)] border-2 border-dashed border-[var(--d-border)] shrink-0">Img</div>
 
                 )}
 
                 <div>
 
-                  <label className="text-sm text-gray-400 block mb-1">Profile Photo</label>
+                  <label className="text-sm text-[var(--d-text-muted)] block mb-1">Profile Photo</label>
 
-                  <input id="profile-upload" type="file" accept="image/*" onChange={handleFileUpload} className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                  <input id="profile-upload" type="file" accept="image/*" onChange={handleFileUpload} className="text-sm text-[var(--d-text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
 
                 </div>
 
@@ -1434,7 +1456,7 @@ export default function CardForm({ id }: CardFormProps) {
 
               <div>
 
-                <label className="text-sm text-gray-400 block mb-1">
+                <label className="text-sm text-[var(--d-text-muted)] block mb-1">
                   {formData.card_type === 'business' ? 'Business Full Name' : 'Full Name'} <span className="text-red-500">*</span>
                 </label>
 
@@ -1464,9 +1486,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                   }}
 
-                  className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all ${
+                  className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500 transition-all ${
 
-                    validationErrors.name ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10'
+                    validationErrors.name ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)]'
 
                   }`}
 
@@ -1486,7 +1508,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                 <div>
 
-                  <label className="text-sm text-gray-400 block mb-1">Category <span className="text-red-500">*</span></label>
+                  <label className="text-sm text-[var(--d-text-muted)] block mb-1">Category <span className="text-red-500">*</span></label>
 
                   <select
 
@@ -1514,9 +1536,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                     }}
 
-                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all ${
+                    className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500 transition-all ${
 
-                      validationErrors.category_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10'
+                      validationErrors.category_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)]'
 
                     }`}
 
@@ -1524,23 +1546,23 @@ export default function CardForm({ id }: CardFormProps) {
 
                   >
 
-                    <option value="" className="bg-gray-900">Select Category</option>
+                    <option value="" className="bg-[var(--d-surface)]">Select Category</option>
 
-                    <optgroup label="Departments" className="bg-gray-900 font-semibold text-blue-400">
+                    <optgroup label="Departments" className="bg-[var(--d-surface)] font-semibold text-blue-400">
 
                       {categories.filter(c => c.type === 'department').map(c => (
 
-                        <option key={c.id} value={c.id} className="bg-gray-900 text-white font-normal">{c.name}</option>
+                        <option key={c.id} value={c.id} className="bg-[var(--d-surface)] text-[var(--d-text)] font-normal">{c.name}</option>
 
                       ))}
 
                     </optgroup>
 
-                    <optgroup label="Business Categories" className="bg-gray-900 font-semibold text-blue-400">
+                    <optgroup label="Business Categories" className="bg-[var(--d-surface)] font-semibold text-blue-400">
 
                       {categories.filter(c => c.type === 'business').map(c => (
 
-                        <option key={c.id} value={c.id} className="bg-gray-900 text-white font-normal">{c.name}</option>
+                        <option key={c.id} value={c.id} className="bg-[var(--d-surface)] text-[var(--d-text)] font-normal">{c.name}</option>
 
                       ))}
 
@@ -1558,7 +1580,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                 <div>
 
-                  <label className="text-sm text-gray-400 block mb-1">Subcategory <span className="text-red-500">*</span></label>
+                  <label className="text-sm text-[var(--d-text-muted)] block mb-1">Subcategory <span className="text-red-500">*</span></label>
 
                   <select
 
@@ -1586,9 +1608,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                     disabled={!formData.category_id}
 
-                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+                    className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
 
-                      validationErrors.subcategory_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10'
+                      validationErrors.subcategory_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)]'
 
                     }`}
 
@@ -1596,11 +1618,11 @@ export default function CardForm({ id }: CardFormProps) {
 
                   >
 
-                    <option value="" className="bg-gray-900">Select Subcategory</option>
+                    <option value="" className="bg-[var(--d-surface)]">Select Subcategory</option>
 
                     {categories.find(c => c.id.toString() === formData.category_id)?.children?.map((c: any) => (
 
-                      <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>
+                      <option key={c.id} value={c.id} className="bg-[var(--d-surface)]">{c.name}</option>
 
                     ))}
 
@@ -1618,9 +1640,9 @@ export default function CardForm({ id }: CardFormProps) {
 
               <div>
 
-                <label className="text-sm text-gray-400 block mb-1">Designation / Title</label>
+                <label className="text-sm text-[var(--d-text-muted)] block mb-1">Designation / Title</label>
 
-                <input list="designation-options" type="text" value={formData.personal_info?.designation || ''} onChange={(e) => setFormData({ ...formData, personal_info: { ...(formData.personal_info || {}), designation: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. CEO, Software Engineer" />
+                <input list="designation-options" type="text" value={formData.personal_info?.designation || ''} onChange={(e) => setFormData({ ...formData, personal_info: { ...(formData.personal_info || {}), designation: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="e.g. CEO, Software Engineer" />
                 <datalist id="designation-options">
                   {designations.map((d) => (
                     <option key={d.id} value={d.name} />
@@ -1631,9 +1653,9 @@ export default function CardForm({ id }: CardFormProps) {
 
               <div>
 
-                <label className="text-sm text-gray-400 block mb-1">Short Bio</label>
+                <label className="text-sm text-[var(--d-text-muted)] block mb-1">Short Bio</label>
 
-                <textarea value={formData.personal_info?.bio || ''} onChange={(e) => setFormData({ ...formData, personal_info: { ...(formData.personal_info || {}), bio: e.target.value } })} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                <textarea value={formData.personal_info?.bio || ''} onChange={(e) => setFormData({ ...formData, personal_info: { ...(formData.personal_info || {}), bio: e.target.value } })} rows={3} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" />
 
               </div>
 
@@ -1651,9 +1673,9 @@ export default function CardForm({ id }: CardFormProps) {
 
             <div>
 
-              <h2 className="text-2xl font-bold mb-2">Contact & Social</h2>
+              <h2 className="text-xl font-bold mb-2">Contact & Social</h2>
 
-              <p className="text-gray-400 mb-6">How your leads and clients will reach you.</p>
+              <p className="text-sm text-[var(--d-text-muted)] mb-4">How your leads and clients will reach you.</p>
 
             </div>
 
@@ -1665,7 +1687,7 @@ export default function CardForm({ id }: CardFormProps) {
 
               <div>
 
-                <h3 className="text-lg font-semibold text-white mb-3">Contact Information</h3>
+                <h3 className="text-lg font-semibold text-[var(--d-text)] mb-3">Contact Information</h3>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
@@ -1685,7 +1707,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                       <div key={field.key}>
 
-                        <label className="text-sm text-gray-400 block mb-1">
+                        <label className="text-sm text-[var(--d-text-muted)] block mb-1">
 
                           {field.label} {field.required && <span className="text-red-500">*</span>}
 
@@ -1713,7 +1735,7 @@ export default function CardForm({ id }: CardFormProps) {
                           return (
                             <div className={field.type === 'tel' ? 'flex items-center relative' : ''}>
                               {field.type === 'tel' && (
-                                <div className="absolute inset-y-[1px] left-[1px] flex items-center border-r border-white/10 z-10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors rounded-l-xl">
+                                <div className="absolute inset-y-[1px] left-[1px] flex items-center border-r border-[var(--d-border)] z-10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors rounded-l-xl">
                                   <select
                                     value={code}
                                     onChange={(e) => {
@@ -1727,20 +1749,20 @@ export default function CardForm({ id }: CardFormProps) {
                                         }
                                       });
                                     }}
-                                    className="h-full bg-transparent border-none text-gray-300 focus:outline-none focus:ring-0 pl-3 pr-8 rounded-l-xl cursor-pointer text-sm font-semibold tracking-wide appearance-none"
+                                    className="h-full bg-transparent border-none text-[var(--d-text-muted)] focus:outline-none focus:ring-0 pl-3 pr-8 rounded-l-xl cursor-pointer text-sm font-semibold tracking-wide appearance-none"
                                     style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
                                   >
-                                    <option value="+1" className="bg-[#1a2234] text-white">US +1</option>
-                                    <option value="+44" className="bg-[#1a2234] text-white">UK +44</option>
-                                    <option value="+91" className="bg-[#1a2234] text-white">IN +91</option>
-                                    <option value="+61" className="bg-[#1a2234] text-white">AU +61</option>
-                                    <option value="+971" className="bg-[#1a2234] text-white">AE +971</option>
-                                    <option value="+65" className="bg-[#1a2234] text-white">SG +65</option>
-                                    <option value="+60" className="bg-[#1a2234] text-white">MY +60</option>
-                                    <option value="+49" className="bg-[#1a2234] text-white">DE +49</option>
-                                    <option value="+33" className="bg-[#1a2234] text-white">FR +33</option>
+                                    <option value="+1" className="bg-[#1a2234] text-[var(--d-text)]">US +1</option>
+                                    <option value="+44" className="bg-[#1a2234] text-[var(--d-text)]">UK +44</option>
+                                    <option value="+91" className="bg-[#1a2234] text-[var(--d-text)]">IN +91</option>
+                                    <option value="+61" className="bg-[#1a2234] text-[var(--d-text)]">AU +61</option>
+                                    <option value="+971" className="bg-[#1a2234] text-[var(--d-text)]">AE +971</option>
+                                    <option value="+65" className="bg-[#1a2234] text-[var(--d-text)]">SG +65</option>
+                                    <option value="+60" className="bg-[#1a2234] text-[var(--d-text)]">MY +60</option>
+                                    <option value="+49" className="bg-[#1a2234] text-[var(--d-text)]">DE +49</option>
+                                    <option value="+33" className="bg-[#1a2234] text-[var(--d-text)]">FR +33</option>
                                   </select>
-                                  <svg className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                  <svg className="w-3.5 h-3.5 text-[var(--d-text-muted)] absolute right-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                                 </div>
                               )}
                               <input
@@ -1791,12 +1813,12 @@ export default function CardForm({ id }: CardFormProps) {
                                     return copy;
                                   });
                                 }}
-                                className={`w-full bg-white/5 border rounded-xl py-3 text-white focus:outline-none transition-all ${
+                                className={`w-full bg-[var(--d-elevate)] border rounded-xl py-3 text-[var(--d-text)] focus:outline-none transition-all ${
                                   field.type === 'tel' ? 'pl-[104px] pr-4' : 'px-4'
                                 } ${
                                   hasError
                                     ? 'border-red-500/80 focus:border-red-500 bg-red-500/5'
-                                    : 'border-white/10 focus:border-blue-500'
+                                    : 'border-[var(--d-border)] focus:border-blue-500'
                                 }`}
                               />
                             </div>
@@ -1825,7 +1847,7 @@ export default function CardForm({ id }: CardFormProps) {
 
               <div>
 
-                <h3 className="text-lg font-semibold text-white mb-3">Social Media Profiles</h3>
+                <h3 className="text-lg font-semibold text-[var(--d-text)] mb-3">Social Media Profiles</h3>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
@@ -1852,12 +1874,12 @@ export default function CardForm({ id }: CardFormProps) {
 
                       <div key={field.key}>
 
-                        <label className="text-sm text-gray-400 block mb-1">{field.label}</label>
+                        <label className="text-sm text-[var(--d-text-muted)] block mb-1">{field.label}</label>
 
                         <div className={`flex items-center border rounded-xl overflow-hidden transition-all ${
-                          hasError ? 'border-red-500/80 bg-red-500/5' : 'border-white/10 focus-within:border-blue-500'
+                          hasError ? 'border-red-500/80 bg-red-500/5' : 'border-[var(--d-border)] focus-within:border-blue-500'
                         }`}>
-                          <span className="flex-shrink-0 bg-white/5 border-r border-white/10 px-3 py-3 text-xs text-gray-500 font-mono select-none whitespace-nowrap">
+                          <span className="flex-shrink-0 bg-[var(--d-elevate)] border-r border-[var(--d-border)] px-3 py-3 text-xs text-[var(--d-text-faint)] font-mono select-none whitespace-nowrap">
                             {field.prefix}
                           </span>
                           <input
@@ -1879,7 +1901,7 @@ export default function CardForm({ id }: CardFormProps) {
                                 return copy;
                               });
                             }}
-                            className="flex-1 min-w-0 bg-transparent px-3 py-3 text-white focus:outline-none text-sm"
+                            className="flex-1 min-w-0 bg-transparent px-3 py-3 text-[var(--d-text)] focus:outline-none text-sm"
                             placeholder={field.placeholder}
                           />
                         </div>
@@ -1923,11 +1945,11 @@ export default function CardForm({ id }: CardFormProps) {
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold mb-2">Business & Payments</h2>
-              <p className="text-gray-400 mb-6">Setup your company details and payment links.</p>
+              <p className="text-[var(--d-text-muted)] mb-6">Setup your company details and payment links.</p>
             </div>
 
             {/* Sub-tab Navigation */}
-            <div className="flex border-b border-white/10 pb-px mb-6 overflow-x-auto no-scrollbar gap-2">
+            <div className="flex border-b border-[var(--d-border)] pb-px mb-6 overflow-x-auto no-scrollbar gap-2">
               {availableTabs.map(tab => {
                 const isActive = activeBusinessTab === tab.id;
                 const hasErrors = getBusinessTabHasErrors(tab.id);
@@ -1940,7 +1962,7 @@ export default function CardForm({ id }: CardFormProps) {
                     className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all duration-300 relative whitespace-nowrap focus:outline-none border-b-2
                       ${isActive 
                         ? 'text-blue-400 border-blue-500 bg-blue-500/5' 
-                        : 'text-gray-400 border-transparent hover:text-gray-200 hover:bg-white/5'}`}
+                        : 'text-[var(--d-text-muted)] border-transparent hover:text-[var(--d-text)] hover:bg-[var(--d-hover)]'}`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d={tab.icon} />
@@ -1963,15 +1985,15 @@ export default function CardForm({ id }: CardFormProps) {
                   {/* Company Details */}
                   {formData.card_type !== 'personal' && (
 
-                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl overflow-hidden">
 
-                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div className="flex items-center justify-between p-4 border-b border-[var(--d-border)] bg-black/20">
 
                     <div>
 
-                      <h3 className="font-semibold text-white">Company Information</h3>
+                      <h3 className="font-semibold text-[var(--d-text)]">Company Information</h3>
 
-                      <p className="text-sm text-gray-400">Display your brand's details</p>
+                      <p className="text-sm text-[var(--d-text-muted)]">Display your brand's details</p>
 
                     </div>
 
@@ -2027,7 +2049,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                         <div>
 
-                          <label className="text-sm text-gray-400 block mb-1">Company Name <span className="text-red-500">*</span></label>
+                          <label className="text-sm text-[var(--d-text-muted)] block mb-1">Company Name <span className="text-red-500">*</span></label>
 
                           <input
 
@@ -2055,9 +2077,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                             }}
 
-                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                            className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${
 
-                              validationErrors.company_name ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                              validationErrors.company_name ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'
 
                             }`}
 
@@ -2073,7 +2095,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                         <div>
 
-                          <label className="text-sm text-gray-400 block mb-1">GST Number</label>
+                          <label className="text-sm text-[var(--d-text-muted)] block mb-1">GST Number</label>
 
                           <div className="relative">
 
@@ -2121,7 +2143,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                               }}
 
-                              className={`w-full bg-white/5 border rounded-xl pl-4 pr-24 py-3 text-white focus:outline-none transition-all ${
+                              className={`w-full bg-[var(--d-elevate)] border rounded-xl pl-4 pr-24 py-3 text-[var(--d-text)] focus:outline-none transition-all ${
 
                                 validationErrors.gst
 
@@ -2131,7 +2153,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                                   ? 'border-green-500/80 focus:border-green-500 bg-green-500/5'
 
-                                  : 'border-white/10 focus:border-blue-500'
+                                  : 'border-[var(--d-border)] focus:border-blue-500'
 
                               }`}
 
@@ -2157,11 +2179,11 @@ export default function CardForm({ id }: CardFormProps) {
 
                               {!isVerifyingGst && isGstVerified && (
 
-                                <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-2 py-0.5 text-[10px] font-bold" title="Verification is currently mocked">
+                                <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full px-2 py-0.5 text-[10px] font-bold" title="GSTIN format is valid. This is not an official government (GSTN) verification.">
 
-                                  <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                  <svg className="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
 
-                                  Verified (Mock)
+                                  Format valid
 
                                 </div>
 
@@ -2183,7 +2205,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                       <div>
 
-                        <label className="text-sm text-gray-400 block mb-1">Website URL</label>
+                        <label className="text-sm text-[var(--d-text-muted)] block mb-1">Website URL</label>
 
                         <input
 
@@ -2219,9 +2241,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                           }}
 
-                          className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                          className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${
 
-                            validationErrors.website ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                            validationErrors.website ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'
 
                           }`}
 
@@ -2245,15 +2267,15 @@ export default function CardForm({ id }: CardFormProps) {
                   
                   {/* Proprietor Details */}
                   {formData.card_type !== 'personal' && (
-                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl overflow-hidden">
 
-                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div className="flex items-center justify-between p-4 border-b border-[var(--d-border)] bg-black/20">
 
                     <div>
 
-                      <h3 className="font-semibold text-white">Proprietor / Team Details</h3>
+                      <h3 className="font-semibold text-[var(--d-text)]">Proprietor / Team Details</h3>
 
-                      <p className="text-sm text-gray-400">Add founders, co-founders, or key team members</p>
+                      <p className="text-sm text-[var(--d-text-muted)]">Add founders, co-founders, or key team members</p>
 
                     </div>
 
@@ -2273,7 +2295,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                       {formData.proprietor_details.map((proprietor, index) => (
 
-                        <div key={index} className="space-y-4 p-4 border border-white/10 rounded-xl bg-black/10 relative">
+                        <div key={index} className="space-y-4 p-4 border border-[var(--d-border)] rounded-xl bg-black/10 relative">
 
                           {formData.proprietor_details.length > 1 && (
 
@@ -2291,7 +2313,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                               }}
 
-                              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                              className="absolute top-4 right-4 text-[var(--d-text-muted)] hover:text-red-500 transition-colors"
 
                             >
 
@@ -2305,9 +2327,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                             <div className="shrink-0">
 
-                              <label className="text-sm text-gray-400 block mb-2">Photo</label>
+                              <label className="text-sm text-[var(--d-text-muted)] block mb-2">Photo</label>
 
-                              <div className="relative w-16 h-16 rounded-xl border border-white/10 overflow-hidden bg-black/50 shrink-0 group">
+                              <div className="relative w-16 h-16 rounded-xl border border-[var(--d-border)] overflow-hidden bg-black/50 shrink-0 group">
 
                                 {proprietor.image ? (
 
@@ -2332,7 +2354,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                                 ) : (
 
-                                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 group-hover:bg-white/5 transition-colors">
+                                  <div className="w-full h-full flex flex-col items-center justify-center text-[var(--d-text-faint)] group-hover:bg-[var(--d-hover)] transition-colors">
 
                                     <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
 
@@ -2350,7 +2372,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                               <div>
 
-                                <label className="text-sm text-gray-400 block mb-1">Name</label>
+                                <label className="text-sm text-[var(--d-text-muted)] block mb-1">Name</label>
 
                                 <input type="text" value={proprietor.name || ''} onChange={(e) => {
 
@@ -2360,19 +2382,19 @@ export default function CardForm({ id }: CardFormProps) {
 
                                   setFormData({ ...formData, proprietor_details: newDetails });
 
-                                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="John Doe" />
+                                }} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="John Doe" />
 
                               </div>
 
                               <div>
 
-                                <label className="text-sm text-gray-400 block mb-1">Designation</label>
+                                <label className="text-sm text-[var(--d-text-muted)] block mb-1">Designation</label>
 
                                 <input list="designation-options" type="text" value={proprietor.designation || ''} onChange={(e) => {
                                   const newDetails = [...formData.proprietor_details];
                                   newDetails[index].designation = e.target.value;
                                   setFormData({ ...formData, proprietor_details: newDetails });
-                                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
+                                }} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="Co-Founder" />
                                 <datalist id="designation-options">
                                   {designations.map((d) => (
                                     <option key={d.id} value={d.name} />
@@ -2391,7 +2413,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                             <div>
 
-                              <label className="text-sm text-gray-400 block mb-1">Email</label>
+                              <label className="text-sm text-[var(--d-text-muted)] block mb-1">Email</label>
 
                               <input type="email" value={proprietor.email || ''} onChange={(e) => {
 
@@ -2401,7 +2423,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                                 setFormData({ ...formData, proprietor_details: newDetails });
 
-                              }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_email`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="john@example.com" />
+                              }} className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${validationErrors[`proprietor_${index}_email`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'}`} placeholder="john@example.com" />
 
                               {validationErrors[`proprietor_${index}_email`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_email`]}</p>}
 
@@ -2409,7 +2431,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                             <div>
 
-                              <label className="text-sm text-gray-400 block mb-1">Phone Number</label>
+                              <label className="text-sm text-[var(--d-text-muted)] block mb-1">Phone Number</label>
 
                               <input type="tel" value={proprietor.phone || ''} onChange={(e) => {
 
@@ -2419,7 +2441,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                                 setFormData({ ...formData, proprietor_details: newDetails });
 
-                              }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_phone`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="+1234567890" />
+                              }} className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${validationErrors[`proprietor_${index}_phone`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'}`} placeholder="+1234567890" />
 
                               {validationErrors[`proprietor_${index}_phone`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_phone`]}</p>}
 
@@ -2431,7 +2453,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                             <div>
 
-                              <label className="text-sm text-gray-400 block mb-1">WhatsApp Number</label>
+                              <label className="text-sm text-[var(--d-text-muted)] block mb-1">WhatsApp Number</label>
 
                               <input type="tel" value={proprietor.whatsapp || ''} onChange={(e) => {
 
@@ -2441,7 +2463,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                                 setFormData({ ...formData, proprietor_details: newDetails });
 
-                              }} className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${validationErrors[`proprietor_${index}_whatsapp`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'}`} placeholder="+1234567890" />
+                              }} className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${validationErrors[`proprietor_${index}_whatsapp`] ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'}`} placeholder="+1234567890" />
 
                               {validationErrors[`proprietor_${index}_whatsapp`] && <p className="text-xs text-red-500 mt-1">{validationErrors[`proprietor_${index}_whatsapp`]}</p>}
 
@@ -2449,7 +2471,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                             <div>
 
-                              <label className="text-sm text-gray-400 block mb-1">Date of Birth</label>
+                              <label className="text-sm text-[var(--d-text-muted)] block mb-1">Date of Birth</label>
 
                               <input type="date" value={proprietor.dob || ''} onChange={(e) => {
 
@@ -2459,7 +2481,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                                 setFormData({ ...formData, proprietor_details: newDetails });
 
-                              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                              }} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" />
 
                             </div>
 
@@ -2485,7 +2507,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                         }}
 
-                        className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl text-blue-400 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-3 bg-[var(--d-elevate)] border border-[var(--d-border)] border-dashed rounded-xl text-blue-400 hover:bg-[var(--d-hover)] transition-colors flex items-center justify-center gap-2"
 
                       >
 
@@ -2511,15 +2533,15 @@ export default function CardForm({ id }: CardFormProps) {
                   {/* Payment Details */}
                   {formData.card_type !== 'personal' && (
 
-                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl overflow-hidden">
 
-                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div className="flex items-center justify-between p-4 border-b border-[var(--d-border)] bg-black/20">
 
                     <div>
 
-                      <h3 className="font-semibold text-white">Payment Details</h3>
+                      <h3 className="font-semibold text-[var(--d-text)]">Payment Details</h3>
 
-                      <p className="text-sm text-gray-400">Allow clients to pay you directly</p>
+                      <p className="text-sm text-[var(--d-text-muted)]">Allow clients to pay you directly</p>
 
                     </div>
 
@@ -2579,7 +2601,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                       <div>
 
-                        <h4 className="text-sm font-semibold text-white mb-4 pb-2 border-b border-white/10">
+                        <h4 className="text-sm font-semibold text-[var(--d-text)] mb-4 pb-2 border-b border-[var(--d-border)]">
 
                           Bank Details
 
@@ -2589,15 +2611,15 @@ export default function CardForm({ id }: CardFormProps) {
 
                           <div className="md:col-span-2">
 
-                            <label className="text-sm text-gray-400 block mb-1">Bank Name</label>
+                            <label className="text-sm text-[var(--d-text-muted)] block mb-1">Bank Name</label>
 
-                            <input type="text" value={formData.payment_info?.bank_name || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), bank_name: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                            <input type="text" value={formData.payment_info?.bank_name || ''} onChange={(e) => setFormData({ ...formData, payment_info: { ...(formData.payment_info || {}), bank_name: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" />
 
                           </div>
 
                           <div>
 
-                            <label className="text-sm text-gray-400 block mb-1">Account Number</label>
+                            <label className="text-sm text-[var(--d-text-muted)] block mb-1">Account Number</label>
 
                             <input
 
@@ -2637,9 +2659,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                               }}
 
-                              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${
 
-                                validationErrors.account_number ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                                validationErrors.account_number ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'
 
                               }`}
 
@@ -2655,7 +2677,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                           <div>
 
-                            <label className="text-sm text-gray-400 block mb-1">IFSC Code</label>
+                            <label className="text-sm text-[var(--d-text-muted)] block mb-1">IFSC Code</label>
 
                             <input
 
@@ -2695,9 +2717,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                               }}
 
-                              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${
 
-                                validationErrors.ifsc_code ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                                validationErrors.ifsc_code ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'
 
                               }`}
 
@@ -2721,7 +2743,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                       <div>
 
-                        <h4 className="text-sm font-semibold text-white mb-4 pb-2 border-b border-white/10">
+                        <h4 className="text-sm font-semibold text-[var(--d-text)] mb-4 pb-2 border-b border-[var(--d-border)]">
 
                           Bar Code / UPI
 
@@ -2731,19 +2753,19 @@ export default function CardForm({ id }: CardFormProps) {
 
                           <div className="flex-1 space-y-2">
 
-                              <label className="text-sm font-medium text-gray-400 block mb-1">
+                              <label className="text-sm font-medium text-[var(--d-text-muted)] block mb-1">
 
                                 Upload Custom QR Code
 
                               </label>
 
-                              <input id="qr-upload" type="file" accept="image/*" onChange={handleQrUpload} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                              <input id="qr-upload" type="file" accept="image/*" onChange={handleQrUpload} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
 
                             </div>
 
                             {(formData.payment_info?.qr_path) && (
 
-                              <div className="relative w-24 h-24 rounded-xl border border-white/10 overflow-hidden bg-black/50 shrink-0 group">
+                              <div className="relative w-24 h-24 rounded-xl border border-[var(--d-border)] overflow-hidden bg-black/50 shrink-0 group">
 
                                 <img src={formData.payment_info.qr_path} alt="QR Code Preview" className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" />
 
@@ -2769,7 +2791,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                           <div>
 
-                            <label className="text-sm text-gray-400 block mb-1">UPI ID</label>
+                            <label className="text-sm text-[var(--d-text-muted)] block mb-1">UPI ID</label>
 
                             <input
 
@@ -2809,9 +2831,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                               }}
 
-                              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${
 
-                                validationErrors.upi_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                                validationErrors.upi_id ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'
 
                               }`}
 
@@ -2829,7 +2851,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                           <div>
 
-                            <label className="text-sm text-gray-400 block mb-1">PhonePe Number</label>
+                            <label className="text-sm text-[var(--d-text-muted)] block mb-1">PhonePe Number</label>
 
                             <input
 
@@ -2869,9 +2891,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                               }}
 
-                              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${
+                              className={`w-full bg-[var(--d-elevate)] border rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none transition-all ${
 
-                                validationErrors.phonepe ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-white/10 focus:border-blue-500'
+                                validationErrors.phonepe ? 'border-red-500/80 focus:border-red-500 bg-red-500/5' : 'border-[var(--d-border)] focus:border-blue-500'
 
                               }`}
 
@@ -2906,15 +2928,15 @@ export default function CardForm({ id }: CardFormProps) {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                   {/* Operational Details (Hours) */}
                   {formData.card_type !== 'personal' && (
-                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl overflow-hidden">
 
-                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                  <div className="flex items-center justify-between p-4 border-b border-[var(--d-border)] bg-black/20">
 
                     <div>
 
-                      <h3 className="font-semibold text-white">Operational Details</h3>
+                      <h3 className="font-semibold text-[var(--d-text)]">Operational Details</h3>
 
-                      <p className="text-sm text-gray-400">Shop / business opening hours</p>
+                      <p className="text-sm text-[var(--d-text-muted)]">Shop / business opening hours</p>
 
                     </div>
 
@@ -2935,11 +2957,11 @@ export default function CardForm({ id }: CardFormProps) {
                       {Object.entries(formData.opening_hours).map(([dayStr, hours]: [string, any]) => {
                         const day = dayStr as keyof typeof formData.opening_hours;
                         return (
-                        <div key={day} className="flex items-center justify-between gap-4 py-2 border-b border-white/5 last:border-0">
+                        <div key={day} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 py-2 border-b border-[var(--d-border)] last:border-0">
 
-                          <div className="w-24 capitalize text-gray-300 text-sm font-medium">{day}</div>
+                          <div className="w-20 shrink-0 capitalize text-[var(--d-text-muted)] text-sm font-medium">{day}</div>
 
-                          <div className="flex items-center gap-2 flex-1">
+                          <div className="flex items-center flex-wrap gap-2">
 
                             <input type="time" value={hours.open || ''} disabled={hours.closed} onChange={(e) => {
 
@@ -2959,9 +2981,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                               setFormData({ ...formData, opening_hours: newHours });
 
-                            }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
+                            }} className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-lg px-3 py-1.5 text-[var(--d-text)] text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
 
-                            <span className="text-gray-500 text-sm">to</span>
+                            <span className="text-[var(--d-text-faint)] text-sm">to</span>
 
                             <input type="time" value={hours.close || ''} disabled={hours.closed} onChange={(e) => {
 
@@ -2981,11 +3003,11 @@ export default function CardForm({ id }: CardFormProps) {
 
                               setFormData({ ...formData, opening_hours: newHours });
 
-                            }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
+                            }} className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-lg px-3 py-1.5 text-[var(--d-text)] text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50" />
 
                           </div>
 
-                          <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                          <label className="flex items-center gap-2 text-sm text-[var(--d-text-muted)] cursor-pointer">
 
                             <input type="checkbox" checked={hours.closed} onChange={(e) => {
 
@@ -2997,7 +3019,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                               });
 
-                            }} className="rounded bg-black/20 border-white/20 text-blue-500 focus:ring-0" />
+                            }} className="rounded bg-black/20 border-[var(--d-border)] text-blue-500 focus:ring-0" />
 
                             Closed
 
@@ -3016,15 +3038,15 @@ export default function CardForm({ id }: CardFormProps) {
               )}
                   
                   {/* Physical Address */}
-                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                  <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl overflow-hidden">
 
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                <div className="flex items-center justify-between p-4 border-b border-[var(--d-border)] bg-black/20">
 
                   <div>
 
-                    <h3 className="font-semibold text-white">Physical Address</h3>
+                    <h3 className="font-semibold text-[var(--d-text)]">Physical Address</h3>
 
-                    <p className="text-sm text-gray-400">Display your address details</p>
+                    <p className="text-sm text-[var(--d-text-muted)]">Display your address details</p>
 
                   </div>
 
@@ -3046,9 +3068,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                       <div>
 
-                        <label className="text-sm text-gray-400 block mb-1">Pincode</label>
+                        <label className="text-sm text-[var(--d-text-muted)] block mb-1">Pincode</label>
 
-                        <input type="text" value={formData.location_info?.pincode || ''} onChange={(e) => handlePincodeChange(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 380001" maxLength={6} />
+                        <input type="text" value={formData.location_info?.pincode || ''} onChange={(e) => handlePincodeChange(e.target.value)} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="e.g. 380001" maxLength={6} />
 
                         {isFetchingPincode && <span className="text-xs text-blue-400 mt-1 block">Fetching details...</span>}
 
@@ -3056,9 +3078,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                       <div>
 
-                        <label className="text-sm text-gray-400 block mb-1">State</label>
+                        <label className="text-sm text-[var(--d-text-muted)] block mb-1">State</label>
 
-                        <input type="text" value={formData.location_info?.state || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), state: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="State" />
+                        <input type="text" value={formData.location_info?.state || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), state: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="State" />
 
                       </div>
 
@@ -3070,29 +3092,29 @@ export default function CardForm({ id }: CardFormProps) {
 
                       <div>
 
-                        <label className="text-sm text-gray-400 block mb-1">City</label>
+                        <label className="text-sm text-[var(--d-text-muted)] block mb-1">City</label>
 
-                        <input type="text" value={formData.location_info?.city || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), city: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="City" />
+                        <input type="text" value={formData.location_info?.city || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), city: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="City" />
 
                       </div>
 
                       <div>
 
-                        <label className="text-sm text-gray-400 block mb-1">Village / Area</label>
+                        <label className="text-sm text-[var(--d-text-muted)] block mb-1">Village / Area</label>
 
                         {villages.length > 0 ? (
 
-                          <select value={formData.location_info?.village || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), village: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500">
+                          <select value={formData.location_info?.village || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), village: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500">
 
                             <option value="">Select Village/Area</option>
 
-                            {villages.map((v, i) => <option key={i} value={v} className="bg-gray-900">{v}</option>)}
+                            {villages.map((v, i) => <option key={i} value={v} className="bg-[var(--d-surface)]">{v}</option>)}
 
                           </select>
 
                         ) : (
 
-                          <input type="text" value={formData.location_info?.village || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), village: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="Village / Area" />
+                          <input type="text" value={formData.location_info?.village || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), village: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="Village / Area" />
 
                         )}
 
@@ -3104,9 +3126,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                     <div>
 
-                      <label className="text-sm text-gray-400 block mb-1">Full Physical Address</label>
+                      <label className="text-sm text-[var(--d-text-muted)] block mb-1">Full Physical Address</label>
 
-                      <textarea rows={2} value={formData.location_info?.address || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), address: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="123 Business Street, City..." />
+                      <textarea rows={2} value={formData.location_info?.address || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), address: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="123 Business Street, City..." />
 
                     </div>
 
@@ -3121,15 +3143,15 @@ export default function CardForm({ id }: CardFormProps) {
               {/* Google Maps Location */}
                   
                   {/* Google Maps Location */}
-                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                  <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl overflow-hidden">
 
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                <div className="flex items-center justify-between p-4 border-b border-[var(--d-border)] bg-black/20">
 
                   <div>
 
-                    <h3 className="font-semibold text-white">Google Maps Location</h3>
+                    <h3 className="font-semibold text-[var(--d-text)]">Google Maps Location</h3>
 
-                    <p className="text-sm text-gray-400">Embed a map to your office or store</p>
+                    <p className="text-sm text-[var(--d-text-muted)]">Embed a map to your office or store</p>
 
                   </div>
 
@@ -3149,9 +3171,9 @@ export default function CardForm({ id }: CardFormProps) {
 
                     <div>
 
-                      <label className="text-sm text-gray-400 block mb-1">Google Maps URL</label>
+                      <label className="text-sm text-[var(--d-text-muted)] block mb-1">Google Maps URL</label>
 
-                      <input type="url" value={formData.location_info?.map_url || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), map_url: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="https://goo.gl/maps/..." />
+                      <input type="url" value={formData.location_info?.map_url || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), map_url: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="https://goo.gl/maps/..." />
 
                     </div>
 
@@ -3159,11 +3181,11 @@ export default function CardForm({ id }: CardFormProps) {
 
                     <div className="flex items-center justify-center my-4">
 
-                      <div className="h-px bg-white/10 flex-1"></div>
+                      <div className="h-px bg-[var(--d-elevate)] flex-1"></div>
 
-                      <span className="px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">OR</span>
+                      <span className="px-4 text-xs font-medium text-[var(--d-text-faint)] uppercase tracking-wider">OR</span>
 
-                      <div className="h-px bg-white/10 flex-1"></div>
+                      <div className="h-px bg-[var(--d-elevate)] flex-1"></div>
 
                     </div>
 
@@ -3175,17 +3197,17 @@ export default function CardForm({ id }: CardFormProps) {
 
                         <div className="flex-1">
 
-                          <label className="text-sm text-gray-400 block mb-1">Latitude</label>
+                          <label className="text-sm text-[var(--d-text-muted)] block mb-1">Latitude</label>
 
-                          <input type="text" value={formData.location_info?.latitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), latitude: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 28.6139" />
+                          <input type="text" value={formData.location_info?.latitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), latitude: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="e.g. 28.6139" />
 
                         </div>
 
                         <div className="flex-1">
 
-                          <label className="text-sm text-gray-400 block mb-1">Longitude</label>
+                          <label className="text-sm text-[var(--d-text-muted)] block mb-1">Longitude</label>
 
-                          <input type="text" value={formData.location_info?.longitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), longitude: e.target.value } })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 77.2090" />
+                          <input type="text" value={formData.location_info?.longitude || ''} onChange={(e) => setFormData({ ...formData, location_info: { ...(formData.location_info || {}), longitude: e.target.value } })} className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" placeholder="e.g. 77.2090" />
 
                         </div>
 
@@ -3219,11 +3241,11 @@ export default function CardForm({ id }: CardFormProps) {
                   
                   {/* Appointment Details */}
                   {formData.card_type === 'professional' && (
-                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden mt-6">
-                  <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl overflow-hidden mt-6">
+                  <div className="flex items-center justify-between p-4 border-b border-[var(--d-border)] bg-black/20">
                     <div>
-                      <h3 className="font-semibold text-white">Appointments & Schedule</h3>
-                      <p className="text-sm text-gray-400">Allow clients to book appointments with you</p>
+                      <h3 className="font-semibold text-[var(--d-text)]">Appointments & Schedule</h3>
+                      <p className="text-sm text-[var(--d-text-muted)]">Allow clients to book appointments with you</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -3240,7 +3262,7 @@ export default function CardForm({ id }: CardFormProps) {
                           });
                         }}
                       />
-                      <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                      <div className="w-11 h-6 bg-[var(--d-elevate)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
                     </label>
                   </div>
 
@@ -3248,11 +3270,11 @@ export default function CardForm({ id }: CardFormProps) {
                     {formData.appointment_details?.is_enabled && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="p-4 space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-1.5">Booking Method</label>
+                          <label className="block text-sm font-medium text-[var(--d-text-muted)] mb-1.5">Booking Method</label>
                           <select
                             value={formData.appointment_details?.booking_type || 'native'}
                             onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), booking_type: e.target.value } })}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                            className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500"
                           >
                             <option value="native" className="bg-slate-900">TapCard Native Slot Booking</option>
                             <option value="url" className="bg-slate-900">External Booking URL (Calendly, etc.)</option>
@@ -3260,38 +3282,38 @@ export default function CardForm({ id }: CardFormProps) {
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-1.5">Button Title</label>
+                          <label className="block text-sm font-medium text-[var(--d-text-muted)] mb-1.5">Button Title</label>
                           <input 
                             type="text" 
                             value={formData.appointment_details?.title || 'Book an Appointment'} 
                             onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), title: e.target.value } })} 
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" 
+                            className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" 
                             placeholder="e.g. Book a Consultation" 
                           />
                         </div>
 
                         {(formData.appointment_details?.booking_type === 'url') ? (
                           <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Booking URL</label>
+                            <label className="block text-sm font-medium text-[var(--d-text-muted)] mb-1.5">Booking URL</label>
                             <input 
                               type="url" 
                               value={formData.appointment_details?.booking_url || ''} 
                               onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), booking_url: e.target.value } })} 
-                              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" 
+                              className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500" 
                               placeholder="https://calendly.com/your-link" 
                             />
-                            <p className="mt-1.5 text-xs text-gray-500">Enter your Calendly, Google Calendar, or other booking link.</p>
+                            <p className="mt-1.5 text-xs text-[var(--d-text-faint)]">Enter your Calendly, Google Calendar, or other booking link.</p>
                           </div>
                         ) : (
-                          <div className="space-y-4 pt-2 border-t border-white/10">
+                          <div className="space-y-4 pt-2 border-t border-[var(--d-border)]">
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-1.5">Working Days</label>
+                              <label className="block text-sm font-medium text-[var(--d-text-muted)] mb-1.5">Working Days</label>
                               <div className="flex flex-wrap gap-2">
                                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                                  <label key={day} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-white/10 transition-colors">
+                                  <label key={day} className="flex items-center gap-2 bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-lg px-3 py-1.5 cursor-pointer hover:bg-[var(--d-hover)] transition-colors">
                                     <input 
                                       type="checkbox" 
-                                      className="rounded bg-black/20 border-white/10 text-blue-500 focus:ring-blue-500/20"
+                                      className="rounded bg-black/20 border-[var(--d-border)] text-blue-500 focus:ring-blue-500/20"
                                       checked={(formData.appointment_details?.working_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']).includes(day)}
                                       onChange={(e) => {
                                         const currentDays = formData.appointment_details?.working_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -3299,37 +3321,37 @@ export default function CardForm({ id }: CardFormProps) {
                                         setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), working_days: newDays } });
                                       }}
                                     />
-                                    <span className="text-sm text-gray-300">{day}</span>
+                                    <span className="text-sm text-[var(--d-text-muted)]">{day}</span>
                                   </label>
                                 ))}
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">Start Time</label>
+                                <label className="block text-sm font-medium text-[var(--d-text-muted)] mb-1.5">Start Time</label>
                                 <input 
                                   type="time" 
                                   value={formData.appointment_details?.start_time || '09:00'}
                                   onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), start_time: e.target.value } })}
-                                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 [color-scheme:dark]" 
+                                  className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500 [color-scheme:dark]" 
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">End Time</label>
+                                <label className="block text-sm font-medium text-[var(--d-text-muted)] mb-1.5">End Time</label>
                                 <input 
                                   type="time" 
                                   value={formData.appointment_details?.end_time || '17:00'}
                                   onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), end_time: e.target.value } })}
-                                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 [color-scheme:dark]" 
+                                  className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500 [color-scheme:dark]" 
                                 />
                               </div>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-1.5">Slot Duration</label>
+                              <label className="block text-sm font-medium text-[var(--d-text-muted)] mb-1.5">Slot Duration</label>
                               <select
                                 value={formData.appointment_details?.slot_duration || '30'}
                                 onChange={(e) => setFormData({ ...formData, appointment_details: { ...(formData.appointment_details || {}), slot_duration: e.target.value } })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                                className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl px-4 py-3 text-[var(--d-text)] focus:outline-none focus:border-blue-500"
                               >
                                 <option value="15" className="bg-slate-900">15 Minutes</option>
                                 <option value="30" className="bg-slate-900">30 Minutes</option>
@@ -3353,15 +3375,15 @@ export default function CardForm({ id }: CardFormProps) {
               {activeBusinessTab === 'gallery' && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                   {/* Gallery Content */}
-                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                  <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl overflow-hidden">
 
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
+                <div className="flex items-center justify-between p-4 border-b border-[var(--d-border)] bg-black/20">
 
                   <div>
 
-                    <h3 className="font-semibold text-white">Gallery Content</h3>
+                    <h3 className="font-semibold text-[var(--d-text)]">Gallery Content</h3>
 
-                    <p className="text-sm text-gray-400">Add photos, videos, or graphics</p>
+                    <p className="text-sm text-[var(--d-text-muted)]">Add photos, videos, or graphics</p>
 
                   </div>
 
@@ -3379,7 +3401,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 space-y-4">
 
-                    <p className="text-sm text-gray-400 mb-2">Upload images to your gallery.</p>
+                    <p className="text-sm text-[var(--d-text-muted)] mb-2">Upload images to your gallery.</p>
 
                     {/* Placeholder for actual file upload mapping. In real integration, upload to API and save URLs. */}
 
@@ -3433,13 +3455,13 @@ export default function CardForm({ id }: CardFormProps) {
 
                       setFormData({ ...formData, gallery_content: newGallery });
 
-                    }} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
+                    }} className="block w-full text-sm text-[var(--d-text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20" />
 
                     <div className="flex flex-wrap gap-4 mt-4">
 
                       {formData.gallery_content.map((url: string, idx: number) => (
 
-                        <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-white/10 group">
+                        <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-[var(--d-border)] group">
 
                           <img src={url} alt="Gallery item" className="w-full h-full object-cover" />
 
@@ -3489,7 +3511,7 @@ export default function CardForm({ id }: CardFormProps) {
 
               <h2 className="text-2xl font-bold mb-2">{id ? 'Theme & Save' : 'Theme & Complete'}</h2>
 
-              <p className="text-gray-400 mb-6">{id ? 'Choose your brand color and save your changes!' : 'Choose your brand color and generate your card!'}</p>
+              <p className="text-[var(--d-text-muted)] mb-6">{id ? 'Choose your brand color and save your changes!' : 'Choose your brand color and generate your card!'}</p>
 
             </div>
 
@@ -3497,9 +3519,9 @@ export default function CardForm({ id }: CardFormProps) {
 
             <div>
 
-              <h3 className="text-lg font-semibold text-white mb-3">Select Brand Colors</h3>
+              <h3 className="text-lg font-semibold text-[var(--d-text)] mb-3">Select Brand Colors</h3>
 
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+              <div className="grid grid-cols-4 min-[360px]:grid-cols-5 md:grid-cols-10 gap-2 sm:gap-3">
 
                 {[
 
@@ -3521,7 +3543,23 @@ export default function CardForm({ id }: CardFormProps) {
 
                   { id: 'yellow', primary: '#eab308', secondary: '#fefce8' },
 
-                  { id: 'dark', primary: '#1f2937', secondary: '#f3f4f6' },
+                  { id: 'fuchsia', primary: '#d946ef', secondary: '#fdf4ff' },
+
+                  { id: 'lavender', primary: '#a78bfa', secondary: '#f5f3ff' },
+
+                  { id: 'pink', primary: '#ec4899', secondary: '#fdf2f8' },
+
+                  { id: 'amber', primary: '#f59e0b', secondary: '#fffbeb' },
+
+                  { id: 'lime', primary: '#84cc16', secondary: '#f7fee7' },
+
+                  { id: 'emerald', primary: '#10b981', secondary: '#ecfdf5' },
+
+                  { id: 'sky', primary: '#0ea5e9', secondary: '#f0f9ff' },
+
+                  { id: 'slate', primary: '#64748b', secondary: '#f8fafc' },
+
+                  { id: 'midnight', primary: '#1e293b', secondary: '#f1f5f9' },
 
                 ].map((pair) => (
 
@@ -3549,7 +3587,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                     className={`h-10 w-10 rounded-full cursor-pointer border-2 transition-transform overflow-hidden relative ${
 
-                      (formData.custom_branding?.primary_color === pair.primary || formData.custom_branding?.theme_color === pair.primary || formData.custom_branding?.theme_color === pair.id) ? 'border-white scale-110 shadow-lg ring-2 ring-white/20' : 'border-white/10 hover:scale-105'
+                      (formData.custom_branding?.primary_color === pair.primary || formData.custom_branding?.theme_color === pair.primary || formData.custom_branding?.theme_color === pair.id) ? 'border-white scale-110 shadow-lg ring-2 ring-white/20' : 'border-[var(--d-border)] hover:scale-105'
 
                     }`}
 
@@ -3569,11 +3607,11 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-              <div className="flex items-center gap-6 mt-5 pt-5 border-t border-white/10">
+              <div className="flex items-center gap-6 mt-5 pt-5 border-t border-[var(--d-border)]">
 
                 <div className="flex flex-col">
 
-                  <label className="text-sm font-medium text-white mb-2">Custom Primary</label>
+                  <label className="text-sm font-medium text-[var(--d-text)] mb-2">Custom Primary</label>
 
                   <div className="flex items-center gap-2">
 
@@ -3603,7 +3641,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                     />
 
-                    <span className="text-xs text-gray-400 font-mono uppercase">
+                    <span className="text-xs text-[var(--d-text-muted)] font-mono uppercase">
 
                       {formData.custom_branding.primary_color || (formData.custom_branding.theme_color?.startsWith('#') ? formData.custom_branding.theme_color : '#3B82F6')}
 
@@ -3615,13 +3653,13 @@ export default function CardForm({ id }: CardFormProps) {
 
                 
 
-                <div className="w-[1px] h-10 bg-white/10"></div>
+                <div className="w-[1px] h-10 bg-[var(--d-elevate)]"></div>
 
                 
 
                 <div className="flex flex-col">
 
-                  <label className="text-sm font-medium text-white mb-2">Custom Secondary</label>
+                  <label className="text-sm font-medium text-[var(--d-text)] mb-2">Custom Secondary</label>
 
                   <div className="flex items-center gap-2">
 
@@ -3649,7 +3687,7 @@ export default function CardForm({ id }: CardFormProps) {
 
                     />
 
-                    <span className="text-xs text-gray-400 font-mono uppercase">
+                    <span className="text-xs text-[var(--d-text-muted)] font-mono uppercase">
 
                       {formData.custom_branding.secondary_color || '#EFF6FF'}
 
@@ -3683,24 +3721,24 @@ export default function CardForm({ id }: CardFormProps) {
 
   if (authLoading || checkingCards) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-[#030712]">
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-[var(--d-surface)]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-          <p className="text-gray-400 font-medium animate-pulse">Loading...</p>
+          <p className="text-[var(--d-text-muted)] font-medium animate-pulse">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-[#030712]">
+    <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-[var(--d-surface)]">
 
-      <div className="w-full lg:w-3/5 flex flex-col h-full border-r border-white/5 overflow-y-auto no-scrollbar">
-        <div className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
+      <div className="w-full lg:w-3/5 flex flex-col h-full border-r border-[var(--d-border)] overflow-y-auto no-scrollbar">
+        <div className="p-4 sm:p-6 pb-24 lg:pb-6 max-w-4xl mx-auto w-full">
 
           <div className="mb-8">
 
-            <button onClick={() => router.push('/dashboard/cards')} className="text-sm text-gray-400 hover:text-white flex items-center gap-1.5 transition-all duration-200 mb-6 group">
+            <button onClick={() => router.push('/dashboard/cards')} className="text-sm text-[var(--d-text-muted)] hover:text-[var(--d-text)] flex items-center gap-1.5 transition-all duration-200 mb-6 group">
 
               <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
 
@@ -3713,7 +3751,7 @@ export default function CardForm({ id }: CardFormProps) {
             {/* Enhanced Stepper */}
             <div className="relative mb-4">
               {/* Progress bar background */}
-              <div className="absolute top-5 left-[10%] right-[10%] h-1 bg-white/10 rounded-full" />
+              <div className="absolute top-5 left-[10%] right-[10%] h-1 bg-[var(--d-elevate)] rounded-full" />
               {/* Progress bar fill */}
               <div
                 className="absolute top-5 left-[10%] h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700 ease-out"
@@ -3744,7 +3782,7 @@ export default function CardForm({ id }: CardFormProps) {
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-500 relative
                         ${isCompleted ? 'bg-gradient-to-br from-green-400 to-emerald-600 text-white shadow-lg shadow-green-500/30 scale-100 group-hover:scale-105 active:scale-95' : ''}
                         ${isActive ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/40 scale-110 ring-[3px] ring-blue-400/30' : ''}
-                        ${isUpcoming ? 'bg-white/[0.07] text-gray-500 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 active:scale-95' : ''}
+                        ${isUpcoming ? 'bg-white/[0.07] text-[var(--d-text-faint)] border border-[var(--d-border)] group-hover:bg-[var(--d-hover)] group-hover:border-[var(--d-border)] active:scale-95' : ''}
                       `}>
                         {isCompleted ? (
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -3755,8 +3793,8 @@ export default function CardForm({ id }: CardFormProps) {
                         )}
                         {isActive && <span className="absolute -inset-1 rounded-full bg-blue-500/20 animate-ping opacity-30" />}
                       </div>
-                      <span className={`mt-2 text-[11px] font-medium transition-colors duration-300 text-center leading-tight
-                        ${isActive ? 'text-blue-400' : isCompleted ? 'text-green-400/80 group-hover:text-green-300' : 'text-gray-600 group-hover:text-gray-400'}
+                      <span className={`mt-2 hidden min-[360px]:block text-[11px] font-medium transition-colors duration-300 text-center leading-tight
+                        ${isActive ? 'text-blue-400' : isCompleted ? 'text-green-400/80 group-hover:text-green-300' : 'text-gray-600 group-hover:text-[var(--d-text-muted)]'}
                       `}>{step.label}</span>
                     </button>
                   );
@@ -3768,7 +3806,7 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-          <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
+          <div className="bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
 
             {error && (
 
@@ -3788,9 +3826,9 @@ export default function CardForm({ id }: CardFormProps) {
 
 
 
-            <div className="flex justify-between items-center mt-10 pt-6 border-t border-white/5">
+            <div className="flex justify-between items-center mt-10 pt-6 border-t border-[var(--d-border)]">
 
-              <button onClick={handlePrev} disabled={currentStep === 1 || isSubmitting} className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${currentStep === 1 ? 'opacity-0 cursor-default pointer-events-none' : 'bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20'}`}>
+              <button onClick={handlePrev} disabled={currentStep === 1 || isSubmitting} className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${currentStep === 1 ? 'opacity-0 cursor-default pointer-events-none' : 'bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] text-[var(--d-text)] border border-[var(--d-border)] hover:border-[var(--d-border)]'}`}>
 
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
                 Back
@@ -3798,7 +3836,7 @@ export default function CardForm({ id }: CardFormProps) {
               </button>
 
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-500 hidden sm:block">Step {currentStep} of {totalSteps}</span>
+                <span className="text-xs text-[var(--d-text-faint)] hidden sm:block">Step {currentStep} of {totalSteps}</span>
 
                 {currentStep < totalSteps ? (
 
@@ -3833,8 +3871,30 @@ export default function CardForm({ id }: CardFormProps) {
         </div>
       </div>
 
-      {/* RIGHT PANEL: Live Preview */}
-      <div className="hidden lg:flex lg:w-2/5 bg-black/50 items-center justify-center p-4 lg:p-8 overflow-hidden">
+      {/* Floating preview toggle — mobile & tablet only (hidden once the sheet is open) */}
+      {!showMobilePreview && (
+        <button
+          type="button"
+          onClick={() => setShowMobilePreview(true)}
+          aria-label="Show live preview"
+          className="lg:hidden fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold text-sm px-5 py-3 shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          Preview
+        </button>
+      )}
+
+      {/* RIGHT PANEL: Live Preview — a fixed side panel on desktop; on mobile/tablet
+          (where it would otherwise be hidden) it opens as a full-screen sheet. */}
+      <div className={`${showMobilePreview ? 'fixed inset-0 z-[60] flex' : 'hidden'} lg:static lg:z-auto lg:flex lg:w-2/5 bg-black/50 items-center justify-center p-4 lg:p-8 overflow-hidden`}>
+        <button
+          type="button"
+          onClick={() => setShowMobilePreview(false)}
+          aria-label="Close preview"
+          className="lg:hidden absolute top-4 right-4 z-[70] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
         <div className="w-[320px] h-[650px] bg-black rounded-[48px] border-[3.5px] border-neutral-800/80 ring-1 ring-white/15 overflow-hidden shadow-2xl relative flex flex-col scale-[0.85] lg:scale-100 origin-center">
           {/* Dynamic Island Notch */}
           <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-full z-40 flex items-center justify-center border border-neutral-800/50 shadow-inner">
@@ -3900,9 +3960,9 @@ export default function CardForm({ id }: CardFormProps) {
                Object.entries(openingHours).some(([day, h]: any) => day.toLowerCase() !== 'sunday' && h && h.closed === true));
             const hasBrochuresBlock = showBrochures && brochurePdfs.length > 0;
 
-            const surface       = isDark ? 'bg-[#0f0f13]' : 'bg-white';
+            const surface       = isDark ? 'bg-[var(--d-surface)]' : 'bg-white';
             const surfaceSoft   = isDark ? 'bg-white/[0.04]' : 'bg-slate-50';
-            const borderSoft    = isDark ? 'border-white/10' : 'border-slate-200';
+            const borderSoft    = isDark ? 'border-[var(--d-border)]' : 'border-slate-200';
             const ringSoft      = isDark ? 'ring-white/10' : 'ring-slate-200';
             const cardStyle     = `${surfaceSoft} ring-1 ${ringSoft} transition-all duration-200 rounded-2xl`;
 
@@ -4038,7 +4098,7 @@ export default function CardForm({ id }: CardFormProps) {
             };
 
             const RenderSection = ({ title, children, icon }: { title: string; children: React.ReactNode; icon?: React.ReactNode }) => (
-              <div className={`mt-4 relative rounded-2xl border p-3 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'} ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'}`}>
+              <div className={`mt-4 relative rounded-2xl border p-3 ${isDark ? 'border-[var(--d-border)] bg-white/[0.04]' : 'border-slate-200/70 bg-white'} ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {icon && <span className="flex h-5 w-5 items-center justify-center rounded-md" style={{ backgroundColor: hexToRgba(primaryColor, 0.15), color: primaryColor }}>{icon}</span>}
                   <h4 className={`text-[9px] font-bold uppercase tracking-widest ${textMuted}`}>{title}</h4>
@@ -4086,7 +4146,7 @@ export default function CardForm({ id }: CardFormProps) {
             return (
               <div 
                 id="simulated-phone-scroll"
-                className={`flex-1 overflow-y-auto pb-20 relative transition-colors duration-300 ${
+                className={`dash-scope ${isDark ? 'dark' : ''} flex-1 overflow-y-auto pb-20 relative transition-colors duration-300 ${
                   isDark ? 'bg-[#08080C] text-slate-100' : 'bg-slate-100 text-slate-900'
                 }`}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -4106,24 +4166,24 @@ export default function CardForm({ id }: CardFormProps) {
 
                 {/* Simulated card wrapper */}
                 <div className={`relative m-2.5 mt-4 rounded-3xl border overflow-hidden backdrop-blur ${
-                  isDark ? 'bg-[#0f0f13] border-white/10 shadow-black/10 shadow-2xl' : 'bg-white border-slate-200 shadow-xl'
+                  isDark ? 'bg-[var(--d-surface)] border-[var(--d-border)] shadow-black/10 shadow-2xl' : 'bg-white border-slate-200 shadow-xl'
                 }`}>
                   {/* ---- Simulated HERO R3F ---- */}
                   <div className="relative h-28 w-full overflow-hidden">
                     <Hero3DBackground primaryColor={primaryColor} secondaryColor={secondaryColor} />
-                    <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px] mix-blend-overlay" />
+                    <div className="absolute inset-0 bg-[var(--d-elevate)] backdrop-blur-[1px] mix-blend-overlay" />
                     
                     {/* Simulated live actions at top of preview */}
                     <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-3">
-                      <div className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[9px] font-bold text-white backdrop-blur-md ring-1 ring-white/20">
+                      <div className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[9px] font-bold text-[var(--d-text)] backdrop-blur-md ring-1 ring-white/20">
                         <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                         7 views
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-[var(--d-text)] ring-1 ring-white/20 backdrop-blur-md">
                           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
                         </div>
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 backdrop-blur-md">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-[var(--d-text)] ring-1 ring-white/20 backdrop-blur-md">
                           {isDark ? (
                             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
                           ) : (
@@ -4149,7 +4209,7 @@ export default function CardForm({ id }: CardFormProps) {
                             <img src={formData.personal_info.profile_image} alt="Profile" className="h-full w-full object-cover" />
                           ) : (
                             <div 
-                              className="flex h-full w-full items-center justify-center text-2xl font-bold text-white" 
+                              className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--d-text)]" 
                               style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
                             >
                               {(formData.personal_info?.name || 'U').trim().charAt(0).toUpperCase()}
@@ -4157,12 +4217,12 @@ export default function CardForm({ id }: CardFormProps) {
                           )}
                         </div>
                         <div className={`absolute bottom-0 right-0 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-[2px] ${isDark ? 'ring-[#12121A]' : 'ring-white'}`}>
-                          <PreviewIcon.Check className="w-3 h-3 text-white" />
+                          <PreviewIcon.Check className="w-3 h-3 text-[var(--d-text)]" />
                         </div>
                       </div>
 
                       {formData.personal_info?.name && (
-                        <h2 className={`mt-3 text-[15px] font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{formData.personal_info.name}</h2>
+                        <h2 className={`mt-3 text-[15px] font-bold tracking-tight ${isDark ? 'text-[var(--d-text)]' : 'text-slate-900'}`}>{formData.personal_info.name}</h2>
                       )}
                       {formData.personal_info?.designation && (
                         <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formData.personal_info.designation}</p>
@@ -4171,7 +4231,7 @@ export default function CardForm({ id }: CardFormProps) {
                       <div className="mt-2.5 flex flex-wrap items-center justify-center gap-1.5">
                         {formData.category_id && (
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold ${
-                            isDark ? 'bg-white/[0.04] text-slate-300 border-white/20' : 'bg-slate-50 text-slate-600 border-slate-200'
+                            isDark ? 'bg-white/[0.04] text-slate-300 border-[var(--d-border)]' : 'bg-slate-50 text-slate-600 border-slate-200'
                           } ring-1 ring-inset ${isDark ? 'ring-white/10' : 'ring-slate-900/5'}`}>
                             <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M7 7h.01M6 20a2 2 0 002 2h8a2 2 0 002-2V8l-6-6H8a2 2 0 00-2 2v16z" /></svg>
                             {categories.find(c => c.id.toString() === formData.category_id)?.name}
@@ -4179,7 +4239,7 @@ export default function CardForm({ id }: CardFormProps) {
                         )}
                         {formData.custom_branding?.show_company && companyName && (
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold ${
-                            isDark ? 'bg-white/[0.04] text-slate-300 border-white/20' : 'bg-slate-50 text-slate-600 border-slate-200'
+                            isDark ? 'bg-white/[0.04] text-slate-300 border-[var(--d-border)]' : 'bg-slate-50 text-slate-600 border-slate-200'
                           } ring-1 ring-inset ${isDark ? 'ring-white/10' : 'ring-slate-900/5'}`}>
                             <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" /></svg>
                             {companyName}
@@ -4194,27 +4254,27 @@ export default function CardForm({ id }: CardFormProps) {
                         <p className={`text-[8px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Connect</p>
                         <div className="flex flex-wrap items-center justify-center gap-2">
                           {socialLinks.linkedin && (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#0A66C2' }}>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--d-text)] shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#0A66C2' }}>
                               <PreviewIcon.LinkedIn className="w-3 h-3" />
                             </span>
                           )}
                           {socialLinks.instagram && (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#E1306C' }}>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--d-text)] shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#E1306C' }}>
                               <PreviewIcon.Instagram className="w-3 h-3" />
                             </span>
                           )}
                           {socialLinks.facebook && (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#1877F2' }}>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--d-text)] shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#1877F2' }}>
                               <PreviewIcon.Facebook className="w-3 h-3" />
                             </span>
                           )}
                           {socialLinks.twitter && (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#0F1419' }}>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--d-text)] shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#0F1419' }}>
                               <PreviewIcon.Twitter className="w-3 h-3" />
                             </span>
                           )}
                           {socialLinks.youtube && (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#FF0000' }}>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--d-text)] shadow-sm ring-1 ring-white/10" style={{ backgroundColor: '#FF0000' }}>
                               <PreviewIcon.YouTube className="w-3 h-3" />
                             </span>
                           )}
@@ -4225,7 +4285,7 @@ export default function CardForm({ id }: CardFormProps) {
                     {/* ---- Simulated QUICK ACTIONS ---- */}
                     <div className="mt-5 grid grid-cols-4 gap-2">
                       <div className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border ${
-                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'
+                        isDark ? 'border-[var(--d-border)] bg-white/[0.04]' : 'border-slate-200/70 bg-white'
                       } p-1 ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'} ${!cleanedPhone ? 'opacity-40' : 'opacity-80'}`}>
                         <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, isDark ? 0.15 : 0.1), color: primaryColor }}>
                           <PreviewIcon.Phone className="w-3.5 h-3.5" />
@@ -4234,7 +4294,7 @@ export default function CardForm({ id }: CardFormProps) {
                       </div>
 
                       <div className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border ${
-                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'
+                        isDark ? 'border-[var(--d-border)] bg-white/[0.04]' : 'border-slate-200/70 bg-white'
                       } p-1 ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'} ${!cleanedWhatsapp ? 'opacity-40' : 'opacity-80'}`}>
                         <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, isDark ? 0.15 : 0.1), color: primaryColor }}>
                           <PreviewIcon.Whatsapp className="w-3.5 h-3.5" />
@@ -4243,7 +4303,7 @@ export default function CardForm({ id }: CardFormProps) {
                       </div>
 
                       <div className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border ${
-                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'
+                        isDark ? 'border-[var(--d-border)] bg-white/[0.04]' : 'border-slate-200/70 bg-white'
                       } p-1 ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'} ${!email ? 'opacity-40' : 'opacity-80'}`}>
                         <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, isDark ? 0.15 : 0.1), color: primaryColor }}>
                           <PreviewIcon.Mail className="w-3.5 h-3.5" />
@@ -4252,7 +4312,7 @@ export default function CardForm({ id }: CardFormProps) {
                       </div>
 
                       <div className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border ${
-                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/70 bg-white'
+                        isDark ? 'border-[var(--d-border)] bg-white/[0.04]' : 'border-slate-200/70 bg-white'
                       } p-1 ring-1 ${isDark ? 'ring-white/5' : 'ring-slate-900/5'} opacity-80`}>
                         <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: hexToRgba(primaryColor, isDark ? 0.15 : 0.1), color: primaryColor }}>
                           <PreviewIcon.Save className="w-3.5 h-3.5" />
@@ -4265,7 +4325,7 @@ export default function CardForm({ id }: CardFormProps) {
                     {(formData.personal_info as any)?.card_type === 'professional' && formData.appointment_details?.is_enabled && (
                       <div className="mt-4 w-full">
                         <div
-                          className="w-full rounded-xl py-2.5 text-[10px] font-bold text-white flex items-center justify-center gap-1.5 overflow-hidden shadow-lg"
+                          className="w-full rounded-xl py-2.5 text-[10px] font-bold text-[var(--d-text)] flex items-center justify-center gap-1.5 overflow-hidden shadow-lg"
                           style={{ backgroundColor: primaryColor }}
                         >
                           <PreviewIcon.Calendar className="h-3 w-3" />
@@ -4298,15 +4358,7 @@ export default function CardForm({ id }: CardFormProps) {
                             <RenderInfoRow
                               icon={<PreviewIcon.Wallet className="h-4 w-4" style={{ color: primaryColor }} />}
                               label="GST"
-                              value={
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  <span>{companyDetails.gst}</span>
-                                  <span className="flex items-center gap-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full px-1 py-0.25 text-[7px] font-bold">
-                                    <PreviewIcon.Check className="w-1.5 h-1.5 text-green-400" />
-                                    Verified
-                                  </span>
-                                </div>
-                              }
+                              value={companyDetails.gst}
                             />
                           )}
                           {showCompany && companyDetails.website && (
@@ -4341,12 +4393,12 @@ export default function CardForm({ id }: CardFormProps) {
                                 {proprietor.image ? (
                                   <img src={proprietor.image} alt={proprietor.name} className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
                                 ) : (
-                                  <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isDark ? 'bg-white/10 text-white/50' : 'bg-slate-200 text-slate-500'}`}>
+                                  <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isDark ? 'bg-[var(--d-elevate)] text-[var(--d-text)]/50' : 'bg-slate-200 text-slate-500'}`}>
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                                   </div>
                                 )}
                                 <div className="min-w-0 flex-1">
-                                  <h5 className={`text-[11px] font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{proprietor.name}</h5>
+                                  <h5 className={`text-[11px] font-bold truncate ${isDark ? 'text-[var(--d-text)]' : 'text-slate-900'}`}>{proprietor.name}</h5>
                                   {proprietor.designation && <p className="text-[9px] font-medium truncate" style={{ color: primaryColor }}>{proprietor.designation}</p>}
                                 </div>
                               </div>
@@ -4359,7 +4411,7 @@ export default function CardForm({ id }: CardFormProps) {
                                   </div>
                                 )}
                                 {proprietor.whatsapp && (
-                                  <div className="flex-1 flex items-center justify-center gap-1 py-1 rounded text-white text-[8px] font-bold" style={{ backgroundColor: primaryColor }}>
+                                  <div className="flex-1 flex items-center justify-center gap-1 py-1 rounded text-[var(--d-text)] text-[8px] font-bold" style={{ backgroundColor: primaryColor }}>
                                     <PreviewIcon.Whatsapp className="w-2 h-2" />
                                     WhatsApp
                                   </div>
@@ -4374,7 +4426,7 @@ export default function CardForm({ id }: CardFormProps) {
                     {/* ---- Simulated LOCATION ---- */}
                     {hasLocationBlock && (
                       <RenderSection title="Location">
-                        <div className={`rounded-xl border ${isDark ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className={`rounded-xl border ${isDark ? 'bg-white/[0.03] border-[var(--d-border)]' : 'bg-slate-50 border-slate-200'}`}>
                           <div className="flex items-start gap-2.5 p-3">
                             <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ backgroundImage: primary15, color: primaryColor }}>
                               <PreviewIcon.MapPin className="h-3 w-3" />
@@ -4403,7 +4455,7 @@ export default function CardForm({ id }: CardFormProps) {
                       <RenderSection title="Gallery">
                         <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide">
                           {galleryContent.map((url: string, idx: number) => (
-                            <div key={idx} className="flex-none w-[90px] aspect-[4/3] overflow-hidden rounded-lg border border-white/10 shrink-0">
+                            <div key={idx} className="flex-none w-[90px] aspect-[4/3] overflow-hidden rounded-lg border border-[var(--d-border)] shrink-0">
                               <img src={url} alt={`Gallery item ${idx + 1}`} className="w-full h-full object-cover" />
                             </div>
                           ))}
@@ -4417,14 +4469,14 @@ export default function CardForm({ id }: CardFormProps) {
                         <div className="space-y-2">
                           {brochurePdfs.map((url: string, idx: number) => (
                             <div key={idx} className={`flex items-center justify-between p-2.5 rounded-xl border ${
-                              isDark ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-200'
+                              isDark ? 'bg-white/[0.03] border-[var(--d-border)]' : 'bg-slate-50 border-slate-200'
                             }`}>
                               <div className="flex items-center gap-2 min-w-0">
                                 <div className="w-7 h-7 rounded flex items-center justify-center bg-red-500/10 text-red-500 shrink-0">
                                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"></path></svg>
                                 </div>
                                 <div className="min-w-0">
-                                  <p className={`font-semibold text-[10px] truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>Brochure {idx + 1}</p>
+                                  <p className={`font-semibold text-[10px] truncate ${isDark ? 'text-[var(--d-text)]' : 'text-slate-900'}`}>Brochure {idx + 1}</p>
                                   <p className={`text-[8px] ${textMuted}`}>PDF Document</p>
                                 </div>
                               </div>
@@ -4448,12 +4500,17 @@ export default function CardForm({ id }: CardFormProps) {
                             {isOpenNow ? `Open Now · ${todayHours.open || '10:00'} – ${todayHours.close || '19:00'}` : 'Closed'}
                           </span>
                         </div>
-                        <div className={`mt-2 rounded-2xl divide-y text-[9px] font-medium ${isDark ? 'bg-white/[0.02] divide-white/5 border border-white/5' : 'bg-white divide-slate-100 border border-slate-100'}`}>
-                          {Object.entries(openingHours).map(([day, hours]: [string, any]) => {
+                        <div className={`mt-2 rounded-2xl divide-y text-[9px] font-medium ${isDark ? 'bg-white/[0.02] divide-[var(--d-border)] border border-[var(--d-border)]' : 'bg-white divide-slate-100 border border-slate-100'}`}>
+                          {Object.entries(openingHours)
+                            .sort(([dayA], [dayB]) => {
+                              const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                              return order.indexOf(dayA.toLowerCase()) - order.indexOf(dayB.toLowerCase());
+                            })
+                            .map(([day, hours]: [string, any]) => {
                             const isToday = day.toLowerCase() === todayName;
                             return (
                               <div key={day} className={`flex justify-between items-center px-3 py-2.5 ${isToday ? (isDark ? 'bg-white/[0.04]' : 'bg-slate-50') : ''}`}>
-                                <span className={`capitalize flex items-center gap-1.5 ${isToday ? (isDark ? 'text-white' : 'text-slate-900') : textMuted}`}>
+                                <span className={`capitalize flex items-center gap-1.5 ${isToday ? (isDark ? 'text-[var(--d-text)]' : 'text-slate-900') : textMuted}`}>
                                   {day}
                                   {isToday && <span className="text-[7px] font-extrabold uppercase tracking-widest text-emerald-500">TODAY</span>}
                                 </span>
@@ -4477,7 +4534,7 @@ export default function CardForm({ id }: CardFormProps) {
                         <div className="grid grid-cols-2 gap-2 mt-2">
                           {(paymentInfo.bank_name || paymentInfo.account_number || paymentInfo.ifsc_code) && (
                             <div className={`flex flex-col items-start justify-center gap-1.5 rounded-2xl p-3 border ${
-                              isDark ? 'bg-white/[0.02] border-white/5' : 'bg-white border-slate-100 shadow-sm'
+                              isDark ? 'bg-white/[0.02] border-[var(--d-border)]' : 'bg-white border-slate-100 shadow-sm'
                             }`}>
                               <div className="flex items-center gap-1.5">
                                 <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-50 text-indigo-500">
@@ -4490,7 +4547,7 @@ export default function CardForm({ id }: CardFormProps) {
                           )}
                           {(paymentInfo.qr_path || paymentInfo.upi_id || paymentInfo.phonepe) && (
                             <div className={`flex flex-col items-start justify-center gap-1.5 rounded-2xl p-3 border ${
-                              isDark ? 'bg-white/[0.02] border-white/5' : 'bg-white border-slate-100 shadow-sm'
+                              isDark ? 'bg-white/[0.02] border-[var(--d-border)]' : 'bg-white border-slate-100 shadow-sm'
                             }`}>
                               <div className="flex items-center gap-1.5">
                                 <span className="flex h-5 w-5 items-center justify-center rounded bg-emerald-50 text-emerald-500">
@@ -4509,7 +4566,7 @@ export default function CardForm({ id }: CardFormProps) {
                     {formData.card_type === 'professional' && formData.appointment_details?.is_enabled && (
                       <div className="mt-4 flex w-full">
                         <button
-                          className="w-full rounded-xl py-2.5 text-[10px] font-bold text-white shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-1.5"
+                          className="w-full rounded-xl py-2.5 text-[10px] font-bold text-[var(--d-text)] shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-1.5"
                           style={{ backgroundColor: primaryColor }}
                         >
                           <PreviewIcon.Calendar className="h-3 w-3" />
@@ -4532,7 +4589,7 @@ export default function CardForm({ id }: CardFormProps) {
                             <PreviewIcon.Search className="h-3 w-3 text-slate-400" />
                           </div>
                           <div className={`w-full rounded-xl py-1.5 pl-8 pr-3 text-[10px] ${
-                            isDark ? 'bg-white/5 text-slate-400' : 'bg-slate-50 text-slate-500 border border-slate-200'
+                            isDark ? 'bg-[var(--d-elevate)] text-slate-400' : 'bg-slate-50 text-slate-500 border border-slate-200'
                           }`}>
                             Search {formData.card_type === 'professional' ? 'services' : 'products'}...
                           </div>
@@ -4543,9 +4600,9 @@ export default function CardForm({ id }: CardFormProps) {
                             { id: 2, name: 'Exclusive Bundle B', price: 2499, desc: 'All-in-one corporate solutions.' }
                           ].map(prod => (
                             <div key={prod.id} className={`flex flex-col overflow-hidden rounded-xl border ${
-                              isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white border-slate-200'
+                              isDark ? 'bg-white/[0.03] border-[var(--d-border)]' : 'bg-white border-slate-200'
                             }`}>
-                              <div className="aspect-[4/3] w-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-300 shrink-0">
+                              <div className="aspect-[4/3] w-full bg-slate-100 dark:bg-[var(--d-elevate)] flex items-center justify-center text-slate-300 shrink-0">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 opacity-40"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
                               </div>
                               <div className="flex flex-1 flex-col p-2">
@@ -4571,19 +4628,19 @@ export default function CardForm({ id }: CardFormProps) {
                           <h4 className={`text-[11px] font-bold ${textMain}`}>Get in touch</h4>
                           <p className={`text-[9px] mb-3 ${textMuted}`}>We'll reply within 24 hours.</p>
                           <div className="space-y-2">
-                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-[var(--d-border)] text-[var(--d-text)]/50' : 'bg-white border-slate-200 text-slate-500'}`}>
                               Your name
                             </div>
-                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-[var(--d-border)] text-[var(--d-text)]/50' : 'bg-white border-slate-200 text-slate-500'}`}>
                               Email
                             </div>
-                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-[var(--d-border)] text-[var(--d-text)]/50' : 'bg-white border-slate-200 text-slate-500'}`}>
                               Phone
                             </div>
-                            <div className={`w-full h-16 rounded-xl border px-3 py-2.5 text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                            <div className={`w-full h-16 rounded-xl border px-3 py-2.5 text-[9px] ${isDark ? 'bg-white/[0.02] border-[var(--d-border)] text-[var(--d-text)]/50' : 'bg-white border-slate-200 text-slate-500'}`}>
                               How can we help you?
                             </div>
-                            <div className="w-full h-9 mt-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] text-white shadow-lg" style={{ backgroundColor: primaryColor }}>
+                            <div className="w-full h-9 mt-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] text-[var(--d-text)] shadow-lg" style={{ backgroundColor: primaryColor }}>
                               Send Message <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                             </div>
                           </div>
@@ -4595,7 +4652,7 @@ export default function CardForm({ id }: CardFormProps) {
                     <RenderSection title="Feedback & Ratings" icon={<svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>}>
                       <div className="mt-1 px-1">
                         <p className={`text-[8px] mb-3 ${textMuted}`}>Share your experience</p>
-                        <div className={`p-3.5 rounded-2xl border ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
+                        <div className={`p-3.5 rounded-2xl border ${isDark ? 'bg-white/[0.02] border-[var(--d-border)]' : 'bg-slate-50/50 border-slate-100'}`}>
                           <p className={`text-[9px] font-bold mb-2 ${textMain}`}>Leave a Review</p>
                           <div className="flex gap-1.5 mb-3.5">
                             {[1,2,3,4,5].map(i => (
@@ -4603,13 +4660,13 @@ export default function CardForm({ id }: CardFormProps) {
                             ))}
                           </div>
                           <div className="space-y-2">
-                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                            <div className={`w-full h-8 rounded-xl border px-3 flex items-center text-[9px] ${isDark ? 'bg-white/[0.02] border-[var(--d-border)] text-[var(--d-text)]/50' : 'bg-white border-slate-200 text-slate-500'}`}>
                               Your Name *
                             </div>
-                            <div className={`w-full h-12 rounded-xl border px-3 py-2 text-[9px] ${isDark ? 'bg-white/[0.02] border-white/5 text-white/50' : 'bg-white border-slate-200 text-slate-500'}`}>
+                            <div className={`w-full h-12 rounded-xl border px-3 py-2 text-[9px] ${isDark ? 'bg-white/[0.02] border-[var(--d-border)] text-[var(--d-text)]/50' : 'bg-white border-slate-200 text-slate-500'}`}>
                               Share your experience (optional)
                             </div>
-                            <div className="w-full h-8 mt-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] text-white opacity-50" style={{ backgroundColor: primaryColor }}>
+                            <div className="w-full h-8 mt-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[10px] text-[var(--d-text)] opacity-50" style={{ backgroundColor: primaryColor }}>
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                               Submit Review
                             </div>

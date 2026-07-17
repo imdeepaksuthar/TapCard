@@ -1,18 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '../../context/AuthContext';
-import { LogOut, User, Menu, X, Search, Eye } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
+import { Search, Sun, Moon, LayoutDashboard, LogOut, Menu, X, Eye, ArrowRight } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [navOpen, setNavOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
   const [hasPlans, setHasPlans] = useState(false);
+  const pathname = usePathname();
+  const isLandingPage = pathname === '/';
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,58 +41,33 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    // 1. Simple passive scroll listener for the header background
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    try {
+      const storedTheme = localStorage.getItem('dash-theme');
+      if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        setTheme('dark');
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch {}
 
-    // 2. Performant Intersection Observer for Scroll Spy
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: '-20% 0px -70% 0px' }
+    );
+
     const sections = ['home', 'features', 'how-it-works', 'pricing', 'faq'];
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    }, {
-      rootMargin: '-40% 0px -40% 0px', // Triggers when section is near the middle
-      threshold: 0
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
     });
 
-    const observed = new Set<string>();
-    
-    const observeElements = () => {
-      sections.forEach(id => {
-        if (!observed.has(id)) {
-          const el = document.getElementById(id);
-          if (el) {
-            observer.observe(el);
-            observed.add(id);
-          }
-        }
-      });
-    };
-
-    observeElements();
-    
-    // Check periodically for asynchronously rendered sections like pricing
-    const interval = setInterval(observeElements, 500);
-
-    // 3. Close search on ESC key
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSearchOpen(false);
-    };
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
-      clearInterval(interval);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
-  useEffect(() => {
     const fetchPlans = async () => {
       try {
         const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -101,162 +79,195 @@ export default function Header() {
       } catch { /* ignore */ }
     };
     fetchPlans();
-  }, []);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSearchOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [hasPlans]);
+
+  const isDark = theme === 'dark';
+  const toggleTheme = () =>
+    setTheme((p) => {
+      const n = p === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('dash-theme', n); } catch {}
+      if (n === 'dark') {
+          document.documentElement.classList.add('dark');
+      } else {
+          document.documentElement.classList.remove('dark');
+      }
+      return n;
+    });
+
+  const navLinks = [
+    { label: 'Home', href: isLandingPage ? '#home' : '/#home', id: 'home' },
+    { label: 'Features', href: isLandingPage ? '#features' : '/#features', id: 'features' },
+    { label: 'How it Works', href: isLandingPage ? '#how-it-works' : '/#how-it-works', id: 'how-it-works' },
+    ...(hasPlans ? [{ label: 'Pricing', href: isLandingPage ? '#pricing' : '/#pricing', id: 'pricing' }] : []),
+    { label: 'FAQ', href: isLandingPage ? '#faq' : '/#faq', id: 'faq' },
+  ];
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none px-4 sm:px-6">
-      <header
-        className={`flex justify-between items-center w-full pointer-events-auto transition-all duration-500 ease-in-out ${
-          isScrolled
-            ? 'max-w-4xl bg-black/60 backdrop-blur-2xl border border-white/[0.08] rounded-full py-2.5 px-5 mt-3 shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.04)_inset] ring-1 ring-blue-500/5'
-            : 'max-w-5xl bg-transparent border border-transparent rounded-none py-6 px-0 mt-0'
-        }`}
-        style={isScrolled ? {
-          backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.03), transparent)',
-        } : {}}
-      >
-        {/* Top shimmer line when scrolled */}
-        {isScrolled && (
-          <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-full pointer-events-none" />
-        )}
+    <>
+      <header className="sticky top-0 z-50 border-b border-gray-200/50 dark:border-white/5 bg-white/80 dark:bg-[#0A0F19]/80 backdrop-blur-2xl">
+        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+            <span className="flex h-9 w-9 items-center justify-center rounded-[14px] text-white shadow-md transition-transform duration-300 group-hover:scale-105" style={{ background: 'linear-gradient(135deg, var(--d-accent-2), var(--d-accent))' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]"><path d="M5 12.55a8 8 0 0 1 14 0" /><path d="M8.5 15.5a3.5 3.5 0 0 1 7 0" /><circle cx="12" cy="19" r="1.5" /></svg>
+            </span>
+            <span className="text-xl font-black tracking-tight text-gray-900 dark:text-white">Card<span className="text-indigo-600 dark:text-indigo-400">Setu</span></span>
+          </Link>
 
-        <Link href="/" className="flex items-center group">
-          <img src="/logo-dark.png" alt="Card Setu Logo" className="h-8 sm:h-9 w-auto group-hover:opacity-90 transition-opacity duration-200" />
-        </Link>
+          <nav className="hidden lg:flex items-center gap-1.5 p-1.5 rounded-full bg-gray-50/50 dark:bg-white/5 border border-gray-200/50 dark:border-white/10">
+            {navLinks.map((l) => {
+              const isActive = isLandingPage && activeSection === l.id;
+              return (
+                <Link 
+                  key={l.label} 
+                  href={l.href} 
+                  className={`relative rounded-full px-4 py-2 text-sm font-semibold transition-all shadow-sm ${
+                    isActive 
+                      ? 'bg-white text-indigo-600 shadow-md dark:bg-white/10 dark:text-white ring-1 ring-black/5 dark:ring-white/10' 
+                      : 'text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/50 dark:hover:bg-white/5 hover:shadow-indigo-500/5'
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-        {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-0.5 bg-white/[0.04] border border-white/[0.08] rounded-full p-1 backdrop-blur-xl">
-          {[
-            { id: 'home', label: 'Home', href: '/#home' },
-            { id: 'features', label: 'Features', href: '/#features' },
-            { id: 'how-it-works', label: 'How it Works', href: '/#how-it-works' },
-            { id: 'pricing', label: 'Pricing', href: '/#pricing' },
-            { id: 'faq', label: 'FAQ', href: '/#faq' },
-          ].filter(item => item.id !== 'pricing' || hasPlans).map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
-              className={`text-sm font-medium transition-all duration-300 px-4 py-1.5 rounded-full ${
-                activeSection === item.id || (item.id === 'home' && activeSection === '')
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex gap-2 items-center">
-          {/* Search Toggle Button */}
-          <div ref={searchRef} className="relative">
-            <button
+          <div className="flex items-center gap-2 shrink-0">
+            <button 
               onClick={() => { setSearchOpen(!searchOpen); if (!searchOpen) setTimeout(() => document.getElementById('header-search-input')?.focus(), 100); }}
-              className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 ${
+              aria-label="Search cards" 
+              className={`hidden sm:flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
                 searchOpen
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.08] border border-transparent'
+                  ? 'bg-indigo-50 text-indigo-600 dark:bg-white/10 dark:text-indigo-400'
+                  : 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-gray-400 dark:hover:text-indigo-400 dark:hover:bg-white/10'
               }`}
-              aria-label="Search"
             >
-              <Search size={16} />
+              <Search className="h-5 w-5" />
+            </button>
+            <button onClick={toggleTheme} aria-label="Toggle theme" className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-gray-400 dark:hover:text-indigo-400 dark:hover:bg-white/10 transition-colors">
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+
+            <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-white/10 mx-1" />
+
+            {user ? (
+              <div className="hidden md:flex items-center gap-2">
+                <Link href="/dashboard" className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-white hover:bg-indigo-50 dark:hover:bg-white/10 transition-colors">
+                  <LayoutDashboard className="h-[18px] w-[18px]" /> Dashboard
+                </Link>
+                <button onClick={logout} className="flex items-center gap-2 rounded-full border border-gray-200 dark:border-white/10 px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:border-rose-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors">
+                  <LogOut className="h-[18px] w-[18px]" />
+                </button>
+              </div>
+            ) : (
+              <div className="hidden md:flex items-center gap-2">
+                <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-white transition-colors">Sign In</Link>
+                <Link href="/register" className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-indigo-500/40 hover:-translate-y-0.5">Sign Up</Link>
+              </div>
+            )}
+
+            <button onClick={() => setNavOpen((v) => !v)} aria-label="Toggle menu" className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors ml-1">
+              {navOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
-
-          {user ? (
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors whitespace-nowrap px-3 py-2 rounded-full hover:bg-white/[0.06]"
-              >
-                <User size={15} />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Link>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 text-sm font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/20 rounded-full py-2 px-3 transition-all duration-300 whitespace-nowrap"
-              >
-                <LogOut size={15} />
-                <span className="hidden sm:inline">Log Out</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link
-                href="/login"
-                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap px-3 py-2"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-full py-2 px-4 sm:px-5 transition-all duration-300 whitespace-nowrap shadow-lg shadow-blue-500/25 hover:-translate-y-px hover:shadow-blue-500/40"
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          aria-label="Toggle mobile menu"
-          className="md:hidden p-2 ml-1 text-zinc-400 hover:text-white pointer-events-auto rounded-full hover:bg-white/[0.06] transition-colors"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        {/* Mobile menu animated drawer */}
+        <AnimatePresence>
+          {navOpen && (
+            <motion.nav 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="lg:hidden overflow-hidden border-t border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#0A0F19]"
+            >
+              <div className="flex flex-col gap-2 p-4">
+                {navLinks.map((l) => {
+                const isActive = isLandingPage && activeSection === l.id;
+                return (
+                  <Link 
+                    key={l.label} 
+                    href={l.href} 
+                    onClick={() => setNavOpen(false)} 
+                    className={`rounded-2xl px-5 py-3.5 text-base font-bold transition-colors ${
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-600 dark:bg-white/10 dark:text-white'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-white/5 dark:hover:text-indigo-400'
+                    }`}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
+                
+                <div className="my-2 h-px bg-gray-200/50 dark:bg-white/5" />
+                
+                {user ? (
+                  <>
+                    <Link href="/dashboard" onClick={() => setNavOpen(false)} className="flex items-center gap-3 rounded-2xl px-5 py-3.5 text-base font-bold text-gray-700 dark:text-gray-200 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-white/5 transition-colors">
+                      <LayoutDashboard className="h-5 w-5 text-gray-400" /> Dashboard
+                    </Link>
+                    <button onClick={() => { logout(); setNavOpen(false); }} className="flex items-center gap-3 rounded-2xl px-5 py-3.5 text-base font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors text-left">
+                      <LogOut className="h-5 w-5" /> Log Out
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-3 mt-2">
+                    <Link href="/login" onClick={() => setNavOpen(false)} className="rounded-2xl border border-gray-200 dark:border-white/10 px-5 py-3.5 text-center text-base font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                      Sign In
+                    </Link>
+                    <Link href="/register" onClick={() => setNavOpen(false)} className="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3.5 text-center text-base font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5">
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
       </header>
-
-      {/* Mobile Menu Dropdown */}
-      <div 
-        className={`absolute top-[calc(100%+10px)] left-4 right-4 bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl flex flex-col md:hidden pointer-events-auto transition-all duration-300 overflow-hidden ${
-          mobileMenuOpen ? 'max-h-[400px] opacity-100 p-3' : 'max-h-0 opacity-0 p-0 border-transparent'
-        }`}
-      >
-        {[
-          { id: 'home', label: 'Home', href: '/#home' },
-          { id: 'features', label: 'Features', href: '/#features' },
-          { id: 'how-it-works', label: 'How it Works', href: '/#how-it-works' },
-          { id: 'pricing', label: 'Pricing', href: '/#pricing' },
-          { id: 'faq', label: 'FAQ', href: '/#faq' },
-        ].filter(item => item.id !== 'pricing' || hasPlans).map((item) => (
-          <Link 
-            key={item.id} 
-            href={item.href} 
-            onClick={() => setMobileMenuOpen(false)}
-            className={`text-base font-medium px-4 py-3.5 rounded-xl transition-colors ${
-              activeSection === item.id || (item.id === 'home' && activeSection === '')
-                ? 'bg-blue-600/20 text-blue-400' 
-                : 'text-gray-300 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
 
       {/* ── Search Panel (fixed full-width overlay) ── */}
       {searchOpen && (
-        <div className="fixed inset-0 top-0 z-[60] pointer-events-none">
+        <div className="fixed inset-0 top-0 z-[60] pointer-events-none flex items-start justify-center pt-[10vh] sm:pt-[15vh]">
           {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40 pointer-events-auto"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-md pointer-events-auto"
             onClick={() => { setSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}
           />
+          
           {/* Panel */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             ref={searchRef}
-            className="absolute left-1/2 -translate-x-1/2 top-[70px] w-[calc(100%-2rem)] max-w-[480px] pointer-events-auto animate-in fade-in slide-in-from-top-2 duration-200"
+            className="relative w-[calc(100%-2rem)] max-w-2xl pointer-events-auto"
           >
-            <div className="rounded-2xl border border-zinc-700/80 bg-zinc-900/[0.98] backdrop-blur-2xl shadow-2xl shadow-black/60 overflow-hidden">
-              {/* Search Input */}
-              <div className="relative flex items-center border-b border-zinc-800/60 px-4">
-                <Search size={16} className="text-zinc-500 shrink-0" />
+            <div className="rounded-2xl border border-gray-200/50 dark:border-white/10 bg-white/90 dark:bg-[#0A0F19]/90 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
+              {/* Search Input Area */}
+              <div className="relative flex items-center border-b border-gray-100 dark:border-white/5 px-5 py-2">
+                <Search size={20} className="text-gray-400 dark:text-gray-500 shrink-0" />
                 <input
                   id="header-search-input"
                   type="text"
-                  placeholder="Search business cards..."
+                  placeholder="Search professionals, skills, or companies..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   onKeyDown={(e) => {
@@ -265,80 +276,91 @@ export default function Header() {
                       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
                     }
                   }}
-                  className="w-full bg-transparent text-white placeholder-zinc-500 text-sm py-4 pl-3 pr-10 outline-none"
+                  className="w-full bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-lg py-4 pl-4 pr-12 outline-none border-none focus:ring-0 focus:border-transparent focus:outline-none shadow-none"
+                  autoComplete="off"
+                  spellCheck="false"
                 />
+                
                 {searchQuery ? (
-                  <button aria-label="Clear search" onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="absolute right-4 text-zinc-500 hover:text-white transition-colors">
-                    <X size={16} />
+                  <button aria-label="Clear search" onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="absolute right-5 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors bg-gray-100 dark:bg-white/10 rounded-full p-1.5">
+                    <X size={14} />
                   </button>
                 ) : (
-                  <kbd className="absolute right-4 text-[10px] text-zinc-600 border border-zinc-700 rounded px-1.5 py-0.5 font-mono hidden sm:inline">ESC</kbd>
+                  <div className="absolute right-5 flex items-center gap-1">
+                    <kbd className="text-[11px] text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 rounded px-2 py-1 font-mono hidden sm:inline-block shadow-sm">ESC</kbd>
+                  </div>
                 )}
+                
                 {isSearching && (
-                  <div className="absolute right-4">
-                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="absolute right-14">
+                    <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
               </div>
 
-              {/* Results */}
-              {searchQuery.length >= 2 && (
-                <div className="max-h-[60vh] overflow-y-auto">
-                  {searchResults.length > 0 ? (
-                    <>
+              {/* Results Area */}
+              <div className="max-h-[50vh] overflow-y-auto overscroll-contain">
+                {searchQuery.length >= 2 ? (
+                  searchResults.length > 0 ? (
+                    <div className="p-2">
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Results</div>
                       {searchResults.map((card: any) => (
                         <Link
                           key={card.slug}
                           href={`/${card.slug}`}
                           onClick={() => { setSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-zinc-800/30 last:border-b-0"
+                          className="group flex items-center gap-4 px-3 py-3 hover:bg-indigo-50 dark:hover:bg-white/5 rounded-xl transition-colors"
                         >
                           {card.image ? (
-                            <img src={card.image} alt="" className="w-10 h-10 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
+                            <img src={card.image} alt="" className="w-12 h-12 rounded-full object-cover shrink-0 ring-1 ring-gray-200 dark:ring-white/10 group-hover:shadow-md transition-shadow" />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center shrink-0 ring-1 ring-white/10">
-                              <span className="text-sm font-bold text-white/70">{(card.name || '?')[0]}</span>
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 flex items-center justify-center shrink-0 ring-1 ring-gray-200 dark:ring-white/10 text-indigo-600 dark:text-indigo-400 font-bold text-base group-hover:shadow-md transition-all">
+                              {(card.name || '?')[0]}
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-white truncate">{card.name}</p>
-                            <p className="text-[11px] text-zinc-500 truncate">
+                            <p className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{card.name}</p>
+                            <p className="text-xs text-gray-500 truncate mt-0.5">
                               {[card.designation, card.company].filter(Boolean).join(' \u00b7 ') || card.slug}
                             </p>
                           </div>
-                          <div className="flex items-center gap-1 text-zinc-600 shrink-0">
-                            <Eye size={11} />
-                            <span className="text-[10px] font-medium">{card.views?.toLocaleString()}</span>
+                          <div className="flex items-center gap-1.5 text-gray-400 shrink-0 bg-gray-50 dark:bg-white/5 px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-xs font-medium">View Profile</span>
+                            <ArrowRight size={14} />
                           </div>
                         </Link>
                       ))}
                       <Link
                         href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
                         onClick={() => { setSearchOpen(false); }}
-                        className="block w-full text-center py-3 text-sm text-blue-400 hover:text-blue-300 hover:bg-white/5 transition-colors font-medium border-t border-zinc-800/60"
+                        className="mt-2 block w-full text-center py-3 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-white/5 rounded-xl transition-colors font-semibold"
                       >
                         See all results for &ldquo;{searchQuery}&rdquo; &rarr;
                       </Link>
-                    </>
-                  ) : !isSearching ? (
-                    <div className="px-4 py-8 text-center text-zinc-500 text-sm">
-                      No cards found for &ldquo;{searchQuery}&rdquo;
-                      <div className="mt-2 text-xs text-zinc-600">Press Enter to search all fields</div>
                     </div>
-                  ) : null}
-                </div>
-              )}
-
-              {/* Empty state */}
-              {searchQuery.length < 2 && (
-                <div className="px-4 py-6 text-center text-zinc-600 text-xs">
-                  Type at least 2 characters to search
-                </div>
-              )}
+                  ) : !isSearching ? (
+                    <div className="px-4 py-12 flex flex-col items-center justify-center text-center">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
+                        <Search className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-900 dark:text-white font-medium text-sm">No results found for &ldquo;{searchQuery}&rdquo;</p>
+                      <p className="mt-1 text-sm text-gray-500">Try searching for a different name or skill.</p>
+                    </div>
+                  ) : null
+                ) : (
+                  <div className="px-4 py-10 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mb-3">
+                      <Search className="h-6 w-6 text-indigo-500 dark:text-indigo-400" />
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-medium text-sm">Search the network</p>
+                    <p className="mt-1 text-sm text-gray-500">Find professionals by name, company, or skills.</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
-    </div>
+    </>
   );
 }

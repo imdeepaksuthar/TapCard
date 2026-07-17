@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -61,6 +62,13 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = auth()->user();
+
+        if ($user->role !== 'user') {
+            auth()->logout();
+            return response()->json([
+                'message' => 'Admin users must use the admin portal to log in.'
+            ], 403);
+        }
 
         if (!$user->hasVerifiedEmail()) {
             auth()->logout();
@@ -222,5 +230,34 @@ class AuthController extends Controller
         $user->sendEmailVerificationNotification();
 
         return response()->json(['message' => 'Verification link sent.']);
+    }
+
+    /**
+     * Permanently delete the authenticated user's account and their data.
+     */
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Require the current password for password-based accounts. Google users
+        // have a random password they never set, so the valid Sanctum token
+        // (already enforced by the route) is sufficient proof of ownership.
+        if (empty($user->google_id)) {
+            $request->validate(['password' => 'required|string']);
+
+            if (!Hash::check($request->input('password'), $user->password)) {
+                return response()->json(['message' => 'The password you entered is incorrect.'], 422);
+            }
+        }
+
+        DB::transaction(function () use ($user) {
+            // Revoke all API tokens, then delete the account. Owned cards,
+            // products, services and subscriptions cascade at the DB level;
+            // past orders are retained with a null user_id for record-keeping.
+            $user->tokens()->delete();
+            $user->delete();
+        });
+
+        return response()->json(['message' => 'Your account has been permanently deleted.']);
     }
 }

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '../../lib/api';
+import { toast } from '@/components/toast';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -69,7 +70,7 @@ export default function Dashboard() {
       const res = await apiFetch<{ leads: any[] }>('/api/leads');
       const leads = res.leads || [];
       if (leads.length === 0) {
-        alert('No leads available to export.');
+        toast.info('No leads available to export.');
         return;
       }
       
@@ -94,7 +95,7 @@ export default function Dashboard() {
       document.body.removeChild(link);
     } catch (err) {
       console.error('Failed to export leads:', err);
-      alert('Failed to export leads. Please try again.');
+      toast.error('Failed to export leads. Please try again.');
     }
   };
 
@@ -114,7 +115,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-fluid-md">
         <div>
           <h1 className="text-fluid-2xl font-bold">Welcome back, {user.name}!</h1>
-          <p className="text-gray-400 text-fluid-sm">Here is what's happening with your cards today.</p>
+          <p className="text-[var(--d-text-muted)] text-fluid-sm">Here is what's happening with your cards today.</p>
         </div>
         {stats.totalCards === 0 && (
           <button 
@@ -139,16 +140,15 @@ export default function Dashboard() {
       {/* Grid Layout for Charts & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-fluid-lg">
         {/* Recent Leads (Large) */}
-        <div className="ag-glass-card rounded-2xl p-fluid-lg overflow-hidden relative">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="bg-[var(--d-surface)] border border-[var(--d-border)] shadow-[var(--d-shadow)] rounded-2xl p-fluid-lg overflow-hidden relative">
           <div className="flex justify-between items-center mb-fluid-md">
             <h3 className="text-fluid-lg font-bold">Recent Leads</h3>
-            <button className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">View All</button>
+            <button className="text-sm text-[var(--d-accent)] hover:opacity-80 font-medium transition-opacity">View All</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-gray-400">
+                <tr className="border-b border-[var(--d-border)] text-[var(--d-text-muted)]">
                   <th className="pb-3 pr-4">Name</th>
                   <th className="pb-3 pr-4">Phone / Msg</th>
                   <th className="pb-3 pr-4">Date</th>
@@ -158,24 +158,24 @@ export default function Dashboard() {
               <tbody>
                 {recentLeads.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-4 text-center text-gray-500">No leads yet</td>
+                    <td colSpan={4} className="py-4 text-center text-[var(--d-text-faint)]">No leads yet</td>
                   </tr>
                 )}
                 {recentLeads.map((lead) => (
-                  <tr key={lead.id} className="border-b border-white/5 last:border-0 text-gray-300">
+                  <tr key={lead.id} className="border-b border-[var(--d-border)] last:border-0 text-[var(--d-text-muted)]">
                     <td className="py-3 pr-4">
-                      <p className="font-medium text-white">{lead.name}</p>
-                      <p className="text-xs text-gray-500">{lead.email || 'No email'}</p>
+                      <p className="font-medium text-[var(--d-text)]">{lead.name}</p>
+                      <p className="text-xs text-[var(--d-text-faint)]">{lead.email || 'No email'}</p>
                     </td>
                     <td className="py-3 pr-4">
                       <p className="text-sm">{lead.phone || '-'}</p>
-                      <p className="text-xs text-gray-500 truncate max-w-[150px]">{lead.message || ''}</p>
+                      <p className="text-xs text-[var(--d-text-faint)] truncate max-w-[150px]">{lead.message || ''}</p>
                     </td>
-                    <td className="py-3 pr-4 text-gray-500">
+                    <td className="py-3 pr-4 text-[var(--d-text-faint)]">
                       {new Date(lead.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-3 text-right">
-                      <button className="text-gray-400 hover:text-white">
+                      <button className="text-[var(--d-text-muted)] hover:text-[var(--d-text)]">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
                         </svg>
@@ -189,8 +189,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Stats / Info (Small) */}
-        <div className="ag-glass-card rounded-2xl p-fluid-lg relative overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="bg-[var(--d-surface)] border border-[var(--d-border)] shadow-[var(--d-shadow)] rounded-2xl p-fluid-lg relative overflow-hidden">
           <h3 className="text-fluid-lg font-bold mb-fluid-md">Quick Actions</h3>
           <div className="space-y-fluid-sm">
             <QuickActionButton 
@@ -199,7 +198,7 @@ export default function Dashboard() {
               description="Show your card QR" 
               onClick={() => {
                 if (cards.length === 0) {
-                  alert('Please create a business card first!');
+                  toast.info('Please create a business card first!');
                   return;
                 }
                 setIsQrOpen(true);
@@ -221,29 +220,29 @@ export default function Dashboard() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative bg-[#090f1e] border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center"
+            className="relative bg-[var(--d-surface)] border border-[var(--d-border)] rounded-3xl p-5 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl text-center"
           >
-            <button 
+            <button
               onClick={() => setIsQrOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-white"
+              className="absolute top-4 right-4 text-[var(--d-text-faint)] hover:text-[var(--d-text)]"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
             <h3 className="text-xl font-bold mb-2">Share Your Card</h3>
-            <p className="text-sm text-gray-400 mb-6">Scan the QR code below to view your digital business card.</p>
+            <p className="text-sm text-[var(--d-text-muted)] mb-6">Scan the QR code below to view your digital business card.</p>
             
             <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-inner">
               <img 
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`)}`} 
-                alt="Card QR Code" 
-                className="w-48 h-48"
+                alt="Card QR Code"
+                className="w-40 h-40 sm:w-48 sm:h-48"
               />
             </div>
 
-            <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between gap-3 mb-6">
-              <span className="text-xs text-gray-300 truncate select-all">{`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`}</span>
+            <div className="bg-[var(--d-surface-2)] border border-[var(--d-border)] rounded-xl p-3 flex items-center justify-between gap-3 mb-6">
+              <span className="text-xs text-[var(--d-text-muted)] truncate select-all">{`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`}</span>
               <button 
                 onClick={() => {
                   navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/${cards[0].slug}`);
@@ -290,7 +289,7 @@ function StatCard({ title, value, icon, color }: StatCardProps) {
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl p-fluid-md ag-float-card`}
+      className={`relative overflow-hidden rounded-2xl p-fluid-md bg-[var(--d-surface)] border shadow-[var(--d-shadow)]`}
       style={{ borderColor: cfg.border }}
     >
       {/* Gradient bg */}
@@ -301,8 +300,8 @@ function StatCard({ title, value, icon, color }: StatCardProps) {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="relative z-10 flex justify-between items-start mb-fluid-sm">
         <div>
-          <p className="text-zinc-400 text-fluid-sm font-medium">{title}</p>
-          <p className="text-fluid-3xl font-bold mt-1 text-white">{value.toLocaleString()}</p>
+          <p className="text-[var(--d-text-muted)] text-fluid-sm font-medium">{title}</p>
+          <p className="text-fluid-3xl font-bold mt-1 text-[var(--d-text)]">{value.toLocaleString()}</p>
         </div>
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${cfg.icon}`}>
           <StatIcon name={icon} />
@@ -356,16 +355,16 @@ function QuickActionButton({ icon, title, description, onClick }: QuickActionBut
   return (
     <button
       onClick={onClick}
-      className="w-full ag-float-card rounded-xl p-4 flex items-center gap-4 group min-h-[60px]"
+      className="w-full bg-[var(--d-surface)] border border-[var(--d-border)] hover:bg-[var(--d-hover)] transition-colors rounded-xl p-4 flex items-center gap-4 group min-h-[60px]"
     >
-      <div className="w-10 h-10 bg-white/[0.05] group-hover:bg-blue-500/15 border border-white/[0.08] group-hover:border-blue-500/20 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0">
+      <div className="w-10 h-10 bg-[var(--d-surface-2)] group-hover:bg-[var(--d-accent-soft)] border border-[var(--d-border)] group-hover:border-[var(--d-accent)]/40 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0">
         <QuickActionIcon name={icon} />
       </div>
       <div className="text-left flex-1">
-        <p className="font-semibold text-sm group-hover:text-white transition-colors duration-300">{title}</p>
-        <p className="text-xs text-zinc-500">{description}</p>
+        <p className="font-semibold text-sm group-hover:text-[var(--d-accent)] transition-colors duration-300">{title}</p>
+        <p className="text-xs text-[var(--d-text-faint)]">{description}</p>
       </div>
-      <svg className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 text-[var(--d-text-faint)] group-hover:text-[var(--d-text-muted)] group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
       </svg>
     </button>
@@ -373,7 +372,7 @@ function QuickActionButton({ icon, title, description, onClick }: QuickActionBut
 }
 
 function QuickActionIcon({ name }: { name: string }) {
-  const baseClasses = "w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-all duration-300";
+  const baseClasses = "w-5 h-5 text-[var(--d-text-muted)] group-hover:text-[var(--d-accent)] transition-all duration-300";
   switch (name) {
     case 'qr':
       return (

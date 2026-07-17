@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../../../lib/api';
 import { useAuth } from '../../../context/AuthContext';
 import { compressProductImage } from '../../../lib/compressImage';
+import { toast } from '@/components/toast';
 
 interface Service {
   id: number;
@@ -25,8 +26,9 @@ interface UploadedImage {
 
 export default function ServicesPage() {
   const { user } = useAuth();
-  // Changed to true permanently as requested so users can manage services
-  const isAdmin = true;
+  // Service management is available to any signed-in owner — the API scopes all
+  // writes to the authenticated user, so this is not an admin-only capability.
+  const canManage = !!user;
 
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -211,7 +213,7 @@ export default function ServicesPage() {
     } catch (err) {
       // Revert on failure
       setServices(prev => prev.map(p => p.id === service.id ? { ...p, is_active: service.is_active } : p));
-      alert((err as Error).message || 'Failed to update status');
+      toast.error((err as Error).message || 'Failed to update status');
     }
   };
 
@@ -223,7 +225,7 @@ export default function ServicesPage() {
       setServices(prev => prev.filter(p => p.id !== serviceToDelete.id));
       setServiceToDelete(null);
     } catch (err) {
-      alert((err as Error).message || 'Failed to delete service');
+      toast.error((err as Error).message || 'Failed to delete service');
     } finally {
       setIsDeleting(false);
     }
@@ -254,8 +256,8 @@ export default function ServicesPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Services</h1>
-            <p className="text-gray-400 mt-2 flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-[var(--d-text)] tracking-tight">Services</h1>
+            <p className="text-[var(--d-text-muted)] mt-2 flex items-center gap-2">
               Manage and organize your service catalog.
               {services.length > 0 && (
                 <span className="inline-flex items-center justify-center bg-blue-500/15 text-blue-400 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-500/20">
@@ -264,7 +266,7 @@ export default function ServicesPage() {
               )}
             </p>
           </div>
-          {isAdmin && (
+          {canManage && (
             <button
               onClick={openAddModal}
               className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold py-2.5 px-6 rounded-2xl transition-all duration-300 shadow-lg shadow-blue-500/30 active:scale-95"
@@ -279,10 +281,10 @@ export default function ServicesPage() {
 
         {/* Toolbar */}
         {!isLoading && !error && services.length > 0 && (
-          <div className="flex flex-col sm:flex-row gap-4 bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 p-4 rounded-3xl shadow-lg">
+          <div className="flex flex-col sm:flex-row gap-4 bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] p-4 rounded-3xl shadow-lg">
             {/* Search */}
             <div className="relative flex-1">
-              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--d-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input 
@@ -290,7 +292,7 @@ export default function ServicesPage() {
                 placeholder="Search services..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-2xl pl-12 pr-4 py-3 text-white text-sm outline-none transition-all duration-300 shadow-inner"
+                className="w-full bg-[var(--d-surface-2)] border border-[var(--d-border)] hover:border-[var(--d-border)] focus:border-blue-500/50 rounded-2xl pl-12 pr-4 py-3 text-[var(--d-text)] text-sm outline-none transition-all duration-300 shadow-inner"
               />
             </div>
 
@@ -299,24 +301,24 @@ export default function ServicesPage() {
               <select 
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-2xl px-5 py-3 text-sm font-semibold text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer shadow-inner"
+                className="bg-[var(--d-surface-2)] border border-[var(--d-border)] hover:border-[var(--d-border)] focus:border-blue-500/50 rounded-2xl px-5 py-3 text-sm font-semibold text-[var(--d-text-muted)] outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer shadow-inner"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
               >
-                <option value="all" className="bg-[#0F1C35]">All Status</option>
-                <option value="active" className="bg-[#0F1C35]">Active Only</option>
-                <option value="inactive" className="bg-[#0F1C35]">Inactive Only</option>
+                <option value="all" className="bg-[var(--d-surface-2)]">All Status</option>
+                <option value="active" className="bg-[var(--d-surface-2)]">Active Only</option>
+                <option value="inactive" className="bg-[var(--d-surface-2)]">Inactive Only</option>
               </select>
 
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-[#0F1C35]/80 border border-white/5 hover:border-white/10 focus:border-blue-500/50 rounded-2xl px-5 py-3 text-sm font-semibold text-gray-300 outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer shadow-inner"
+                className="bg-[var(--d-surface-2)] border border-[var(--d-border)] hover:border-[var(--d-border)] focus:border-blue-500/50 rounded-2xl px-5 py-3 text-sm font-semibold text-[var(--d-text-muted)] outline-none transition-all duration-300 appearance-none pr-10 relative cursor-pointer shadow-inner"
                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
               >
-                <option value="newest" className="bg-[#0F1C35]">Newest First</option>
-                <option value="price-asc" className="bg-[#0F1C35]">Price: Low to High</option>
-                <option value="price-desc" className="bg-[#0F1C35]">Price: High to Low</option>
-                <option value="name-asc" className="bg-[#0F1C35]">Name: A to Z</option>
+                <option value="newest" className="bg-[var(--d-surface-2)]">Newest First</option>
+                <option value="price-asc" className="bg-[var(--d-surface-2)]">Price: Low to High</option>
+                <option value="price-desc" className="bg-[var(--d-surface-2)]">Price: High to Low</option>
+                <option value="name-asc" className="bg-[var(--d-surface-2)]">Name: A to Z</option>
               </select>
             </div>
           </div>
@@ -336,7 +338,7 @@ export default function ServicesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative overflow-hidden bg-gradient-to-br from-[#0B1528] via-[#0F1C35] to-[#0B1528] border border-white/10 rounded-3xl shadow-2xl"
+          className="relative overflow-hidden bg-gradient-to-br from-[#0B1528] via-[#0F1C35] to-[#0B1528] border border-[var(--d-border)] rounded-3xl shadow-2xl"
         >
           {/* Decorative glowing blobs */}
           <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl" />
@@ -350,10 +352,10 @@ export default function ServicesPage() {
               </svg>
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--d-text)] mb-3 tracking-tight">
               Showcase Your Services
             </h2>
-            <p className="text-gray-400 text-base max-w-md mb-10 leading-relaxed">
+            <p className="text-[var(--d-text-muted)] text-base max-w-md mb-10 leading-relaxed">
               Add the services you offer and let customers discover and inquire about them directly from your digital card.
             </p>
 
@@ -393,12 +395,12 @@ export default function ServicesPage() {
                   desc: 'Customers can inquire instantly',
                 },
               ].map((f, i) => (
-                <div key={i} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                <div key={i} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-[var(--d-border)]">
                   <span className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/10">
                     {f.icon}
                   </span>
-                  <p className="text-sm font-bold text-white">{f.title}</p>
-                  <p className="text-xs text-gray-500 text-center">{f.desc}</p>
+                  <p className="text-sm font-bold text-[var(--d-text)]">{f.title}</p>
+                  <p className="text-xs text-[var(--d-text-faint)] text-center">{f.desc}</p>
                 </div>
               ))}
             </div>
@@ -408,10 +410,10 @@ export default function ServicesPage() {
 
       {/* Service Grid */}
       {!isLoading && services.length > 0 && filteredAndSortedServices.length === 0 && (
-        <div className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-16 text-center mt-6 shadow-xl">
-          <svg className="w-16 h-16 text-gray-500 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <h3 className="text-xl font-bold text-white tracking-tight">No services found</h3>
-          <p className="text-gray-400 mt-2">Try adjusting your filters or search query.</p>
+        <div className="bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-3xl p-16 text-center mt-6 shadow-xl">
+          <svg className="w-16 h-16 text-[var(--d-text-faint)] mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <h3 className="text-xl font-bold text-[var(--d-text)] tracking-tight">No services found</h3>
+          <p className="text-[var(--d-text-muted)] mt-2">Try adjusting your filters or search query.</p>
           <button 
             onClick={() => { setSearchQuery(''); setFilterStatus('all'); setSortBy('newest'); }}
             className="mt-6 text-sm font-semibold text-blue-400 hover:text-blue-300 hover:underline"
@@ -422,7 +424,7 @@ export default function ServicesPage() {
       )}
 
       {!isLoading && filteredAndSortedServices.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 mt-6">
           {filteredAndSortedServices.map((service, index) => {
             const imgs = service.images || [];
             const ci = getCarouselIdx(service.id);
@@ -432,12 +434,12 @@ export default function ServicesPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="bg-[#0B1528]/50 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative group"
+                className="bg-[var(--d-surface)] backdrop-blur-xl border border-[var(--d-border)] rounded-3xl overflow-hidden hover:border-[var(--d-border)] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative group"
               >
                 {/* Status toggle badge with switch */}
-                {isAdmin && (
-                  <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-white/10">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${service.is_active ? 'text-green-400' : 'text-gray-400'}`}>
+                {canManage && (
+                  <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-[var(--d-border)]">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${service.is_active ? 'text-green-400' : 'text-[var(--d-text-muted)]'}`}>
                       {service.is_active ? 'Active' : 'Inactive'}
                     </span>
                     <button
@@ -481,13 +483,13 @@ export default function ServicesPage() {
                         <>
                           <button
                             onClick={e => { e.stopPropagation(); setCarouselIdx(service.id, (ci - 1 + imgs.length) % imgs.length); }}
-                            className="absolute left-1 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute left-1 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-[var(--d-elevate)] hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
                           </button>
                           <button
                             onClick={e => { e.stopPropagation(); setCarouselIdx(service.id, (ci + 1) % imgs.length); }}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-[var(--d-elevate)] hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                           </button>
@@ -495,7 +497,7 @@ export default function ServicesPage() {
                       )}
                       {/* Image count badge */}
                       {imgs.length > 1 && (
-                        <span className="absolute top-3 right-3 z-10 bg-black/50 backdrop-blur text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                        <span className="absolute top-3 right-3 z-10 bg-[var(--d-elevate)] backdrop-blur text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
                           {ci + 1}/{imgs.length}
                         </span>
                       )}
@@ -510,26 +512,26 @@ export default function ServicesPage() {
                 </div>
 
                 <div className="p-5 flex flex-col flex-1">
-                  <h3 className="font-bold text-lg text-white mb-2 line-clamp-1">{service.name}</h3>
+                  <h3 className="font-bold text-lg text-[var(--d-text)] mb-2 line-clamp-1">{service.name}</h3>
                   {service.description ? (
-                    <p className="text-sm text-gray-400 line-clamp-3 mb-4 flex-1">{service.description}</p>
+                    <p className="text-sm text-[var(--d-text-muted)] line-clamp-3 mb-4">{service.description}</p>
                   ) : (
-                    <div className="mb-4 flex-1" />
+                    <div className="mb-4" />
                   )}
-                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-                      {service.price !== null ? `₹${service.price.toFixed(2)}` : 'Custom Price'}
-                    <div className="flex items-center gap-2">
-                      {isAdmin && (
+                  <div className="flex items-center justify-between flex-wrap gap-2 mt-auto pt-3 border-t border-[var(--d-border)]">
+                      <span className="text-sm font-bold text-[var(--d-text)] truncate min-w-0">{service.price !== null ? `₹${service.price.toFixed(2)}` : 'Custom Price'}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {canManage && (
                         <>
-                          <button onClick={() => openEditModal(service)} className="p-2 text-gray-400 hover:text-blue-400 bg-white/5 hover:bg-blue-500/10 rounded-lg transition-colors border border-white/5" title="Edit Service">
+                          <button onClick={() => openEditModal(service)} className="p-2 text-[var(--d-text-muted)] hover:text-blue-400 bg-[var(--d-elevate)] hover:bg-blue-500/10 rounded-lg transition-colors border border-[var(--d-border)]" title="Edit Service">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                           </button>
-                          <button onClick={() => setServiceToDelete(service)} className="p-2 text-gray-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 rounded-lg transition-colors border border-white/5" title="Delete Service">
+                          <button onClick={() => setServiceToDelete(service)} className="p-2 text-[var(--d-text-muted)] hover:text-red-400 bg-[var(--d-elevate)] hover:bg-red-500/10 rounded-lg transition-colors border border-[var(--d-border)]" title="Delete Service">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         </>
                       )}
-                      <button onClick={() => setServiceToView(service)} className="text-sm bg-white/5 hover:bg-white/10 text-white font-medium py-2 px-4 rounded-lg border border-white/10 transition-all duration-300">View</button>
+                      <button onClick={() => setServiceToView(service)} className="text-sm bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] text-[var(--d-text)] font-medium py-2 px-4 rounded-lg border border-[var(--d-border)] transition-all duration-300">View</button>
                     </div>
                   </div>
                 </div>
@@ -540,14 +542,14 @@ export default function ServicesPage() {
       )}
 
       {/* Floating Action Button — always reachable while scrolling */}
-      {!isLoading && services.length > 0 && isAdmin && (
+      {!isLoading && services.length > 0 && canManage && (
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.3, type: 'spring', stiffness: 260, damping: 20 }}
           onClick={openAddModal}
           title="Add Service"
-          className="fixed bottom-6 right-6 z-40 w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-2xl shadow-blue-500/40 hover:shadow-blue-500/60 hover:scale-110 active:scale-95 transition-all duration-200 border border-white/10"
+          className="fixed bottom-6 right-6 z-40 w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-2xl shadow-blue-500/40 hover:shadow-blue-500/60 hover:scale-110 active:scale-95 transition-all duration-200 border border-[var(--d-border)]"
         >
           <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -564,14 +566,14 @@ export default function ServicesPage() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-[#0B1528] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] z-10"
+              className="bg-[var(--d-surface)] border border-[var(--d-border)] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] z-10"
             >
               {/* Header */}
-              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#070D1A]">
+              <div className="p-6 border-b border-[var(--d-border)] flex justify-between items-center bg-[var(--d-elevate)]">
                 <h2 className="text-xl font-bold text-white bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
                   {editingService ? 'Edit Service' : 'Add New Service'}
                 </h2>
-                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors p-1 bg-white/5 hover:bg-white/10 rounded-lg">
+                <button onClick={() => setIsModalOpen(false)} className="text-[var(--d-text-muted)] hover:text-[var(--d-text)] transition-colors p-1 bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] rounded-lg">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -585,7 +587,7 @@ export default function ServicesPage() {
                 {/* ─── Multi-Image Upload ─── */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--d-text-muted)]">
                       Service Images <span className="text-gray-600 normal-case font-normal">(up to 10)</span>
                     </label>
                     {formImages.length < 10 && (
@@ -605,12 +607,12 @@ export default function ServicesPage() {
                   {formImages.length === 0 && (
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-white/10 hover:border-blue-500/50 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 bg-[#070D1A]/50 hover:bg-[#070D1A]/80 group"
+                      className="border-2 border-dashed border-[var(--d-border)] hover:border-blue-500/50 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 bg-[var(--d-elevate)] hover:bg-[var(--d-elevate)] group"
                     >
                       {uploadingCount > 0 ? (
                         <div className="flex flex-col items-center gap-2">
                           <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
-                          <span className="text-xs text-gray-400 font-medium">Uploading {uploadingCount} image(s)...</span>
+                          <span className="text-xs text-[var(--d-text-muted)] font-medium">Uploading {uploadingCount} image(s)...</span>
                         </div>
                       ) : (
                         <div className="text-center space-y-3">
@@ -620,8 +622,8 @@ export default function ServicesPage() {
                             </svg>
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-white">Click to upload service images</p>
-                            <p className="text-xs text-gray-500 mt-1">PNG, JPG supported · Max 10MB per image · Select multiple</p>
+                            <p className="text-sm font-semibold text-[var(--d-text)]">Click to upload service images</p>
+                            <p className="text-xs text-[var(--d-text-faint)] mt-1">PNG, JPG supported · Max 10MB per image · Select multiple</p>
                           </div>
                         </div>
                       )}
@@ -632,7 +634,7 @@ export default function ServicesPage() {
                   {formImages.length > 0 && (
                     <div className="grid grid-cols-3 gap-2">
                       {formImages.map((img, i) => (
-                        <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group/img bg-[#070D1A]">
+                        <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-[var(--d-border)] group/img bg-[var(--d-elevate)]">
                           <img src={img.url} alt={`Service image ${i + 1}`} className="w-full h-full object-cover" />
                           {/* Main badge on first image */}
                           {i === 0 && (
@@ -654,14 +656,14 @@ export default function ServicesPage() {
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploadingCount > 0}
-                          className="aspect-square rounded-xl border-2 border-dashed border-white/10 hover:border-blue-500/50 flex flex-col items-center justify-center gap-1 transition-colors bg-[#070D1A]/50 hover:bg-[#070D1A] disabled:opacity-50"
+                          className="aspect-square rounded-xl border-2 border-dashed border-[var(--d-border)] hover:border-blue-500/50 flex flex-col items-center justify-center gap-1 transition-colors bg-[var(--d-elevate)] hover:bg-[var(--d-elevate)] disabled:opacity-50"
                         >
                           {uploadingCount > 0 ? (
                             <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
                           ) : (
                             <>
-                              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-                              <span className="text-[10px] text-gray-500">Add</span>
+                              <svg className="w-5 h-5 text-[var(--d-text-faint)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                              <span className="text-[10px] text-[var(--d-text-faint)]">Add</span>
                             </>
                           )}
                         </button>
@@ -681,7 +683,7 @@ export default function ServicesPage() {
 
                 {/* Name */}
                 <div className="space-y-2">
-                  <label htmlFor="prod-name" className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <label htmlFor="prod-name" className="block text-xs font-semibold uppercase tracking-wider text-[var(--d-text-muted)]">
                     Service Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -691,17 +693,17 @@ export default function ServicesPage() {
                     onChange={e => setFormName(e.target.value)}
                     placeholder="e.g. Card Setu Premium NFC Card"
                     required
-                    className="w-full bg-[#070D1A] border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-xl px-4 py-3 text-white text-sm outline-none transition-all duration-300"
+                    className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] hover:border-[var(--d-border)] focus:border-blue-500 rounded-xl px-4 py-3 text-[var(--d-text)] text-sm outline-none transition-all duration-300"
                   />
                 </div>
 
                 {/* Price */}
                 <div className="space-y-2">
-                  <label htmlFor="prod-price" className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <label htmlFor="prod-price" className="block text-xs font-semibold uppercase tracking-wider text-[var(--d-text-muted)]">
                     Price (₹) <span className="text-gray-600 normal-case font-normal">(optional)</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-3 text-gray-400 text-sm">₹</span>
+                    <span className="absolute left-4 top-3 text-[var(--d-text-muted)] text-sm">₹</span>
                     <input
                       id="prod-price"
                       type="number"
@@ -710,29 +712,29 @@ export default function ServicesPage() {
                       value={formPrice}
                       onChange={e => setFormPrice(e.target.value)}
                       placeholder="0.00"
-                      className="w-full bg-[#070D1A] border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-xl pl-8 pr-4 py-3 text-white text-sm outline-none transition-all duration-300"
+                      className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] hover:border-[var(--d-border)] focus:border-blue-500 rounded-xl pl-8 pr-4 py-3 text-[var(--d-text)] text-sm outline-none transition-all duration-300"
                     />
                   </div>
                 </div>
 
                 {/* Description */}
                 <div className="space-y-2">
-                  <label htmlFor="prod-desc" className="block text-xs font-semibold uppercase tracking-wider text-gray-400">Description</label>
+                  <label htmlFor="prod-desc" className="block text-xs font-semibold uppercase tracking-wider text-[var(--d-text-muted)]">Description</label>
                   <textarea
                     id="prod-desc"
                     value={formDescription}
                     onChange={e => setFormDescription(e.target.value)}
                     placeholder="Provide a detailed description of the service..."
                     rows={4}
-                    className="w-full bg-[#070D1A] border border-white/10 hover:border-white/20 focus:border-blue-500 rounded-xl px-4 py-3 text-white text-sm outline-none transition-all duration-300 resize-none"
+                    className="w-full bg-[var(--d-elevate)] border border-[var(--d-border)] hover:border-[var(--d-border)] focus:border-blue-500 rounded-xl px-4 py-3 text-[var(--d-text)] text-sm outline-none transition-all duration-300 resize-none"
                   />
                 </div>
 
                 {/* Status Toggle */}
-                <div className="flex items-center justify-between p-4 bg-[#070D1A]/50 border border-white/5 rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl">
                   <div>
-                    <p className="text-sm font-medium text-white">Active Status</p>
-                    <p className="text-xs text-gray-400">Determine if this service is visible to customers.</p>
+                    <p className="text-sm font-medium text-[var(--d-text)]">Active Status</p>
+                    <p className="text-xs text-[var(--d-text-muted)]">Determine if this service is visible to customers.</p>
                   </div>
                   <button
                     type="button"
@@ -749,11 +751,11 @@ export default function ServicesPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="pt-4 border-t border-white/5 flex justify-end gap-3">
+                <div className="pt-4 border-t border-[var(--d-border)] flex justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium transition-all duration-300"
+                    className="px-5 py-2.5 bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] text-[var(--d-text)] rounded-xl text-sm font-medium transition-all duration-300"
                     disabled={isSaving}
                   >
                     Cancel
@@ -782,22 +784,22 @@ export default function ServicesPage() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-[#0B1528] border border-red-500/20 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative p-6 z-10 space-y-6"
+              className="bg-[var(--d-surface)] border border-red-500/20 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative p-6 z-10 space-y-6"
             >
               <div className="flex gap-4">
                 <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Delete Service</h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Are you sure you want to delete <span className="font-semibold text-white">"{serviceToDelete.name}"</span>?
+                  <h3 className="text-lg font-bold text-[var(--d-text)]">Delete Service</h3>
+                  <p className="text-sm text-[var(--d-text-muted)] mt-1">
+                    Are you sure you want to delete <span className="font-semibold text-[var(--d-text)]">"{serviceToDelete.name}"</span>?
                     This action cannot be undone.
                   </p>
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button onClick={() => setServiceToDelete(null)} disabled={isDeleting} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium transition-all duration-300">Cancel</button>
+                <button onClick={() => setServiceToDelete(null)} disabled={isDeleting} className="px-5 py-2.5 bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] text-[var(--d-text)] rounded-xl text-sm font-medium transition-all duration-300">Cancel</button>
                 <button onClick={confirmDeleteService} disabled={isDeleting} className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow-lg shadow-red-500/20">
                   {isDeleting && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
                   Delete
@@ -817,17 +819,17 @@ export default function ServicesPage() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-[#0B1528] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] z-10"
+              className="bg-[var(--d-surface)] border border-[var(--d-border)] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] z-10"
             >
               {/* Header */}
-              <div className="p-6 border-b border-white/5 flex justify-between items-start bg-[#070D1A]">
+              <div className="p-6 border-b border-[var(--d-border)] flex justify-between items-start bg-[var(--d-elevate)]">
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">{serviceToView.name}</h2>
+                  <h2 className="text-2xl font-bold text-[var(--d-text)] mb-1">{serviceToView.name}</h2>
                   <p className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
                     {serviceToView.price !== null ? `₹${serviceToView.price.toFixed(2)}` : 'Custom Price'}
                   </p>
                 </div>
-                <button onClick={() => setServiceToView(null)} className="text-gray-400 hover:text-white transition-colors p-1 bg-white/5 hover:bg-white/10 rounded-lg">
+                <button onClick={() => setServiceToView(null)} className="text-[var(--d-text-muted)] hover:text-[var(--d-text)] transition-colors p-1 bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] rounded-lg">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -838,27 +840,27 @@ export default function ServicesPage() {
                 {serviceToView.images && serviceToView.images.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {serviceToView.images.map((img, i) => (
-                      <div key={i} className="aspect-square rounded-xl overflow-hidden bg-black/50 border border-white/5">
+                      <div key={i} className="aspect-square rounded-xl overflow-hidden bg-[var(--d-elevate)] border border-[var(--d-border)]">
                         <img src={img} alt={`${serviceToView.name} ${i+1}`} className="w-full h-full object-cover" />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="w-full h-40 bg-black/20 rounded-xl flex items-center justify-center border border-white/5">
-                    <p className="text-gray-500 text-sm">No images available.</p>
+                  <div className="w-full h-40 bg-black/20 rounded-xl flex items-center justify-center border border-[var(--d-border)]">
+                    <p className="text-[var(--d-text-faint)] text-sm">No images available.</p>
                   </div>
                 )}
                 
                 {/* Description */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Description</h3>
-                  <div className="bg-[#070D1A]/50 border border-white/5 rounded-xl p-4 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-                    {serviceToView.description || <span className="text-gray-500 italic">No description provided.</span>}
+                  <h3 className="text-sm font-semibold text-[var(--d-text-muted)] uppercase tracking-wider mb-2">Description</h3>
+                  <div className="bg-[var(--d-elevate)] border border-[var(--d-border)] rounded-xl p-4 text-[var(--d-text-muted)] text-sm leading-relaxed whitespace-pre-wrap">
+                    {serviceToView.description || <span className="text-[var(--d-text-faint)] italic">No description provided.</span>}
                   </div>
                 </div>
 
                 {/* Additional Details */}
-                <div className="flex items-center gap-4 text-sm text-gray-400">
+                <div className="flex items-center gap-4 text-sm text-[var(--d-text-muted)]">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${serviceToView.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
                     {serviceToView.is_active ? 'Currently Active' : 'Currently Inactive'}
@@ -868,8 +870,8 @@ export default function ServicesPage() {
                 </div>
               </div>
 
-              <div className="p-4 border-t border-white/5 flex justify-end bg-[#070D1A]">
-                <button onClick={() => setServiceToView(null)} className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-medium transition-all duration-300">
+              <div className="p-4 border-t border-[var(--d-border)] flex justify-end bg-[var(--d-elevate)]">
+                <button onClick={() => setServiceToView(null)} className="px-5 py-2.5 bg-[var(--d-elevate)] hover:bg-[var(--d-hover)] text-[var(--d-text)] rounded-xl text-sm font-medium transition-all duration-300">
                   Close Preview
                 </button>
               </div>

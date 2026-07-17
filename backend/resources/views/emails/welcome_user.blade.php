@@ -30,7 +30,7 @@
         </div>
         <div class="info-row">
           <span class="info-label">Share</span>
-          <span class="info-value">Share your card via QR code, NFC tap, or a unique link — instantly.</span>
+          <span class="info-value">Share your card via QR code or a unique link — instantly.</span>
         </div>
         <div class="info-row">
           <span class="info-label">Connect</span>

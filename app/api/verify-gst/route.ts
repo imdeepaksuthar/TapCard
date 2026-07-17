@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+// Maps the first two digits of a GSTIN to the issuing state / UT.
 const STATE_CODES: Record<string, string> = {
   '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
   '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan',
@@ -13,70 +14,56 @@ const STATE_CODES: Record<string, string> = {
   '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh'
 };
 
+// The 4th character of the embedded PAN encodes the entity type.
+const PAN_ENTITY_TYPE: Record<string, string> = {
+  P: 'Individual / Proprietor', C: 'Company', H: 'Hindu Undivided Family (HUF)',
+  F: 'Firm / LLP', A: 'Association of Persons (AOP)', T: 'Trust',
+  B: 'Body of Individuals (BOI)', L: 'Local Authority', J: 'Artificial Juridical Person',
+  G: 'Government',
+};
+
+// IMPORTANT: This endpoint performs a STRUCTURAL FORMAT CHECK ONLY. It reads
+// facts that are encoded inside the GSTIN itself (state code + embedded PAN) and
+// does NOT contact the government GSTN portal. It therefore cannot confirm that
+// a business is registered, active, or that the name matches. The response must
+// never be presented to users as an official "verification". To offer real
+// verification, integrate a government-authorised GSTIN API here and return its
+// actual fields (legal name, status, registration date, principal place).
 export async function POST(request: Request) {
   try {
     const { gstNo } = await request.json();
-
     const normalizedGst = (gstNo || '').trim().toUpperCase();
 
-    // Indian GSTIN regex: 2 digits, 5 letters, 4 digits, 1 letter, 1 digit, 1 letter (usually Z), 1 alphanumeric/digit
+    // 2 digits, 5 letters, 4 digits, 1 letter, 1 alnum, 'Z', 1 alnum.
     const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
     if (!gstRegex.test(normalizedGst)) {
       return NextResponse.json(
-        { error: 'Invalid GST Number format. A valid GSTIN contains 15 alphanumeric characters (e.g. 08GROPS2567D1Z8).' },
+        { success: false, error: 'Invalid GST number format. A valid GSTIN has 15 characters (e.g. 08GROPS2567D1Z8).' },
         { status: 400 }
       );
     }
 
-    // Simulate network delay for verification
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     const stateCode = normalizedGst.substring(0, 2);
     const pan = normalizedGst.substring(2, 12);
-    const panType = pan.charAt(3);
-    const businessIdentifier = pan.substring(0, 5); // e.g. GROPS
-
-    const stateName = STATE_CODES[stateCode] || 'Karnataka';
-    
-    // Generate dynamic names based on PAN and taxpayer type
-    let legalName = '';
-    let tradeName = '';
-    let taxpayerType = 'Regular';
-
-    if (panType === 'C') {
-      legalName = `M/S ${businessIdentifier} TECHNOLOGIES PRIVATE LIMITED (Mocked Integration)`;
-      tradeName = `${businessIdentifier} TECH`;
-      taxpayerType = 'Regular';
-    } else if (panType === 'P') {
-      legalName = `${businessIdentifier} ENTERPRISES (Mocked Integration)`;
-      tradeName = `${businessIdentifier} STORES`;
-      taxpayerType = 'Composition';
-    } else if (panType === 'F') {
-      legalName = `M/S ${businessIdentifier} & SONS PARTNERSHIP (Mocked Integration)`;
-      tradeName = `${businessIdentifier} CO`;
-      taxpayerType = 'Regular';
-    } else {
-      legalName = `M/S ${businessIdentifier} BUSINESS SOLUTIONS (Mocked Integration)`;
-      tradeName = `${businessIdentifier} SOLUTIONS`;
-      taxpayerType = 'Regular';
-    }
+    const entityChar = pan.charAt(3);
 
     return NextResponse.json({
       success: true,
+      // Explicit: the number is well-formed, but it was NOT checked against GSTN.
+      verified: false,
+      format_valid: true,
       data: {
         gstin: normalizedGst,
-        legal_name: legalName,
-        trade_name: tradeName,
-        status: 'Active',
-        taxpayer_type: taxpayerType,
-        registration_date: '15/06/2021',
-        principal_place_of_business: `Shop No. 42, ${businessIdentifier} Plaza, Main Sector Road, ${stateName}, India`,
-      }
+        pan,
+        state: STATE_CODES[stateCode] || 'Unknown',
+        entity_type: PAN_ENTITY_TYPE[entityChar] || 'Unknown',
+        note: 'Format check only — not verified against government (GSTN) records.',
+      },
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to verify GST' },
+      { success: false, error: 'Failed to process GST number.' },
       { status: 500 }
     );
   }

@@ -24,11 +24,14 @@ class CategoryController extends Controller
                   ->orWhere('slug', 'like', "%{$search}%")
                   ->orWhere('type', 'like', "%{$search}%");
             });
+        } else {
+            // Only show root level categories if not searching, for tree structure
+            $query->whereNull('parent_id');
         }
 
         // Handle Sorting
-        $sortField = $request->input('sort', 'created_at');
-        $sortDirection = $request->input('direction', 'desc');
+        $sortField = $request->input('sort', 'name');
+        $sortDirection = $request->input('direction', 'asc');
         
         $allowedSorts = ['name', 'slug', 'type', 'created_at'];
         if (in_array($sortField, $allowedSorts)) {
