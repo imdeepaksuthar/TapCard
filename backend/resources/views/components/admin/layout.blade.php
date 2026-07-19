@@ -45,7 +45,7 @@
                         </li>
                         <li>
                             <a class="group relative flex items-center gap-2.5 rounded-lg py-2.5 px-4 font-medium duration-300 ease-in-out hover:bg-gray-800 dark:hover:bg-strokedark {{ request()->routeIs('admin.designations.*') ? 'bg-primary/90 dark:bg-primary text-white shadow-lg' : 'text-gray-300' }}" href="{{ route('admin.designations.index') }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.805-9-2.255M15 10v2a3 3 0 11-6 0v-2m12 4V8a2 2 0 00-2-2H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2z"></path></svg>
                                 Designations
                             </a>
                         </li>

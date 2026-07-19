@@ -55,10 +55,10 @@ class AdvertisingController extends Controller
             'title' => 'required|string|max:255',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'target_url' => 'nullable|url|max:255',
-            'position' => 'required|string|max:50',
+            'position' => 'required|string|max:50|unique:advertisings,position',
             'status' => 'required|in:active,inactive',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
         if ($request->hasFile('image')) {
@@ -97,10 +97,10 @@ class AdvertisingController extends Controller
             'title' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'target_url' => 'nullable|url|max:255',
-            'position' => 'required|string|max:50',
+            'position' => 'required|string|max:50|unique:advertisings,position,' . $advertising->id,
             'status' => 'required|in:active,inactive',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
         if ($request->hasFile('image')) {

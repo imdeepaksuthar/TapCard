@@ -270,12 +270,27 @@ class BusinessCardController extends Controller
         // correlation; documents / seo_metadata aren't used by the public page).
         $card->makeHidden(['user_id', 'documents', 'seo_metadata']);
 
+        // Fetch active advertisements
+        $advertisements = \App\Models\Advertising::where('status', 'active')
+            ->where(function ($query) {
+                $now = now()->toDateString();
+                $query->whereNull('start_date')
+                      ->orWhere('start_date', '<=', $now);
+            })
+            ->where(function ($query) {
+                $now = now()->toDateString();
+                $query->whereNull('end_date')
+                      ->orWhere('end_date', '>=', $now);
+            })
+            ->get();
+
         return response()->json([
             'card' => $card,
             'theme' => $theme,
             'booked_slots' => $bookedSlots,
             'products' => $products,
-            'services' => $services
+            'services' => $services,
+            'advertisements' => $advertisements
         ]);
     }
 
